@@ -9,9 +9,9 @@
 //! * : By compressed I mean removing uneeded feilds from the json and
 //!     storing it inside games.json, gui.json and web.json by doing:
 //!
-//! $ zig build run_repoListCompressor -- web > ./database/web.json
-//! $ zig build run_repoListCompressor -- gui > ./database/gui.json
-//! $ zig build run_repoListCompressor -- games > ./database/games.json
+//! $ zig build run_repoListCompressor -- web > ./web.json
+//! $ zig build run_repoListCompressor -- gui > ./gui.json
+//! $ zig build run_repoListCompressor -- games > ./games.json
 //!=======================================================================
 
 // =======================

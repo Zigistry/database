@@ -7,9 +7,9 @@
 //! and stores it inside main.json.
 //!
 //! * : By compressed I mean removing uneeded feilds from the json
-//!     and storing it inside ./database/main.json by doing:
+//!     and storing it inside ./main.json by doing:
 //!
-//! $ zig build run_databaseCompiler > ./database/main.json
+//! $ zig build run_databaseCompiler > ./main.json
 //!==================================================================
 
 // =======================

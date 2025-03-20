@@ -6,11 +6,11 @@
 //! Details : This file generates statistics
 //! by reading data from main.json. For this
 //! file to run correctly, please first
-//! copy the database/main.json to
+//! copy the ./main.json to
 //! scripts folder, and then run this file.
 //!
 //! This can be done by:
-//! $ cp ./database/main.json ./scripts/main.json
+//! $ cp ./main.json ./scripts/main.json
 //! and then:
 //! $ zig run ./scripts/statistics.zig
 //!
@@ -19,7 +19,7 @@
 //! $ rm -rf ./scripts/main.json
 //!
 //! If you want to do the same for programs:
-//! $ cp ./database/programs.json ./scripts/main.json
+//! $ cp ./programs.json ./scripts/main.json
 //! $ zig run ./scripts/statistics.zig
 //!
 //! Please don't forget to (even though once
