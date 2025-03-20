@@ -25,16 +25,16 @@ jobs:
         run: zig build --release=fast
       - name: Run all tasks in parallel
         run: |
-          $BINARIES_PATH/databaseCompiler > ./database/main.json &
-          $BINARIES_PATH/databaseCompiler2 > ./database/programs.json &
-          $BINARIES_PATH/repoListCompressor web > ./database/web.json &
-          $BINARIES_PATH/repoListCompressor gui > ./database/gui.json &
-          $BINARIES_PATH/repoListCompressor games > ./database/games.json &
-          $BINARIES_PATH/codeberg > ./database/codebergPrograms.json &
-          $BINARIES_PATH/gitlab > ./database/gitlabPrograms.json &
+          $BINARIES_PATH/databaseCompiler > ./main.json &
+          $BINARIES_PATH/databaseCompiler2 > ./programs.json &
+          $BINARIES_PATH/repoListCompressor web > ./web.json &
+          $BINARIES_PATH/repoListCompressor gui > ./gui.json &
+          $BINARIES_PATH/repoListCompressor games > ./games.json &
+          $BINARIES_PATH/codeberg > ./codebergPrograms.json &
+          $BINARIES_PATH/gitlab > ./gitlabPrograms.json &
           wait
       - name: Create Deep Search Database
-        run: $BINARIES_PATH/createDeepSearchDB > ./database/deepSearchData.json
+        run: $BINARIES_PATH/createDeepSearchDB > ./deepSearchData.json
       - name: Config email
         run: git config --global user.name "Github Actions" && git config --global user.email "github-actions@users.noreply.github.com"
 
