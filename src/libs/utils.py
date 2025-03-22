@@ -63,7 +63,7 @@ def process_repo(repo):
         "name": repo["name"],
         "full_name": repo["full_name"],
         "created_at": repo["created_at"],
-        "description": repo["description"],
+        "description": repo["description"] if repo["description"] else "No Description",
         "default_branch": repo["default_branch"],
         "open_issues": repo["open_issues"],
         "stargazers_count": repo["stargazers_count"],
