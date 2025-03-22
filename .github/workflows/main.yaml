@@ -37,4 +37,4 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add .
           git diff --quiet && git diff --staged --quiet || git commit -m "Automated update from GitHub Actions"
-          git push
+          git push --no-verify
