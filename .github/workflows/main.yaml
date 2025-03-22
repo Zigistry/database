@@ -10,6 +10,8 @@ on:
 
 jobs:
   run-scripts:
+    env:
+      GH_API_KEY: ${{ secrets.GH_API_KEY }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
