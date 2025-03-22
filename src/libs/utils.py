@@ -1,4 +1,5 @@
 import os
+import concurrent
 import requests
 
 
@@ -9,24 +10,54 @@ HEADERS = {
     "User-Agent": "Python",
 }
 
+
 def fetch_readme_content(repo_full_name) -> str:
-    url = f"https://api.github.com/repos/{repo_full_name}/readme"
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=5)
-        if response.ok and (readme_url := response.json().get("download_url")):
-            return requests.get(readme_url, timeout=5).text
-    except Exception:
-        pass
+    base_url = f"https://raw.githubusercontent.com/{repo_full_name}/HEAD/"
+    POSSIBLE_FILENAMES = (
+        "README.md",
+        "README.txt",
+        "README",
+        "readme.md",
+        "readme.txt",
+        "README.markdown",
+        "readme.markdown",
+    )
+
+    def fetch(url):
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                return response.text
+        except requests.exceptions.RequestException:
+            pass
+        return None
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(fetch, base_url + filename): filename
+            for filename in POSSIBLE_FILENAMES
+        }
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                return result
+
     return "404"
 
 def has_build_file(owner, repo, filename) -> bool:
-    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{filename}"
-    response = requests.get(url, headers=HEADERS)
+    url = f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{filename}"
+    response = requests.get(url, timeout=10)
     return response.status_code == 200
+
+
 
 def process_repo(repo):
     x, y = repo["full_name"].split("/")
-    license = repo["license"]["spdx_id"] if repo["license"] and repo["license"].get("spdx_id") else "None"
+    license = (
+        repo["license"]["spdx_id"]
+        if repo["license"] and repo["license"].get("spdx_id")
+        else "None"
+    )
     return {
         "avatar_url": repo["owner"]["avatar_url"],
         "name": repo["name"],
