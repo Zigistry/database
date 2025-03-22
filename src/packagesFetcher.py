@@ -22,7 +22,7 @@ def fetch_repos():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         data = list(executor.map(utils.process_repo, repos))
 
-    with open("./jsons/database.json", "w") as f:
+    with open("./jsons/main.json", "w") as f:
         json.dump(data, f)
 
 fetch_repos()
