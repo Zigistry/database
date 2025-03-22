@@ -2,7 +2,7 @@ import os
 import requests
 
 
-API_KEY = os.getenv("GITHUB_API_KEY")
+API_KEY = os.getenv("GH_API_KEY")
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/vnd.github.v3+json",
