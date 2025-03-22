@@ -30,7 +30,8 @@ TOPIC_URLS = {
 def fetch_repo(url):
     res = requests.get(url)
     if not res.ok:
-        return None
+        print("RESPONSE NOT OK")
+        exit(1)
     return utils.process_repo(res.json())
 
 def process_category(file_name, urls):

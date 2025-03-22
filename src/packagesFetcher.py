@@ -8,8 +8,8 @@ def fetch_repos():
     INITIAL_URL = "https://api.github.com/search/repositories?q=topic:zig-package"
     res = requests.get(INITIAL_URL, headers=utils.HEADERS)
     if not res.ok:
-        exit()
-    
+        print("RESPONSE NOT OK")
+        exit(1)
     total_count = res.json()["total_count"]
     data = []
     urls = [f"{INITIAL_URL}&page={i}&per_page=100" for i in range(1, total_count // 100 + 2)]

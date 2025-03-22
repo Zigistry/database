@@ -54,7 +54,8 @@ URLS = (
 def fetch_url(url):
     res = requests.get(url, headers=utils.HEADERS)
     if not res.ok:
-        return []
+        print("RESPONSE NOT OK")
+        exit(1)
     repos = res.json().get("items", [])
     with concurrent.futures.ThreadPoolExecutor() as executor:
         return list(executor.map(utils.process_repo, repos))
