@@ -1,48 +1,37 @@
-name: Update database
+name: Run Python Scripts Hourly
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: "0 * * * *"
-
-permissions:
-  contents: write
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
-  Update_json:
-    env:
-      API_AUTH_TOKEN: ${{ secrets.API_TOKEN }}
-      BINARIES_PATH: ./zig-out/bin
+  run-scripts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          version: 0.14.0
-      - name: Build binaries
-        run: zig build --release=fast
-      - name: Run all tasks in parallel
+          python-version: '3.x'
+
+      - name: Install dependencies
         run: |
-          $BINARIES_PATH/databaseCompiler > ./main.json &
-          $BINARIES_PATH/databaseCompiler2 > ./programs.json &
-          $BINARIES_PATH/repoListCompressor web > ./web.json &
-          $BINARIES_PATH/repoListCompressor gui > ./gui.json &
-          $BINARIES_PATH/repoListCompressor games > ./games.json &
-          $BINARIES_PATH/codeberg > ./codebergPrograms.json &
-          $BINARIES_PATH/gitlab > ./gitlabPrograms.json &
-          wait
-      - name: Create Deep Search Database
-        run: $BINARIES_PATH/createDeepSearchDB > ./deepSearchData.json
-      - name: Config email
-        run: git config --global user.name "Github Actions" && git config --global user.email "github-actions@users.noreply.github.com"
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Git add
-        run: git add .
+      - name: Run Python scripts
+        run: |
+          python ./src/indexSectionsFetcher.py
+          python ./src/packagesFetcher.py
+          python ./src/programsFetcher.py
 
-      - name: Commit database
-        run: git commit -m 'Updated database'
-
-      - name: Push changes
-        run: git push
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated update from GitHub Actions"
+          git push
