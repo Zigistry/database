@@ -33,6 +33,9 @@ jobs:
           python ./src/packagesFetcher.py
           python ./src/programsFetcher.py
 
+      - name: Create dataset and push to Hugging Face
+        run: python ./src/createPushDataset.py
+
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions"
