@@ -13,6 +13,7 @@ jobs:
     runs-on: macos-latest
     env:
       GH_API_KEY: ${{ secrets.GH_API_KEY }}
+      HF_AUTH_TOKEN: ${{ secrets.HF_AUTH_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,7 +35,10 @@ jobs:
           python ./src/programsFetcher.py
 
       - name: Create dataset and push to Hugging Face
-        run: python ./src/createPushDataset.py
+        run: |
+          python ./src/createPushDatasetComplete.py
+          python ./src/createPushDatasetPackages.py
+          python ./src/createPushDatasetPrograms.py
 
       - name: Commit and push changes
         run: |
