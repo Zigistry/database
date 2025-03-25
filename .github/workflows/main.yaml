@@ -39,6 +39,7 @@ jobs:
           python ./src/createPushDatasetComplete.py
           python ./src/createPushDatasetPackages.py
           python ./src/createPushDatasetPrograms.py
+          python ./src/jsonsForAPICreator.py
 
       - name: Commit and push changes
         run: |
