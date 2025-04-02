@@ -1,12 +1,12 @@
 import json
 
-JSON_FILES = ("main.json", "web.json", "games.json", "gui.json")
+from libs import constants
 
 
 def createPackagesDatasetForAPI():
     dataset = []
     seen = set()
-    for file in JSON_FILES:
+    for file in constants.PACKAGES_JSON_FILES:
         with open("./jsons/" + file, "r") as f:
             data = json.load(f)
             for item in data:

@@ -1,10 +1,6 @@
 import json
-import datasets
-import os
-
-JSON_FILES = ("main.json", "web.json", "games.json", "gui.json")
-
-USER_AUTH_TOKEN = os.getenv("HF_AUTH_TOKEN")
+from datasets import Dataset
+from libs import constants
 
 
 def createDataset():
@@ -13,7 +9,7 @@ def createDataset():
     """
     dataset = []
     seen = set()
-    for file in JSON_FILES:
+    for file in constants.PACKAGES_JSON_FILES:
         with open("./jsons/" + file, "r") as f:
             data = json.load(f)
             for item in data:
@@ -30,8 +26,8 @@ def pushDataset():
     """
     dataset = createDataset()
 
-    hfDataset = datasets.Dataset.from_list(dataset)
-    hfDataset.push_to_hub("zigistry/packages", token=USER_AUTH_TOKEN)
+    hfDataset = Dataset.from_list(dataset)
+    hfDataset.push_to_hub("zigistry/packages", token=constants.HUGGING_FACE_API_KEY)
 
 
 if __name__ == "__main__":

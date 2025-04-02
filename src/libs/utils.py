@@ -1,31 +1,14 @@
-import os
+from libs import constants
 import concurrent
 import requests
 
 
-API_KEY = os.getenv("GH_API_KEY")
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Accept": "application/vnd.github.v3+json",
-    "User-Agent": "Python",
-}
-
-
 def fetch_readme_content(repo_full_name) -> str:
     base_url = f"https://raw.githubusercontent.com/{repo_full_name}/HEAD/"
-    POSSIBLE_FILENAMES = (
-        "README.md",
-        "README.txt",
-        "README",
-        "readme.md",
-        "readme.txt",
-        "README.markdown",
-        "readme.markdown",
-    )
 
     def fetch(url):
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, headers=constants.HEADERS, timeout=10)
             if response.status_code == 200:
                 return response.text
         except requests.exceptions.RequestException:
@@ -35,7 +18,7 @@ def fetch_readme_content(repo_full_name) -> str:
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
             executor.submit(fetch, base_url + filename): filename
-            for filename in POSSIBLE_FILENAMES
+            for filename in constants.POSSIBLE_README_FILENAMES
         }
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
@@ -44,11 +27,11 @@ def fetch_readme_content(repo_full_name) -> str:
 
     return "404"
 
+
 def has_build_file(owner, repo, filename) -> bool:
     url = f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{filename}"
     response = requests.get(url, timeout=10)
     return response.status_code == 200
-
 
 
 def process_repo(repo):

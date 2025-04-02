@@ -1,21 +1,16 @@
 import json
-import datasets
-import os
-
-JSON_FILE = "./jsons/programs.json"
-
-USER_AUTH_TOKEN = os.getenv("HF_AUTH_TOKEN")
-
+from datasets import Dataset
+from libs import constants
 
 
 def pushDataset():
     """
     Push the dataset to a file
     """
-    dataset = json.load(open(JSON_FILE, "r"))
+    dataset = json.load(open(constants.PROGRAMS_JSON_FILES[0], "r"))
 
-    hfDataset = datasets.Dataset.from_list(dataset)
-    hfDataset.push_to_hub("zigistry/programs", token=USER_AUTH_TOKEN)
+    hfDataset = Dataset.from_list(dataset)
+    hfDataset.push_to_hub("zigistry/programs", token=constants.HUGGING_FACE_API_KEY)
 
 
 if __name__ == "__main__":
