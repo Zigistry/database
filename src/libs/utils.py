@@ -8,7 +8,7 @@ def fetch_readme_content(repo_full_name) -> str:
 
     def fetch(url):
         try:
-            response = requests.get(url, headers=constants.HEADERS, timeout=10)
+            response = requests.get(url, headers=constants.GITHUB_FETCH_HEADERS, timeout=10)
             if response.status_code == 200:
                 return response.text
         except requests.exceptions.RequestException:

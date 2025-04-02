@@ -1,7 +1,7 @@
 import os
 
 HUGGING_FACE_API_KEY = os.getenv("HF_AUTH_TOKEN")
-GUTHUB_API_KEY = os.getenv("GH_API_KEY")
+GITHUB_API_KEY = os.getenv("GH_API_KEY")
 
 PACKAGES_JSON_FILES = ("main.json", "web.json", "games.json", "gui.json")
 PROGRAMS_JSON_FILES = ("programs.json",)
@@ -17,8 +17,8 @@ POSSIBLE_README_FILENAMES = (
     "readme.markdown",
 )
 
-HEADERS = {
-    "Authorization": f"Bearer {GUTHUB_API_KEY}",
+GITHUB_FETCH_HEADERS = {
+    "Authorization": f"Bearer {GITHUB_API_KEY}",
     "Accept": "application/vnd.github.v3+json",
     "User-Agent": "Python",
 }

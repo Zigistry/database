@@ -1,8 +1,7 @@
 import requests
 import json
 import concurrent.futures
-from libs import utils
-from libs import constants
+from libs import utils, constants
 
 
 def fetch_repo(url):

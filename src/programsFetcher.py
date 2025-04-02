@@ -5,7 +5,7 @@ from libs import utils, constants
 
 
 def fetch_url(url):
-    res = requests.get(url, headers=utils.HEADERS)
+    res = requests.get(url, headers=constants.GITHUB_FETCH_HEADERS)
     if not res.ok:
         print("RESPONSE NOT OK")
         exit(1)

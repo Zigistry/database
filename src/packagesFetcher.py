@@ -7,7 +7,7 @@ from libs import utils, constants
 
 def fetch_repos():
     INITIAL_URL = "https://api.github.com/search/repositories?q=topic:zig-package"
-    res = requests.get(INITIAL_URL, headers=constants.HEADERS)
+    res = requests.get(INITIAL_URL, headers=constants.GITHUB_FETCH_HEADERS)
     if not res.ok:
         print("RESPONSE NOT OK")
         exit(1)
@@ -19,7 +19,7 @@ def fetch_repos():
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = executor.map(
-            lambda url: requests.get(url, headers=constants.HEADERS)
+            lambda url: requests.get(url, headers=constants.GITHUB_FETCH_HEADERS)
             .json()
             .get("items", []),
             urls,
