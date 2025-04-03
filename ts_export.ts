@@ -1,4 +1,4 @@
-import packages from "./jsons/main.json";
+import packages from "./jsons/packages.json";
 import packages_games from "./jsons/games.json";
 import packages_gui from "./jsons/gui.json";
 import packages_web from "./jsons/web.json";

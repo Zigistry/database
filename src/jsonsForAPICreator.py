@@ -15,7 +15,7 @@ def createPackagesDatasetForAPI():
                 if item_str not in seen:
                     seen.add(item_str)
                     dataset.append(item)
-    json.dump(dataset, open("./jsonsForAPICompressed/main.json", "w"))
+    json.dump(dataset, open("./jsonsForAPICompressed/packages.json", "w"))
 
 
 def createProgramsDatasetForAPI():

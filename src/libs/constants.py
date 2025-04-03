@@ -3,7 +3,7 @@ import os
 HUGGING_FACE_API_KEY = os.getenv("HF_AUTH_TOKEN")
 GITHUB_API_KEY = os.getenv("GH_API_KEY")
 
-PACKAGES_JSON_FILES = ("main.json", "web.json", "games.json", "gui.json")
+PACKAGES_JSON_FILES = ("packages.json", "web.json", "games.json", "gui.json")
 PROGRAMS_JSON_FILES = ("programs.json",)
 ALL_JSON_FILES = PACKAGES_JSON_FILES + PROGRAMS_JSON_FILES
 

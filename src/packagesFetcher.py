@@ -30,7 +30,7 @@ def fetch_repos():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         data = list(executor.map(utils.process_repo, repos))
 
-    with open("./jsons/main.json", "w") as f:
+    with open("./jsons/packages.json", "w") as f:
         json.dump(data, f)
 
 
