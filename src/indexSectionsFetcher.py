@@ -1,15 +1,18 @@
 import requests
 import json
 import concurrent.futures
+from dataclasses import asdict
 from libs import utils, constants
 
 
 def fetch_repo(url):
     res = requests.get(url, headers=constants.GITHUB_FETCH_HEADERS)
     if not res.ok:
-        print("RESPONSE NOT OK")
-        exit(1)
-    return utils.process_repo(res.json())
+        print(f"Failed to fetch: {url} → {res.status_code}")
+        return None
+    raw_repo = res.json()
+    converted = utils.convertGithubRepoFormToZigistryRepoForm(raw_repo)
+    return asdict(converted) if converted else None
 
 
 def process_category(file_name, urls):
@@ -19,8 +22,13 @@ def process_category(file_name, urls):
         json.dump(data, f)
 
 
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(
-        lambda item: process_category(*item),
-        constants.INDEX_PAGE_SECTION_TOPIC_URLS.items(),
-    )
+def main():
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(
+            lambda item: process_category(*item),
+            constants.INDEX_PAGE_SECTION_TOPIC_URLS.items(),
+        )
+
+
+if __name__ == "__main__":
+    main()

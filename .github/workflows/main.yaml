@@ -30,16 +30,13 @@ jobs:
 
       - name: Run Python scripts
         run: |
+          python ./src/fetcherPackages.py
+          python ./src/fetcherPrograms.py
           python ./src/indexSectionsFetcher.py
-          python ./src/packagesFetcher.py
-          python ./src/programsFetcher.py
 
       - name: Create dataset and push to Hugging Face
         run: |
-          python ./src/createPushDatasetComplete.py
-          python ./src/createPushDatasetPackages.py
-          python ./src/createPushDatasetPrograms.py
-          python ./src/jsonsForAPICreator.py
+          python ./src/uploadDatasetToHuggingFace.py
 
       - name: Commit and push changes
         run: |
