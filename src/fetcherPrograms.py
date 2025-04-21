@@ -42,5 +42,5 @@ if __name__ == "__main__":
         dict_repos = list(executor.map(asdict, flat_repos))
 
     # Write to file
-    with open("programs.json", "w") as output_file:
+    with open("./database/programs.json", "w") as output_file:
         json.dump(dict_repos, output_file)
