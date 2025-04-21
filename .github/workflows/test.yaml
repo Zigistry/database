@@ -1,0 +1,15 @@
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Hugging Face Space Deployment
+        run: |
+          curl -X POST -H "Authorization: Bearer ${{ secrets.HF_AUTH_TOKEN }}" https://huggingface.co/api/spaces/zigistry/test/deploy
