@@ -43,5 +43,5 @@ if __name__ == "__main__":
         dict_packages = list(executor.map(asdict, flat_packages))
 
     # Write to file
-    with open("packages.json", "w") as output_file:
+    with open("./database/packages.json", "w") as output_file:
         json.dump(dict_packages, output_file)
