@@ -1,7 +1,13 @@
 import concurrent.futures
+from dataclasses import dataclass
+import json
 import requests
 from libs import constants as const
 from libs.types import Repo
+from libs.z2j import get_repo_zon_metadata
+from typing import List, Optional, Dict, Any
+import re
+from dataclasses import dataclass, field
 
 def fileExistsOnGitHubRepo(full_name: str, filename: str) -> bool:
     url = f"https://raw.githubusercontent.com/{full_name}/HEAD/{filename}"
@@ -35,8 +41,121 @@ def fetch_readme_content(repo_full_name:str) -> str:
 
     return "404"
 
+def extract_repo_info(dependency: Dict[str, str]) -> Optional[Dict[str, str]]:
+    """
+    Extracts repository information from a dependency location URL.
+    Handles both git URLs and archive URLs.
+    
+    Args:
+        dependency: Dictionary containing dependency info with 'location' field
+        
+    Returns:
+        Dictionary with 'owner', 'repo', and 'ref' if successful, None otherwise
+    """
+    location = dependency.get('location', '')
+    if not location:
+        return None
 
-def convertGithubRepoFormToZigistryRepoForm(g) -> Repo:
+    # Pattern for git+https URLs (e.g., git+https://github.com/owner/repo#ref)
+    git_pattern = r'git\+https://github\.com/([^/]+)/([^#?]+)(?:#([^#\s]+))?'
+    
+    # Pattern for archive URLs (e.g., https://github.com/owner/repo/archive/ref.tar.gz)
+    archive_pattern = r'https://github\.com/([^/]+)/([^/]+)/archive/([^/]+)(?:\.tar\.gz)?'
+    
+    # Try git URL pattern first
+    git_match = re.match(git_pattern, location)
+    if git_match:
+        owner, repo, ref = git_match.groups()
+        return {
+            'owner': owner,
+            'repo': repo.rstrip('.git'),
+            'ref': ref or 'master'  # Default to master if no ref specified
+        }
+    
+    # Try archive URL pattern
+    archive_match = re.match(archive_pattern, location)
+    if archive_match:
+        owner, repo, ref = archive_match.groups()
+        return {
+            'owner': owner,
+            'repo': repo,
+            'ref': ref
+        }
+    
+    return None
+
+
+@dataclass
+class Dependency:
+    name: str
+    url: str
+    commit: Optional[str] = None
+    tar_url: Optional[str] = None
+    type: str = "unknown"
+
+def process_dependency_url(dep_info: Dict[str, str]) -> Dependency:
+    """Process dependency URL to extract useful information."""
+    name = dep_info.get("name", "")
+    location = dep_info.get("location", "")
+    source = dep_info.get("source", "unknown")
+    
+    if not location:
+        return Dependency(name=name, url="", type=source)
+    
+    # Extract repository information
+    repo_info = extract_repo_info({"location": location})
+    if not repo_info:
+        return Dependency(name=name, url=location, type=source)
+    
+    owner = repo_info["owner"]
+    repo = repo_info["repo"]
+    commit = repo_info["ref"]
+    
+    # Construct URLs
+    github_url = f"https://github.com/{owner}/{repo}"
+    tar_url = f"{github_url}/archive/{commit}.tar.gz"
+    
+    return Dependency(
+        name=name,
+        url=github_url,
+        commit=commit,
+        tar_url=tar_url,
+        type=source
+    )
+
+def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
+    """
+    Convert GitHub repository data to Zigistry repository format.
+    
+    Args:
+        g: GitHub repository data dictionary
+    
+    Returns:
+        Repo: Converted repository data
+    """
+    has_build_zig = fileExistsOnGitHubRepo(g["full_name"], "build.zig")
+    has_build_zig_zon = fileExistsOnGitHubRepo(g["full_name"], "build.zig.zon")
+    
+    # Initialize default values
+    zig_minimum_version = "unknown"
+    dependencies: List[Dependency] = []
+    
+    # Process build.zig.zon if it exists
+    if has_build_zig_zon:
+        try:
+            zon_metadata = get_repo_zon_metadata(g["full_name"])
+            
+            # Extract zig version
+            zig_minimum_version = zon_metadata.get("zig_version", "unknown")
+            
+            # Process dependencies
+            for dep_info in zon_metadata.get("dependencies", []):
+                dependency = process_dependency_url(dep_info)
+                dependencies.append(dependency)
+                
+        except Exception as e:
+            print(f"Error processing build.zig.zon for {g['full_name']}: {str(e)}")
+    
     return Repo(
         avatar_url=g["owner"]["avatar_url"],
         name=g["name"],
@@ -50,14 +169,17 @@ def convertGithubRepoFormToZigistryRepoForm(g) -> Repo:
         watchers_count=g["watchers_count"],
         tags_url=g["tags_url"],
         license=getattr(g["license"], "spdx_id", "-") if g["license"] else "-",
-            topics=g["topics"],
-            size=g["size"],
-            fork=g["fork"],
-            updated_at=g["updated_at"],
-        has_build_zig=fileExistsOnGitHubRepo(g["full_name"], "build.zig"),
-        has_build_zig_zon=fileExistsOnGitHubRepo(g["full_name"], "build.zig.zon"),
-        readme_content=fetch_readme_content(g["full_name"]),
+        topics=g["topics"],
+        size=g["size"],
+        fork=g["fork"],
+        updated_at=g["updated_at"],
+        has_build_zig=has_build_zig,
+        has_build_zig_zon=has_build_zig_zon,
+        zig_minimum_version=zig_minimum_version,
+        dependencies=dependencies,
+        readme_content=fetch_readme_content(g["full_name"])
     )
+
 
 
 def remove_duplicates_from_json_list(repos: list[dict]) -> list[dict]:

@@ -1,4 +1,18 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import json
+import base64
+import requests
+from urllib.parse import urljoin
+
+@dataclass
+class Dependency:
+    name: str
+    url: str
+    commit: Optional[str] = None
+    tar_url: Optional[str] = None
+    type: str = "unknown"  # "remote", "system", or "local"
 
 @dataclass
 class Repo:
@@ -6,7 +20,7 @@ class Repo:
     name: str
     full_name: str
     created_at: str
-    description: str
+    description: Optional[str]
     default_branch: str
     open_issues: int
     stargazers_count: int
@@ -14,10 +28,14 @@ class Repo:
     watchers_count: int
     tags_url: str
     license: str
-    topics: list[str] | None
+    topics: List[str]
     size: int
     fork: bool
     updated_at: str
     has_build_zig: bool
     has_build_zig_zon: bool
-    readme_content: str
+    zig_minimum_version: str
+    dependencies: List[Dependency] = field(default_factory=list)
+    readme_content: Optional[str] = None
+
+# Rest of the code remains the same...
