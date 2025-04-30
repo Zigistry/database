@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any
 from datetime import datetime
 import json
 import base64
@@ -35,7 +35,9 @@ class Repo:
     has_build_zig: bool
     has_build_zig_zon: bool
     zig_minimum_version: str
+    repo_from: Literal["github", "gitlab", "codeberg"]  # moved above
     dependencies: List[Dependency] = field(default_factory=list)
     readme_content: Optional[str] = None
+
 
 # Rest of the code remains the same...

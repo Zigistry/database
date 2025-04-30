@@ -54,8 +54,7 @@ def zon2json(input_str):
 import requests
 import re
 import json
-from typing import Dict, List, Any, Optional
-
+from typing import Dict, List, Any
 
 def get_repo_zon_metadata(repo_full_name: str) -> Dict[str, Any]:
     """
@@ -145,4 +144,189 @@ def get_repo_zon_metadata(repo_full_name: str) -> Dict[str, Any]:
         # Handle network errors silently
         pass
 
+    return {"zig_version": zig_version, "dependencies": dependencies}
+
+
+
+def get_repo_zon_metadata_codeberg(repo_full_name: str) -> Dict[str, Any]:
+    """
+    Fetches build.zig.zon from `repo_full_name` and extracts available metadata.
+    All fields in build.zig.zon are optional, so this function handles missing fields gracefully.
+    Never raises—on any parse/network issue it just returns what it found.
+
+    Args:
+        repo_full_name: The full repository name (owner/repo)
+
+    Returns:
+        Dict containing:
+        - zig_version: String version or "unknown"
+        - dependencies: List of dependency objects with name, source, and location
+    """
+    zig_version = "unknown"
+    dependencies: List[Dict[str, str]] = []
+
+    url = f"https://codeberg.org/{repo_full_name}/raw/branch/master/build.zig.zon"
+    try:
+        r = requests.get(url, timeout=5)
+        if r.status_code != 200:
+            return {"zig_version": zig_version, "dependencies": dependencies}
+
+        zon_raw = r.text
+
+        # Try parsing with zon2json first
+        try:
+            js = zon2json(zon_raw)
+            data = json.loads(js)
+
+            # Extract minimum_zig_version if present
+            if isinstance(data, dict):
+                zig_version = data.get("minimum_zig_version", zig_version)
+
+                # Handle dependencies if present
+                deps = data.get("dependencies", {})
+                if isinstance(deps, dict):
+                    for name, dep in deps.items():
+                        if not isinstance(dep, dict):
+                            continue
+
+                        dep_info = {"name": name}
+
+                        # Remote dependency with URL
+                        if "url" in dep:
+                            dep_info.update(
+                                {"source": "remote", "location": dep["url"]}
+                            )
+                        # Local dependency with path
+                        elif "path" in dep:
+                            dep_info.update(
+                                {"source": "relative", "location": dep["path"]}
+                            )
+                        # System dependency or other types
+                        else:
+                            dep_info.update({"source": "system", "location": ""})
+
+                        dependencies.append(dep_info)
+
+        except (json.JSONDecodeError, Exception):
+            # Fallback to regex for minimum_zig_version if JSON parsing fails
+            m = re.search(r'\.minimum_zig_version\s*=\s*"([^"]+)"', zon_raw)
+            if m:
+                zig_version = m.group(1)
+
+            # Try to extract dependencies using regex as fallback
+            dep_matches = re.finditer(
+                r'\.([a-zA-Z0-9_-]+)\s*=\s*\.{\s*(?:\.url\s*=\s*"([^"]+)"|\.path\s*=\s*"([^"]+)")',
+                zon_raw,
+            )
+            for match in dep_matches:
+                name = match.group(1)
+                url = match.group(2)
+                path = match.group(3)
+
+                if url:
+                    dependencies.append(
+                        {"name": name, "source": "remote", "location": url}
+                    )
+                elif path:
+                    dependencies.append(
+                        {"name": name, "source": "relative", "location": path}
+                    )
+
+    except requests.RequestException:
+        # Handle network errors silently
+        pass
+
+    return {"zig_version": zig_version, "dependencies": dependencies}
+
+
+
+
+def get_repo_zon_metadata_gitlab(repo_full_name: str) -> Dict[str, Any]:
+    """
+    Fetches build.zig.zon from `repo_full_name` and extracts available metadata.
+    All fields in build.zig.zon are optional, so this function handles missing fields gracefully.
+    Never raises—on any parse/network issue it just returns what it found.
+
+    Args:
+        repo_full_name: The full repository name (owner/repo)
+
+    Returns:
+        Dict containing:
+        - zig_version: String version or "unknown"
+        - dependencies: List of dependency objects with name, source, and location
+    """
+    zig_version = "unknown"
+    dependencies: List[Dict[str, str]] = []
+
+    url = f"https://gitlab.com/{repo_full_name}/-/raw/main/build.zig.zon"
+    try:
+        r = requests.get(url, timeout=5)
+        if r.status_code != 200:
+            return {"zig_version": zig_version, "dependencies": dependencies}
+
+        zon_raw = r.text
+
+        # Try parsing with zon2json first
+        try:
+            js = zon2json(zon_raw)
+            data = json.loads(js)
+
+            # Extract minimum_zig_version if present
+            if isinstance(data, dict):
+                zig_version = data.get("minimum_zig_version", zig_version)
+
+                # Handle dependencies if present
+                deps = data.get("dependencies", {})
+                if isinstance(deps, dict):
+                    for name, dep in deps.items():
+                        if not isinstance(dep, dict):
+                            continue
+
+                        dep_info = {"name": name}
+
+                        # Remote dependency with URL
+                        if "url" in dep:
+                            dep_info.update(
+                                {"source": "remote", "location": dep["url"]}
+                            )
+                        # Local dependency with path
+                        elif "path" in dep:
+                            dep_info.update(
+                                {"source": "relative", "location": dep["path"]}
+                            )
+                        # System dependency or other types
+                        else:
+                            dep_info.update({"source": "system", "location": ""})
+
+                        dependencies.append(dep_info)
+
+        except (json.JSONDecodeError, Exception):
+            # Fallback to regex for minimum_zig_version if JSON parsing fails
+            m = re.search(r'\.minimum_zig_version\s*=\s*"([^"]+)"', zon_raw)
+            if m:
+                zig_version = m.group(1)
+
+            # Try to extract dependencies using regex as fallback
+            dep_matches = re.finditer(
+                r'\.([a-zA-Z0-9_-]+)\s*=\s*\.{\s*(?:\.url\s*=\s*"([^"]+)"|\.path\s*=\s*"([^"]+)")',
+                zon_raw,
+            )
+            for match in dep_matches:
+                name = match.group(1)
+                url = match.group(2)
+                path = match.group(3)
+
+                if url:
+                    dependencies.append(
+                        {"name": name, "source": "remote", "location": url}
+                    )
+                elif path:
+                    dependencies.append(
+                        {"name": name, "source": "relative", "location": path}
+                    )
+
+    except requests.RequestException:
+        # Handle network errors silently
+        pass
+    print(dependencies)
     return {"zig_version": zig_version, "dependencies": dependencies}

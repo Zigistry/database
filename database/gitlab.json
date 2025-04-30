@@ -1,0 +1,65 @@
+[
+    {
+        "avatar_url": "https://secure.gravatar.com/avatar/5eca93d9f27866b99557477bd718e5eed74fafd2365790c43b8627254931a1dd?s=80&d=identicon",
+        "name": "zig-git-crawler",
+        "full_name": "dasimmet/zig-git-crawler",
+        "created_at": "2025-03-30T16:21:46.524Z",
+        "description": "crawling and indexing git hosting sites in an sqlite database. [Website](https://dasimmet.gitlab.io/zig-git-crawler/)",
+        "default_branch": "main",
+        "open_issues": 0,
+        "stargazers_count": 1,
+        "forks_count": 0,
+        "watchers_count": 0,
+        "tags_url": "",
+        "license": "-",
+        "topics": [
+            "zig",
+            "zig-package"
+        ],
+        "size": 0,
+        "fork": false,
+        "updated_at": "2025-04-30T06:44:14.531Z",
+        "has_build_zig": true,
+        "has_build_zig_zon": true,
+        "zig_minimum_version": "0.14.0",
+        "repo_from": "gitlab",
+        "dependencies": [
+            {
+                "name": "sqlite",
+                "url": "https://github.com/vrischmann/zig-sqlite",
+                "commit": "59c06617d5b86546c0c739e73ae01d3965dbe8ce",
+                "tar_url": "https://github.com/vrischmann/zig-sqlite/archive/59c06617d5b86546c0c739e73ae01d3965dbe8ce.tar.gz",
+                "type": "remote"
+            },
+            {
+                "name": "libgit2",
+                "url": "https://github.com/allyourcodebase/libgit2",
+                "commit": "ef7eba4ccb0ef303ee0ec263320114442f1239b2",
+                "tar_url": "https://github.com/allyourcodebase/libgit2/archive/ef7eba4ccb0ef303ee0ec263320114442f1239b2.tar.gz",
+                "type": "remote"
+            },
+            {
+                "name": "pkg_tool",
+                "url": "https://github.com/dasimmet/zig_pkg_tool",
+                "commit": "f35c167a0b1009dc7038ab7470d3b26edace0c9c",
+                "tar_url": "https://github.com/dasimmet/zig_pkg_tool/archive/f35c167a0b1009dc7038ab7470d3b26edace0c9c.tar.gz",
+                "type": "remote"
+            },
+            {
+                "name": "zdt",
+                "url": "https://codeberg.org/FObersteiner/zd",
+                "commit": "e5261db1379c4d70dbb6cd6fa3b39f4ed5883942",
+                "tar_url": "https://codeberg.org/FObersteiner/zd/archive/e5261db1379c4d70dbb6cd6fa3b39f4ed5883942.tar.gz",
+                "type": "remote"
+            },
+            {
+                "name": "demo_webserver",
+                "url": "https://github.com/scottredig/zig-demo-webserver",
+                "commit": "51b2442fba8b4c030ec1a5ea2c0de2746c0e672b",
+                "tar_url": "https://github.com/scottredig/zig-demo-webserver/archive/51b2442fba8b4c030ec1a5ea2c0de2746c0e672b.tar.gz",
+                "type": "remote"
+            }
+        ],
+        "readme_content": "# A crawler for Zig dependencies\n\ngenerated a sqlite database of git repositories with zig dependencies.\nAlso includes a small web application to view the database contents.\n\nRepositories are indexed from these sites if they have the topics\n`zig` or `zig-package` assigned:\n\n- <https://github.com>\n- <https://gitlab.com>\n- <https://codeberg.org>\n\nDependencies are resolved between those sites even if those topics\naren't set based on `build.zig.zon` urls.\n\nHosted on gitlab pages: <https://dasimmet.gitlab.io/zig-git-crawler/>\n\n```bash\n# build the exe\nzig build\n# setup an API token for github:\nexport GITHUB_API_AUTH_TOKEN=********************\n# crawl through major all git hosting sites, create the db\nzig build run\n# query the db\nsqlite3 zig-out/www/zig-git.db \"SELECT * FROM view_manifest_tree\"\n# build the webapp:\nzig build web\n# run the dev webserver:\nzig build dev\n# open the browser to view it: http://localhost:8080/www\n```\n\n## Database Schema:\n\n![Schema diagram](src/web/schema.svg)\n\n## TODO\n\n### Web UI\n\n- Needs quite a bit more explaining whats going on.\n- Search for repositories in the main list\n- Provide numerical indicators for dependencies and dependants\n- Better and searchable selectors for `repo` and `ref` in the details view.\n- The dependency/dependant queries have a depth field, however they\n  don't take `path` dependencies into account since the sql query was\n  easier to implement.\n\n### Crawler\n\n- Crawler is hitting Github/Codeberg API limits quickly and needs a\n  few runs to populate.\n- Github's Api is limited to 1000 search results. For now, I\n  keep a list of search urls based on the repo creation date to\n  work around it. Could be solved by calculating the URLs based\n  on whats already in the DB.\n- Crawler does not update the repository entries of dependencies, only\n  those repos with `zig` and `zig-package` tags. New commits and\n  manifests are fetched though.\n- Between runs, the crawler relies on keeping the sqlite db file on the\n  runner cache. Maybe it could be stored and downloaded to/from\n  gitlab's package registry instead.\n"
+    }
+]
