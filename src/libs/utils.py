@@ -93,35 +93,6 @@ class Dependency:
     tar_url: Optional[str] = None
     type: str = "unknown"
 
-def process_dependency_url(dep_info: Dict[str, str]) -> Dependency:
-    """Process dependency URL to extract useful information."""
-    name = dep_info.get("name", "")
-    location = dep_info.get("location", "")
-    source = dep_info.get("source", "unknown")
-    
-    if not location:
-        return Dependency(name=name, url="", type=source)
-    
-    # Extract repository information
-    repo_info = repo_info({"location": location})
-    if not repo_info:
-        return Dependency(name=name, url=location, type=source)
-    
-    owner = repo_info["owner"]
-    repo = repo_info["repo"]
-    commit = repo_info["ref"]
-    
-    # Construct URLs
-    github_url = f"https://github.com/{owner}/{repo}"
-    tar_url = f"{github_url}/archive/{commit}.tar.gz"
-    
-    return Dependency(
-        name=name,
-        url=github_url,
-        commit=commit,
-        tar_url=tar_url,
-        type=source
-    )
 
 def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
     """
@@ -150,7 +121,7 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
             
             # Process dependencies
             for dep_info in zon_metadata.get("dependencies", []):
-                dependency = process_dependency_url(dep_info)
+                dependency = process_dependency_url(dep_info, extract_repo_info_func=extract_repo_info)
                 dependencies.append(dependency)
                 
         except Exception as e:
