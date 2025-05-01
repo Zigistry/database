@@ -4,7 +4,12 @@ from dataclasses import asdict
 import requests
 from libs.types import Dependency, Repo
 from libs.z2j import get_repo_zon_metadata_codeberg
-from libs.utils import file_exists_on_repo, fetch_readme_content, process_dependency_url, extract_repo_info
+from libs.utils import (
+    file_exists_on_repo,
+    fetch_readme_content,
+    process_dependency_url,
+    extract_repo_info,
+)
 
 
 def convert_codeberg_response_to_repo(codeberg_response: Dict) -> Repo:
@@ -18,7 +23,9 @@ def convert_codeberg_response_to_repo(codeberg_response: Dict) -> Repo:
     full_name = codeberg_response["full_name"]
     base_url = "https://codeberg.org"
     has_build_zig = file_exists_on_repo(base_url, full_name, "build.zig", "codeberg")
-    has_build_zig_zon = file_exists_on_repo(base_url, full_name, "build.zig.zon", "codeberg")
+    has_build_zig_zon = file_exists_on_repo(
+        base_url, full_name, "build.zig.zon", "codeberg"
+    )
 
     if has_build_zig_zon:
         try:
@@ -45,7 +52,7 @@ def convert_codeberg_response_to_repo(codeberg_response: Dict) -> Repo:
         has_build_zig_zon=has_build_zig_zon,
         license="-",
         open_issues=codeberg_response["open_issues_count"],
-        readme_content=fetch_readme_content(base_url, full_name, ["README.md", "readme.md", "ReadMe.md"], "codeberg"),
+        readme_content="404",
         repo_from="codeberg",
         size=codeberg_response["size"],
         stargazers_count=codeberg_response["stars_count"],
@@ -65,13 +72,30 @@ if __name__ == "__main__":
 
     if response.status_code == 200:
         try:
+            # Load existing data from programs.json
+            existing_data = []
+            try:
+                with open("./database/programs.json", "r") as file:
+                    existing_data = json.load(file)
+            except FileNotFoundError:
+                print("programs.json not found, will create new file")
+
+            # Process new Codeberg data
             codeberg_data: List[Dict] = response.json()["data"]
             for repo_data in codeberg_data:
                 repos.append(convert_codeberg_response_to_repo(repo_data))
-            with open("./database/codeberg.json", "w") as file:
-                json.dump([asdict(repo) for repo in repos], file, indent=4)
+
+            # Combine existing data with new data
+            combined_data = existing_data + [asdict(repo) for repo in repos]
+
+            # Write back to programs.json
+            with open("./database/programs.json", "w") as file:
+                json.dump(combined_data, file, indent=4)
+
         except Exception as e:
             print(f"Error processing Codeberg repositories: {e}")
     else:
-        print(f"Failed to fetch repositories from Codeberg API. Status code: {response.status_code}")
+        print(
+            f"Failed to fetch repositories from Codeberg API. Status code: {response.status_code}"
+        )
         exit(1)

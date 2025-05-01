@@ -4,7 +4,12 @@ from dataclasses import asdict
 import requests
 from libs.types import Dependency, Repo
 from libs.z2j import get_repo_zon_metadata_gitlab
-from libs.utils import file_exists_on_repo, fetch_readme_content, process_dependency_url, extract_repo_info
+from libs.utils import (
+    file_exists_on_repo,
+    fetch_readme_content,
+    process_dependency_url,
+    extract_repo_info,
+)
 
 
 def convert_gitlab_response_to_repo(gitlab_response: Dict) -> Repo:
@@ -17,8 +22,12 @@ def convert_gitlab_response_to_repo(gitlab_response: Dict) -> Repo:
     # Check for build.zig and build.zig.zon files
     path_with_namespace = gitlab_response["path_with_namespace"]
     base_url = "https://gitlab.com"
-    has_build_zig = file_exists_on_repo(base_url, path_with_namespace, "build.zig", "gitlab")
-    has_build_zig_zon = file_exists_on_repo(base_url, path_with_namespace, "build.zig.zon", "gitlab")
+    has_build_zig = file_exists_on_repo(
+        base_url, path_with_namespace, "build.zig", "gitlab"
+    )
+    has_build_zig_zon = file_exists_on_repo(
+        base_url, path_with_namespace, "build.zig.zon", "gitlab"
+    )
 
     # Process build.zig.zon if it exists
     if has_build_zig_zon:
@@ -49,7 +58,12 @@ def convert_gitlab_response_to_repo(gitlab_response: Dict) -> Repo:
         license="-",
         open_issues=0,
         readme_content=(
-            fetch_readme_content(base_url, path_with_namespace, ["README.md", "readme.md", "ReadMe.md"], "gitlab")
+            fetch_readme_content(
+                base_url,
+                path_with_namespace,
+                ["README.md", "readme.md", "ReadMe.md"],
+                "gitlab",
+            )
             if readme_url
             else "No readme found"
         ),
@@ -70,9 +84,29 @@ if __name__ == "__main__":
     response = requests.get(url, timeout=10)
 
     if response.status_code == 200:
-        repos = [convert_gitlab_response_to_repo(repo) for repo in response.json()]
-        with open("./database/gitlab.json", "w") as file:
-            json.dump([asdict(repo) for repo in repos], file, indent=4)
+        try:
+            # Load existing data from programs.json
+            existing_data = []
+            try:
+                with open("./database/programs.json", "r") as file:
+                    existing_data = json.load(file)
+            except FileNotFoundError:
+                print("programs.json not found, will create new file")
+
+            # Process GitLab data
+            repos = [convert_gitlab_response_to_repo(repo) for repo in response.json()]
+
+            # Combine existing data with new data
+            combined_data = existing_data + [asdict(repo) for repo in repos]
+
+            # Write back to programs.json
+            with open("./database/programs.json", "w") as file:
+                json.dump(combined_data, file, indent=4)
+
+        except Exception as e:
+            print(f"Error processing GitLab repositories: {e}")
     else:
-        print(f"Failed to fetch projects from GitLab API. Status code: {response.status_code}")
+        print(
+            f"Failed to fetch projects from GitLab API. Status code: {response.status_code}"
+        )
         exit(1)

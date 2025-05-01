@@ -176,6 +176,7 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
         has_build_zig=has_build_zig,
         has_build_zig_zon=has_build_zig_zon,
         zig_minimum_version=zig_minimum_version,
+        repo_from="github",
         dependencies=dependencies,
         readme_content=fetch_readme_content(g["full_name"])
     )

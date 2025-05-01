@@ -165,7 +165,7 @@ def get_repo_zon_metadata_codeberg(repo_full_name: str) -> Dict[str, Any]:
     zig_version = "unknown"
     dependencies: List[Dict[str, str]] = []
 
-    url = f"https://codeberg.org/{repo_full_name}/raw/branch/master/build.zig.zon"
+    url = f"https://codeberg.org/{repo_full_name}/raw/branch/main/build.zig.zon"
     try:
         r = requests.get(url, timeout=5)
         if r.status_code != 200:
