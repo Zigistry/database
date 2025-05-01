@@ -33,6 +33,8 @@ jobs:
           python ./src/fetcherPackages.py
           python ./src/fetcherPrograms.py
           python ./src/indexSectionsFetcher.py
+          python ./src/codeberg.py
+          python ./src/gitlab.py
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
