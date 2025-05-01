@@ -177,24 +177,28 @@ from libs.types import Dependency
 def file_exists_on_repo(base_url: str, full_name: str, filename: str, platform: str) -> bool:
     """Check if a specific file exists in a repository."""
     if platform == "gitlab":
-        url = f"{base_url}/{full_name}/-/raw/main/{filename}"  # GitLab specific structure
+        url = f"{base_url}/{full_name}/-/raw/main/{filename}"  # GitLab-specific structure
     elif platform == "codeberg":
-        url = f"{base_url}/{full_name}/raw/branch/{filename}"  # Codeberg specific structure
+        url = f"{base_url}/{full_name}/raw/branch/master/{filename}"  # Codeberg-specific structure
+    elif platform == "github":
+        url = f"https://raw.githubusercontent.com/{full_name}/main/{filename}"  # GitHub-specific structure
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
-    response = requests.get(url, timeout=10)
-    return response.status_code == 200
-
+    try:
+        response = requests.get(url, timeout=10)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
 
 def fetch_readme_content(base_url: str, repo_full_name: str, possible_filenames: List[str], platform: str) -> str:
     """
     Attempts to fetch the README content from a repository.
 
-    :param base_url: The base URL of the platform (e.g., https://gitlab.com, https://codeberg.org)
+    :param base_url: The base URL of the platform (e.g., https://gitlab.com, https://codeberg.org, https://github.com)
     :param repo_full_name: The full name of the repository (e.g., owner/repo)
     :param possible_filenames: A list of possible README filenames (e.g., ["README.md", "readme.md"])
-    :param platform: The platform name (e.g., "gitlab", "codeberg") to adjust URL structure.
+    :param platform: The platform name (e.g., "gitlab", "codeberg", "github") to adjust URL structure.
     :return: The content of the README file or "404" if not found.
     """
     def fetch(url):
@@ -211,6 +215,8 @@ def fetch_readme_content(base_url: str, repo_full_name: str, possible_filenames:
         url_template = lambda base, repo, filename: f"{base}/{repo}/-/raw/main/{filename}"  # GitLab-specific structure
     elif platform == "codeberg":
         url_template = lambda base, repo, filename: f"{base}/{repo}/raw/branch/master/{filename}"  # Codeberg-specific structure
+    elif platform == "github":
+        url_template = lambda base, repo, filename: f"https://raw.githubusercontent.com/{repo}/master/{filename}"  # GitHub-specific structure
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
@@ -225,7 +231,6 @@ def fetch_readme_content(base_url: str, repo_full_name: str, possible_filenames:
                 return result
 
     return "404"
-
 
 import re
 from typing import Dict, Optional
