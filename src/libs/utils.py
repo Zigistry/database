@@ -15,31 +15,31 @@ def fileExistsOnGitHubRepo(full_name: str, filename: str) -> bool:
     return response.status_code == 200
 
 
-def fetch_readme_content(repo_full_name:str) -> str:
-    base_url = f"https://raw.githubusercontent.com/{repo_full_name}/HEAD/"
+# def fetch_readme_content(repo_full_name:str) -> str:
+#     base_url = f"https://raw.githubusercontent.com/{repo_full_name}/HEAD/"
 
-    def fetch(url):
-        try:
-            response = requests.get(
-                url, headers=const.GITHUB_FETCH_HEADERS, timeout=10
-            )
-            if response.status_code == 200:
-                return response.text
-        except requests.exceptions.RequestException:
-            pass
-        return None
+#     def fetch(url):
+#         try:
+#             response = requests.get(
+#                 url, headers=const.GITHUB_FETCH_HEADERS, timeout=10
+#             )
+#             if response.status_code == 200:
+#                 return response.text
+#         except requests.exceptions.RequestException:
+#             pass
+#         return None
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(fetch, base_url + filename): filename
-            for filename in const.POSSIBLE_README_FILENAMES
-        }
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            if result:
-                return result
+#     with concurrent.futures.ThreadPoolExecutor() as executor:
+#         futures = {
+#             executor.submit(fetch, base_url + filename): filename
+#             for filename in const.POSSIBLE_README_FILENAMES
+#         }
+#         for future in concurrent.futures.as_completed(futures):
+#             result = future.result()
+#             if result:
+#                 return result
 
-    return "404"
+#     return "404"
 
 # def extract_repo_info(dependency: Dict[str, str]) -> Optional[Dict[str, str]]:
 #     """
@@ -178,7 +178,7 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
         zig_minimum_version=zig_minimum_version,
         repo_from="github",
         dependencies=dependencies,
-        readme_content=fetch_readme_content(g["full_name"])
+        readme_content=fetch_readme_content("https://github.com", g["full_name"], const.POSSIBLE_README_FILENAMES, "github"),
     )
 
 
