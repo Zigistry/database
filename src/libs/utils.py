@@ -181,7 +181,7 @@ def file_exists_on_repo(base_url: str, full_name: str, filename: str, platform: 
     elif platform == "codeberg":
         url = f"{base_url}/{full_name}/raw/branch/master/{filename}"  # Codeberg-specific structure
     elif platform == "github":
-        url = f"https://raw.githubusercontent.com/{full_name}/main/{filename}"  # GitHub-specific structure
+        url = f"https://raw.githubusercontent.com/{full_name}/master/{filename}"  # GitHub-specific structure
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
