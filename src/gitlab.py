@@ -3,7 +3,7 @@ from typing import Dict, List
 from dataclasses import asdict
 import requests
 from libs.types import Dependency, Repo
-from libs.z2j import get_repo_zon_metadata_gitlab
+from libs.z2j import get_repo_zon_metadata
 from libs.utils import (
     file_exists_on_repo,
     fetch_readme_content,
@@ -32,7 +32,7 @@ def convert_gitlab_response_to_repo(gitlab_response: Dict) -> Repo:
     # Process build.zig.zon if it exists
     if has_build_zig_zon:
         try:
-            zon_metadata = get_repo_zon_metadata_gitlab(path_with_namespace)
+            zon_metadata = get_repo_zon_metadata(path_with_namespace)
             zig_minimum_version = zon_metadata.get("zig_version", "unknown")
             dependencies = [
                 process_dependency_url(dep_info, extract_repo_info)
