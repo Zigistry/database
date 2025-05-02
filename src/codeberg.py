@@ -4,7 +4,7 @@ from dataclasses import asdict
 import requests
 
 from libs.types import Dependency, Repo
-from libs.z2j import get_repo_zon_metadata_codeberg
+from libs.z2j import get_repo_zon_metadata
 from libs.utils import (
     file_exists_on_repo,
     process_dependency_url,
@@ -29,7 +29,7 @@ def convert_codeberg_response_to_repo(codeberg_response: Dict) -> Repo:
 
     if has_build_zig_zon:
         try:
-            zon_metadata = get_repo_zon_metadata_codeberg(full_name)
+            zon_metadata = get_repo_zon_metadata(full_name, platform="codeberg")
             zig_minimum_version = zon_metadata.get("zig_version", "unknown")
             dependencies = [
                 process_dependency_url(dep_info, extract_repo_info)
