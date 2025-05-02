@@ -238,7 +238,7 @@ def extract_repo_info(location: str) -> Optional[Dict[str, str]]:
             return {
                 "platform": platform,
                 "owner": owner,
-                "repo": repo.rstrip(".git"),
+                "repo": repo.removesuffix(".git"),
                 "ref": ref or "master",  # Default to master if no ref specified
             }
 
