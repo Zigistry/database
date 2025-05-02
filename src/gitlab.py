@@ -86,12 +86,12 @@ if __name__ == "__main__":
     if response.status_code == 200:
         try:
             # Load existing data from programs.json
-            existing_data = []
             try:
                 with open("./database/programs.json", "r") as file:
                     existing_data = json.load(file)
             except FileNotFoundError:
-                print("programs.json not found, will create new file")
+                print("programs.json not found, exiting.")
+                exit(1)
 
             # Process GitLab data
             repos = [convert_gitlab_response_to_repo(repo) for repo in response.json()]

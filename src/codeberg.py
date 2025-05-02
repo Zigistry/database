@@ -2,11 +2,11 @@ import json
 from typing import Dict, List
 from dataclasses import asdict
 import requests
+
 from libs.types import Dependency, Repo
 from libs.z2j import get_repo_zon_metadata_codeberg
 from libs.utils import (
     file_exists_on_repo,
-    fetch_readme_content,
     process_dependency_url,
     extract_repo_info,
 )
@@ -73,12 +73,8 @@ if __name__ == "__main__":
     if response.status_code == 200:
         try:
             # Load existing data from programs.json
-            existing_data = []
-            try:
-                with open("./database/programs.json", "r") as file:
-                    existing_data = json.load(file)
-            except FileNotFoundError:
-                print("programs.json not found, will create new file")
+            with open("./database/programs.json", "r") as file:
+                existing_data = json.load(file)
 
             # Process new Codeberg data
             codeberg_data: List[Dict] = response.json()["data"]
@@ -94,6 +90,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print(f"Error processing Codeberg repositories: {e}")
+            exit(1)
     else:
         print(
             f"Failed to fetch repositories from Codeberg API. Status code: {response.status_code}"

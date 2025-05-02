@@ -1,10 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Dict, Any
-from datetime import datetime
-import json
-import base64
-import requests
-from urllib.parse import urljoin
+from typing import List, Literal, Optional
 
 @dataclass
 class Dependency:
