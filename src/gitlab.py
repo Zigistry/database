@@ -32,7 +32,7 @@ def convert_gitlab_response_to_repo(gitlab_response: Dict) -> Repo:
     # Process build.zig.zon if it exists
     if has_build_zig_zon:
         try:
-            zon_metadata = get_repo_zon_metadata(path_with_namespace)
+            zon_metadata = get_repo_zon_metadata(path_with_namespace, platform="gitlab")
             zig_minimum_version = zon_metadata.get("zig_version", "unknown")
             dependencies = [
                 process_dependency_url(dep_info, extract_repo_info)

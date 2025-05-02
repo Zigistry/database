@@ -3,6 +3,7 @@ import requests
 from typing import Dict, List, Any
 import json
 
+
 def remove_comments(input_str):
     def replacement(match):
         string_match = match.group(1)
@@ -51,7 +52,8 @@ def zon2json(input_str):
 
     return input_str
 
-def get_repo_zon_metadata(repo_full_name: str, platform: str = "github") -> Dict[str, Any]:
+
+def get_repo_zon_metadata(repo_full_name: str, platform: str) -> Dict[str, Any]:
     """
     Fetches build.zig.zon from `repo_full_name` on the specified platform and extracts available metadata.
     All fields in build.zig.zon are optional, so this function handles missing fields gracefully.

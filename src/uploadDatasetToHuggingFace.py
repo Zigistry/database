@@ -3,6 +3,7 @@ from libs import constants as const
 from typing import List, Iterable
 import json
 
+
 def remove_duplicates(repos: List[dict]) -> List[dict]:
     seen = set()
     unique = []
@@ -13,6 +14,7 @@ def remove_duplicates(repos: List[dict]) -> List[dict]:
             unique.append(repo)
     return unique
 
+
 def load_repos(file_paths: Iterable[str]) -> List[dict]:
     all_repos = []
     for path in file_paths:
@@ -21,14 +23,21 @@ def load_repos(file_paths: Iterable[str]) -> List[dict]:
             all_repos.extend(repos)
     return all_repos
 
+
 # Load and upload package dataset
 packages = remove_duplicates(load_repos(const.PACKAGES_FILES))
-Dataset.from_list(packages).push_to_hub("Zigistry/packages", token=const.HUGGING_FACE_API_KEY)
+Dataset.from_list(packages).push_to_hub(
+    "Zigistry/packages", token=const.HUGGING_FACE_API_KEY
+)
 
 # Load and upload program dataset
 programs = remove_duplicates(load_repos(const.PROGRAMS_FILES))
-Dataset.from_list(programs).push_to_hub("Zigistry/programs", token=const.HUGGING_FACE_API_KEY)
+Dataset.from_list(programs).push_to_hub(
+    "Zigistry/programs", token=const.HUGGING_FACE_API_KEY
+)
 
 # Load and upload combined dataset
 all_data = remove_duplicates(load_repos(const.ALL_DATABASE_FILES))
-Dataset.from_list(all_data).push_to_hub("Zigistry/Zigistry-complete-dataset", token=const.HUGGING_FACE_API_KEY)
+Dataset.from_list(all_data).push_to_hub(
+    "Zigistry/Zigistry-complete-dataset", token=const.HUGGING_FACE_API_KEY
+)

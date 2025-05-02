@@ -99,6 +99,11 @@ HUGGING_FACE_API_KEY = os.getenv("HF_AUTH_TOKEN")
 
 PROGRAMS_FILES = ("./database/programs.json",)
 
-PACKAGES_FILES = ("./database/packages.json", "./database/games.json", "./database/gui.json", "./database/web.json")
+PACKAGES_FILES = (
+    "./database/packages.json",
+    "./database/games.json",
+    "./database/gui.json",
+    "./database/web.json",
+)
 
 ALL_DATABASE_FILES = PROGRAMS_FILES + PACKAGES_FILES

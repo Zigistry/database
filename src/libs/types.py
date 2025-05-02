@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Literal, Optional
 
+
 @dataclass
 class Dependency:
     name: str
@@ -8,6 +9,7 @@ class Dependency:
     commit: Optional[str] = None
     tar_url: Optional[str] = None
     type: str = "unknown"  # "remote", "system", or "local"
+
 
 @dataclass
 class Repo:

@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 # --------------------------- #
 
+
 def fetch_convert_with_delay(url: str, delay: float) -> list[Repo]:
     time.sleep(delay)
     try:
@@ -20,6 +21,7 @@ def fetch_convert_with_delay(url: str, delay: float) -> list[Repo]:
     except Exception as e:
         print(f"Error fetching {url}: {e}")
         return []
+
 
 if __name__ == "__main__":
     delay_interval = 0.3  # seconds between thread launches
