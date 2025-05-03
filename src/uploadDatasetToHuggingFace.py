@@ -24,19 +24,16 @@ def load_repos(file_paths: Iterable[str]) -> List[dict]:
     return all_repos
 
 
-# Load and upload package dataset
 packages = remove_duplicates(load_repos(const.PACKAGES_FILES))
 Dataset.from_list(packages).push_to_hub(
     "Zigistry/packages", token=const.HUGGING_FACE_API_KEY
 )
 
-# Load and upload program dataset
 programs = remove_duplicates(load_repos(const.PROGRAMS_FILES))
 Dataset.from_list(programs).push_to_hub(
     "Zigistry/programs", token=const.HUGGING_FACE_API_KEY
 )
 
-# Load and upload combined dataset
 all_data = remove_duplicates(load_repos(const.ALL_DATABASE_FILES))
 Dataset.from_list(all_data).push_to_hub(
     "Zigistry/Zigistry-complete-dataset", token=const.HUGGING_FACE_API_KEY
