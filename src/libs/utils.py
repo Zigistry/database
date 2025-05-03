@@ -46,7 +46,9 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
 
         except Exception as e:
             print(f"Error processing build.zig.zon for {g['full_name']}: {str(e)}")
-
+    license = "-"
+    if(g["license"] and g["license"].get("spdx_id")):
+        license = g["license"]["spdx_id"]
     return Repo(
         avatar_url=g["owner"]["avatar_url"],
         name=g["name"],
@@ -59,7 +61,7 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
         forks_count=g["forks_count"],
         watchers_count=g["watchers_count"],
         tags_url=g["tags_url"],
-        license=g["license"]["spdx_id"] if g["license"]["spdx_id"] else "-",
+        license=license,
         topics=g["topics"],
         size=g["size"],
         fork=g["fork"],
