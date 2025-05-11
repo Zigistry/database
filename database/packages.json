@@ -865,9 +865,9 @@
     "description": "bold: the bold linker",
     "default_branch": "main",
     "open_issues": 4,
-    "stargazers_count": 301,
+    "stargazers_count": 302,
     "forks_count": 24,
-    "watchers_count": 301,
+    "watchers_count": 302,
     "tags_url": "https://api.github.com/repos/kubkon/bold/tags",
     "license": "MIT",
     "topics": [
@@ -877,7 +877,7 @@
     ],
     "size": 4513,
     "fork": false,
-    "updated_at": "2025-05-11T13:23:22Z",
+    "updated_at": "2025-05-11T15:17:19Z",
     "has_build_zig": true,
     "has_build_zig_zon": true,
     "zig_minimum_version": "unknown",
@@ -2664,9 +2664,9 @@
     "description": "A collection of some awesome public Zig programming language projects.",
     "default_branch": "main",
     "open_issues": 0,
-    "stargazers_count": 1382,
+    "stargazers_count": 1384,
     "forks_count": 70,
-    "watchers_count": 1382,
+    "watchers_count": 1384,
     "tags_url": "https://api.github.com/repos/zigcc/awesome-zig/tags",
     "license": "MIT",
     "topics": [
@@ -2682,7 +2682,7 @@
     ],
     "size": 245,
     "fork": false,
-    "updated_at": "2025-05-11T12:14:01Z",
+    "updated_at": "2025-05-11T15:52:53Z",
     "has_build_zig": false,
     "has_build_zig_zon": false,
     "zig_minimum_version": "unknown",
@@ -4415,33 +4415,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/379570?v=4",
-    "name": "basis_concept-zig",
-    "full_name": "eldesh/basis_concept-zig",
-    "created_at": "2022-08-29T13:57:19Z",
-    "description": "A collection of basis concept and their operations",
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/eldesh/basis_concept-zig/tags",
-    "license": "BSD-2-Clause",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 179,
-    "fork": false,
-    "updated_at": "2025-01-03T01:41:16Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": false,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# Basis Concept Zig\n\n**basis_concept-zig** is a collection library of \"basis concept\" and some operations on them.\nSome basic concepts such as `Copyable` are provided.\n\n\n## Concept\n\n*Concept* are named constraints on types such as `Clonable`.\n\n\nIn the Zig language, polymorphic functions are sometimes typed `fn (anytype) t`.\nOften, however, functions with such types implicitly require some properties for their types.\nThe `Concept` allows such implicit constraints to be named.\n\nNaming such implicit constraint allows us to deal explicitly with constraints on types.\nFurther, some associated polymorphic functions are able to be implemented to each Concept such like `Cloneable.clone`.\n\n\n## Examples\n\n### Equivalence of generic data type\n\nTo compare equivalence of data of various types:\n\n```\n/// A type constructed from various `isEq` types\nconst S = struct {\n  val_int: u32,\n  val_opt: ?u8,\n  val_eit: error{MyError}![5]u8,\n};\n\nconst s1: S = ...;\nconst s2: S = ...;\nif (Eq.eq(&s1, &s2)) {\n    ...\n}\n```\n\n\n### Check for cloneability\n\nWhen you want to implement `clone` on a container type only for types that are clonable.\n\n```\npub fn Container(comptime T: type) type {\n  return struct {\n    pub const Self: type = @This();\n    pub const CloneError: type = std.mem.Allocator.Error;\n    ..\n    pub usingnamespace if (isClonable(T))\n      struct {\n        pub fn clone(self: *const Self) CloneError!Self {\n          .. T.clone() ..\n        }\n      }\n    else\n      struct {}; // empty\n  };\n}\n\n// For a clonable type C:\nvar c = Container(C);\nvar d = try c.clone(); // clonable\n\n// For a not clonable type N:\nvar n = Container(N);\n// _ = try n.clone(); // compilation error\n```\n\n\n### Comparison by total order\n\nWhen you want to pass an ordering function for a key type of a Mapping container.\n\n```\nvar map: Map(Key, Value) = MakeKeyValueMap(Key, Value, Ord.on(Key));\nmap.insert(key1, value1);\nmap.insert(key2, value2);\n...\n```\n\n\n## Support\n\nThis library is developped with:\n\n- Debian (x86_64) 10.4\n- Zig 0.9.1 with Zigmod r79\n- Zig 0.10.0 with Zigmod r80\n\n\n## Build\n\nTo build, executing the following commands:\n\n```sh\nzigmod fetch\nzig build\n```\n\n\n## Unit Test\n\nTo performs unit tests:\n\n```sh\nzig build test\n```\n\n\n## Generate docs\n\nTo generate documents:\n\n```sh\nzig build doc\n```\n\nA html documents would be generated under the `./docs` directory.\n\n\n## Provided Concept\n\n- TrivialEq\n  Concept for types that trivially comparable value with `==`.\n  This concept is defined for checking the type is comparable with `==`.\n  Then any extra method is not provided.\n\n- TrivialDestroy\n  Concept for types that trivially destroyable implicitly.\n  Then any extra method is not provided.\n\n- Copyable\n  Trivially copyable values with `=`.\n  `Copy` means to duplicate a value that has no resources shared with the original one.\n  In other words, it must not contain a pointer.\n\n- Clonable\n  Duplicable values using `clone` method if exists.\n  Similar to Copyable, `Clonable` means that the value can be duplicated. However, the concept can be satisfied if the `clone` method is implemented even if the value cannot be copied in the trivial way.\n  In other words, if a type is `Copyable`, it is automatically `Clonable` as well.\n\n- PartialEq\n  `PartialEq` concept means that a partial equivalence relation is defined for the type.\n  The partiality comes from the fact that the relation does not require reflexivity.\n  That is, the relation must satisfy the following properties. for all x, y and z:\n\n  - `PartialEq.eq(x, y) == PartialEq.eq(y, x)`\n  - `PartialEq.eq(x, y) == PartialEq.eq(y, z) == PartialEq.eq(x, z)`\n\n- Eq\n  `Eq` concept means that a full equivalence relation is defined for the type.\n  Addition to `PartialEq`, this concept requires relations to have reflexivity.\n\n  - `Eq.eq(x, y) == Eq.eq(y, x)`\n  - `Eq.eq(x, y) and Eq.eq(y, z)` implies `Eq.eq(x, z)`\n  - `Eq.eq(x, x)`\n\n  Furthermore, this concept also contains `ne` method, which must be consistent with `eq`.\n\n- PartialOrd\n  `PartialOrd` concept means parial ordering relation.\n  Such relations require the type satisfies properties and have consistensy to `PartialEq`.\n\n  - `PartialOrd.partial_cmp(x, y).?.compare(.eq)` implies `PartialEq.eq(x, y)`\n  - `PartialOrd.partial_cmp(x, y).?.compare(.le)` implies `PartialOrd.partial_cmp(x, y).?.compare(.lt) or PartialEq.eq(x, y)`\n  - `PartialOrd.partial_cmp(x, y).?.compare(.ge)` implies `PartialOrd.partial_cmp(x, y).?.compare(.lt) or PartialEq.eq(x, y)`\n\n\n- Ord\n  Concept for types that forms total order.\n  Implementations must be consistent with `PartialOrd`.\n\n  - `Ord.cmp(x, y) == PartialOrd.partial_cmp(x, y).?`\n\n- Destroy\n  The `Destroy` concept provides an interface for destroying values.\n  Values of types implementing this concept can be destroyed by `destroy(@This())` or `destroy(@This(), std.mem.Allocator)`.\n\n\n## Module Hierarchy\n\n\n- basis_concept (the root module)\n    - copy\n\t\t- isCopyable\n    - clone\n        - isClonable\n        - Clone\n    - partial_ord\n        - isPartialOrd\n        - PartialOrd\n    - ord\n        - isOrd\n        - Ord\n    - trivial_eq\n        - isTrivialEq\n    - partial_eq\n        - isPartialEq\n        - PartialEq\n    - eq\n        - isEq\n        - Eq\n    - trivial_destroy\n        - isTrivialDestroy\n    - destroy\n        - Destroy\n    - prelude\n        - Clone\n        - PartialEq\n        - PartialOrd\n        - Ord\n        - Eq\n        - Destroy\n\n\n## Concept Convention\n\nImplementations of concept on types, are follows some conventions.\nFor any concept `C`, `implC`, `isC` and `C` maybe implemented.\n\n- `fn implC(comptime T:type) bool`  \n    Determine if the type `T` satisfies concept `C` directly.\n\n- `fn isC(comptime T:type) bool`  \n    Determine if the type `T` satisfies concept `C`.\n\n- `const C = struct { ... };`  \n    Namespace `C` that implements generic functions that depend on the concept `C`.\n\n- `fn DeriveC(comptime T:type) type`  \n    Derive functions that depend on `C`.\n\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/51367850?v=4",
     "name": "libev-zig",
     "full_name": "zephyrchien/libev-zig",
@@ -4467,6 +4440,33 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "404",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/379570?v=4",
+    "name": "basis_concept-zig",
+    "full_name": "eldesh/basis_concept-zig",
+    "created_at": "2022-08-29T13:57:19Z",
+    "description": "A collection of basis concept and their operations",
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/eldesh/basis_concept-zig/tags",
+    "license": "BSD-2-Clause",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 179,
+    "fork": false,
+    "updated_at": "2025-01-03T01:41:16Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": false,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# Basis Concept Zig\n\n**basis_concept-zig** is a collection library of \"basis concept\" and some operations on them.\nSome basic concepts such as `Copyable` are provided.\n\n\n## Concept\n\n*Concept* are named constraints on types such as `Clonable`.\n\n\nIn the Zig language, polymorphic functions are sometimes typed `fn (anytype) t`.\nOften, however, functions with such types implicitly require some properties for their types.\nThe `Concept` allows such implicit constraints to be named.\n\nNaming such implicit constraint allows us to deal explicitly with constraints on types.\nFurther, some associated polymorphic functions are able to be implemented to each Concept such like `Cloneable.clone`.\n\n\n## Examples\n\n### Equivalence of generic data type\n\nTo compare equivalence of data of various types:\n\n```\n/// A type constructed from various `isEq` types\nconst S = struct {\n  val_int: u32,\n  val_opt: ?u8,\n  val_eit: error{MyError}![5]u8,\n};\n\nconst s1: S = ...;\nconst s2: S = ...;\nif (Eq.eq(&s1, &s2)) {\n    ...\n}\n```\n\n\n### Check for cloneability\n\nWhen you want to implement `clone` on a container type only for types that are clonable.\n\n```\npub fn Container(comptime T: type) type {\n  return struct {\n    pub const Self: type = @This();\n    pub const CloneError: type = std.mem.Allocator.Error;\n    ..\n    pub usingnamespace if (isClonable(T))\n      struct {\n        pub fn clone(self: *const Self) CloneError!Self {\n          .. T.clone() ..\n        }\n      }\n    else\n      struct {}; // empty\n  };\n}\n\n// For a clonable type C:\nvar c = Container(C);\nvar d = try c.clone(); // clonable\n\n// For a not clonable type N:\nvar n = Container(N);\n// _ = try n.clone(); // compilation error\n```\n\n\n### Comparison by total order\n\nWhen you want to pass an ordering function for a key type of a Mapping container.\n\n```\nvar map: Map(Key, Value) = MakeKeyValueMap(Key, Value, Ord.on(Key));\nmap.insert(key1, value1);\nmap.insert(key2, value2);\n...\n```\n\n\n## Support\n\nThis library is developped with:\n\n- Debian (x86_64) 10.4\n- Zig 0.9.1 with Zigmod r79\n- Zig 0.10.0 with Zigmod r80\n\n\n## Build\n\nTo build, executing the following commands:\n\n```sh\nzigmod fetch\nzig build\n```\n\n\n## Unit Test\n\nTo performs unit tests:\n\n```sh\nzig build test\n```\n\n\n## Generate docs\n\nTo generate documents:\n\n```sh\nzig build doc\n```\n\nA html documents would be generated under the `./docs` directory.\n\n\n## Provided Concept\n\n- TrivialEq\n  Concept for types that trivially comparable value with `==`.\n  This concept is defined for checking the type is comparable with `==`.\n  Then any extra method is not provided.\n\n- TrivialDestroy\n  Concept for types that trivially destroyable implicitly.\n  Then any extra method is not provided.\n\n- Copyable\n  Trivially copyable values with `=`.\n  `Copy` means to duplicate a value that has no resources shared with the original one.\n  In other words, it must not contain a pointer.\n\n- Clonable\n  Duplicable values using `clone` method if exists.\n  Similar to Copyable, `Clonable` means that the value can be duplicated. However, the concept can be satisfied if the `clone` method is implemented even if the value cannot be copied in the trivial way.\n  In other words, if a type is `Copyable`, it is automatically `Clonable` as well.\n\n- PartialEq\n  `PartialEq` concept means that a partial equivalence relation is defined for the type.\n  The partiality comes from the fact that the relation does not require reflexivity.\n  That is, the relation must satisfy the following properties. for all x, y and z:\n\n  - `PartialEq.eq(x, y) == PartialEq.eq(y, x)`\n  - `PartialEq.eq(x, y) == PartialEq.eq(y, z) == PartialEq.eq(x, z)`\n\n- Eq\n  `Eq` concept means that a full equivalence relation is defined for the type.\n  Addition to `PartialEq`, this concept requires relations to have reflexivity.\n\n  - `Eq.eq(x, y) == Eq.eq(y, x)`\n  - `Eq.eq(x, y) and Eq.eq(y, z)` implies `Eq.eq(x, z)`\n  - `Eq.eq(x, x)`\n\n  Furthermore, this concept also contains `ne` method, which must be consistent with `eq`.\n\n- PartialOrd\n  `PartialOrd` concept means parial ordering relation.\n  Such relations require the type satisfies properties and have consistensy to `PartialEq`.\n\n  - `PartialOrd.partial_cmp(x, y).?.compare(.eq)` implies `PartialEq.eq(x, y)`\n  - `PartialOrd.partial_cmp(x, y).?.compare(.le)` implies `PartialOrd.partial_cmp(x, y).?.compare(.lt) or PartialEq.eq(x, y)`\n  - `PartialOrd.partial_cmp(x, y).?.compare(.ge)` implies `PartialOrd.partial_cmp(x, y).?.compare(.lt) or PartialEq.eq(x, y)`\n\n\n- Ord\n  Concept for types that forms total order.\n  Implementations must be consistent with `PartialOrd`.\n\n  - `Ord.cmp(x, y) == PartialOrd.partial_cmp(x, y).?`\n\n- Destroy\n  The `Destroy` concept provides an interface for destroying values.\n  Values of types implementing this concept can be destroyed by `destroy(@This())` or `destroy(@This(), std.mem.Allocator)`.\n\n\n## Module Hierarchy\n\n\n- basis_concept (the root module)\n    - copy\n\t\t- isCopyable\n    - clone\n        - isClonable\n        - Clone\n    - partial_ord\n        - isPartialOrd\n        - PartialOrd\n    - ord\n        - isOrd\n        - Ord\n    - trivial_eq\n        - isTrivialEq\n    - partial_eq\n        - isPartialEq\n        - PartialEq\n    - eq\n        - isEq\n        - Eq\n    - trivial_destroy\n        - isTrivialDestroy\n    - destroy\n        - Destroy\n    - prelude\n        - Clone\n        - PartialEq\n        - PartialOrd\n        - Ord\n        - Eq\n        - Destroy\n\n\n## Concept Convention\n\nImplementations of concept on types, are follows some conventions.\nFor any concept `C`, `implC`, `isC` and `C` maybe implemented.\n\n- `fn implC(comptime T:type) bool`  \n    Determine if the type `T` satisfies concept `C` directly.\n\n- `fn isC(comptime T:type) bool`  \n    Determine if the type `T` satisfies concept `C`.\n\n- `const C = struct { ... };`  \n    Namespace `C` that implements generic functions that depend on the concept `C`.\n\n- `fn DeriveC(comptime T:type) type`  \n    Derive functions that depend on `C`.\n\n",
     "dependents": []
   },
   {
@@ -4908,9 +4908,9 @@
     "description": "MicroZig is a toolbox for building embedded applications in Zig.",
     "default_branch": "main",
     "open_issues": 58,
-    "stargazers_count": 1614,
+    "stargazers_count": 1615,
     "forks_count": 126,
-    "watchers_count": 1614,
+    "watchers_count": 1615,
     "tags_url": "https://api.github.com/repos/ZigEmbeddedGroup/microzig/tags",
     "license": "Zlib",
     "topics": [
@@ -4922,7 +4922,7 @@
     ],
     "size": 19433,
     "fork": false,
-    "updated_at": "2025-05-11T12:34:26Z",
+    "updated_at": "2025-05-11T15:39:43Z",
     "has_build_zig": true,
     "has_build_zig_zon": true,
     "zig_minimum_version": "0.14.0",
@@ -8273,33 +8273,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/46655455?v=4",
-    "name": "zbencode",
-    "full_name": "4zv4l/zbencode",
-    "created_at": "2024-07-05T04:21:48Z",
-    "description": "zig bencode library",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/4zv4l/zbencode/tags",
-    "license": "GPL-3.0",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 77,
-    "fork": false,
-    "updated_at": "2025-02-02T14:49:24Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# zbencode\nzig bencode library\n\n# Example of usage\n\n```zig\nconst std = @import(\"std\");\nconst bencode = @import(\"bencode\");\nconst sizeFmt = std.fmt.fmtIntSizeBin;\n\npub fn main() !void {\n    // setup + args\n    const allocator = std.heap.page_allocator;\n    const args = try std.process.argsAlloc(allocator);\n    defer std.process.argsFree(allocator, args);\n    if (args.len != 2) {\n        print(\"usage: {s} [file.torrent]\\n\", .{args[0]});\n        return;\n    }\n\n    // read file + decoding\n    const data = try std.fs.cwd().readFileAlloc(tally, \"debian.torrent\", 1 * 1024 * 1024);\n    defer tally.free(data);\n    var arena = std.heap.ArenaAllocator.init(tally);\n    var bencode = try parse(&arena, data);\n    defer bencode.deinit(&arena);\n\n    // pretty print\n    const root = bencode.dictionnary;\n    const info = root.get(\"info\").?.dictionnary;\n    std.debug.print(\"name   : {}\\n\", .{info.get(\"name\").?});\n    std.debug.print(\"length : {}\\n\", .{sizeFmt(@intCast(info.get(\"length\").?.integer))});\n    std.debug.print(\"tracker: {}\\n\", .{root.get(\"announce\").?});\n    std.debug.print(\"creator: {}\\n\", .{root.get(\"created by\").?});\n    std.debug.print(\"created: {}\\n\", .{root.get(\"creation date\").?});\n```\n\n```\n$ btest debian.torrent\nname   : debian-12.9.0-amd64-netinst.iso\nlength : 632MiB\ntracker: http://bttracker.debian.org:6969/announce\ncreator: mktorrent 1.1\ncreated: 1736599700\n```\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
     "name": "dizzy",
     "full_name": "bcrist/dizzy",
@@ -8411,6 +8384,33 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "404",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/46655455?v=4",
+    "name": "zbencode",
+    "full_name": "4zv4l/zbencode",
+    "created_at": "2024-07-05T04:21:48Z",
+    "description": "zig bencode library",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/4zv4l/zbencode/tags",
+    "license": "GPL-3.0",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 77,
+    "fork": false,
+    "updated_at": "2025-02-02T14:49:24Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# zbencode\nzig bencode library\n\n# Example of usage\n\n```zig\nconst std = @import(\"std\");\nconst bencode = @import(\"bencode\");\nconst sizeFmt = std.fmt.fmtIntSizeBin;\n\npub fn main() !void {\n    // setup + args\n    const allocator = std.heap.page_allocator;\n    const args = try std.process.argsAlloc(allocator);\n    defer std.process.argsFree(allocator, args);\n    if (args.len != 2) {\n        print(\"usage: {s} [file.torrent]\\n\", .{args[0]});\n        return;\n    }\n\n    // read file + decoding\n    const data = try std.fs.cwd().readFileAlloc(tally, \"debian.torrent\", 1 * 1024 * 1024);\n    defer tally.free(data);\n    var arena = std.heap.ArenaAllocator.init(tally);\n    var bencode = try parse(&arena, data);\n    defer bencode.deinit(&arena);\n\n    // pretty print\n    const root = bencode.dictionnary;\n    const info = root.get(\"info\").?.dictionnary;\n    std.debug.print(\"name   : {}\\n\", .{info.get(\"name\").?});\n    std.debug.print(\"length : {}\\n\", .{sizeFmt(@intCast(info.get(\"length\").?.integer))});\n    std.debug.print(\"tracker: {}\\n\", .{root.get(\"announce\").?});\n    std.debug.print(\"creator: {}\\n\", .{root.get(\"created by\").?});\n    std.debug.print(\"created: {}\\n\", .{root.get(\"creation date\").?});\n```\n\n```\n$ btest debian.torrent\nname   : debian-12.9.0-amd64-netinst.iso\nlength : 632MiB\ntracker: http://bttracker.debian.org:6969/announce\ncreator: mktorrent 1.1\ncreated: 1736599700\n```\n",
     "dependents": []
   },
   {
@@ -8929,6 +8929,34 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/5464072?v=4",
+    "name": "zig-color",
+    "full_name": "nektro/zig-color",
+    "created_at": "2023-09-15T01:34:27Z",
+    "description": null,
+    "default_branch": "master",
+    "open_issues": 1,
+    "stargazers_count": 3,
+    "forks_count": 0,
+    "watchers_count": 3,
+    "tags_url": "https://api.github.com/repos/nektro/zig-color/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 34,
+    "fork": false,
+    "updated_at": "2025-05-03T10:54:52Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": false,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "404",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/24609692?v=4",
     "name": "llvm-ir-zig",
     "full_name": "seyhajin/llvm-ir-zig",
@@ -8990,34 +9018,6 @@
       "https://github.com/allyourcodebase/ffmpeg",
       "https://github.com/andrewrk/libvorbis"
     ]
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/5464072?v=4",
-    "name": "zig-color",
-    "full_name": "nektro/zig-color",
-    "created_at": "2023-09-15T01:34:27Z",
-    "description": null,
-    "default_branch": "master",
-    "open_issues": 1,
-    "stargazers_count": 3,
-    "forks_count": 0,
-    "watchers_count": 3,
-    "tags_url": "https://api.github.com/repos/nektro/zig-color/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 34,
-    "fork": false,
-    "updated_at": "2025-05-03T10:54:52Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": false,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "404",
-    "dependents": []
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/71951273?v=4",
@@ -10979,6 +10979,42 @@
     ]
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
+    "name": "Zig-ConsoleHelper",
+    "full_name": "bcrist/Zig-ConsoleHelper",
+    "created_at": "2023-06-17T17:55:03Z",
+    "description": "Console Helpers for command line applications",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/bcrist/Zig-ConsoleHelper/tags",
+    "license": "MIT",
+    "topics": [
+      "console",
+      "console-color",
+      "stdio",
+      "stdout",
+      "termcolor",
+      "terminal",
+      "zig",
+      "zig-library",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 24,
+    "fork": false,
+    "updated_at": "2025-03-22T07:07:13Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# Zig-ConsoleHelper\n## Console helpers for command line Zig applications\n\n* Configures Windows stdout/stderr for UTF-8 and enables virtual terminal escape processing\n* Generates escape sequences to change the current color/style\n* Prints file context information with optional line numbers and highlighting (e.g. for error messages)\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/6756180?v=4",
     "name": "libvlcpp",
     "full_name": "kassane/libvlcpp",
@@ -11037,42 +11073,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "<a id=\"top\"></a>\n![Catch2 logo](data/artwork/catch2-logo-small-with-background.png)\n\n[![Github Releases](https://img.shields.io/github/release/catchorg/catch2.svg)](https://github.com/catchorg/catch2/releases)\n[![Linux build status](https://github.com/catchorg/Catch2/actions/workflows/linux-simple-builds.yml/badge.svg)](https://github.com/catchorg/Catch2/actions/workflows/linux-simple-builds.yml)\n[![Linux build status](https://github.com/catchorg/Catch2/actions/workflows/linux-other-builds.yml/badge.svg)](https://github.com/catchorg/Catch2/actions/workflows/linux-other-builds.yml)\n[![MacOS build status](https://github.com/catchorg/Catch2/actions/workflows/mac-builds.yml/badge.svg)](https://github.com/catchorg/Catch2/actions/workflows/mac-builds.yml)\n[![Build Status](https://ci.appveyor.com/api/projects/status/github/catchorg/Catch2?svg=true&branch=devel)](https://ci.appveyor.com/project/catchorg/catch2)\n[![Code Coverage](https://codecov.io/gh/catchorg/Catch2/branch/devel/graph/badge.svg)](https://codecov.io/gh/catchorg/Catch2)\n[![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://godbolt.org/z/EdoY15q9G)\n[![Join the chat in Discord: https://discord.gg/4CWS9zD](https://img.shields.io/badge/Discord-Chat!-brightgreen.svg)](https://discord.gg/4CWS9zD)\n\n\n## What is Catch2?\n\nCatch2 is mainly a unit testing framework for C++, but it also\nprovides basic micro-benchmarking features, and simple BDD macros.\n\nCatch2's main advantage is that using it is both simple and natural.\nTest names do not have to be valid identifiers, assertions look like\nnormal C++ boolean expressions, and sections provide a nice and local way\nto share set-up and tear-down code in tests.\n\n**Example unit test**\n```cpp\n#include <catch2/catch_test_macros.hpp>\n\n#include <cstdint>\n\nuint32_t factorial( uint32_t number ) {\n    return number <= 1 ? number : factorial(number-1) * number;\n}\n\nTEST_CASE( \"Factorials are computed\", \"[factorial]\" ) {\n    REQUIRE( factorial( 1) == 1 );\n    REQUIRE( factorial( 2) == 2 );\n    REQUIRE( factorial( 3) == 6 );\n    REQUIRE( factorial(10) == 3'628'800 );\n}\n```\n\n**Example microbenchmark**\n```cpp\n#include <catch2/catch_test_macros.hpp>\n#include <catch2/benchmark/catch_benchmark.hpp>\n\n#include <cstdint>\n\nuint64_t fibonacci(uint64_t number) {\n    return number < 2 ? number : fibonacci(number - 1) + fibonacci(number - 2);\n}\n\nTEST_CASE(\"Benchmark Fibonacci\", \"[!benchmark]\") {\n    REQUIRE(fibonacci(5) == 5);\n\n    REQUIRE(fibonacci(20) == 6'765);\n    BENCHMARK(\"fibonacci 20\") {\n        return fibonacci(20);\n    };\n\n    REQUIRE(fibonacci(25) == 75'025);\n    BENCHMARK(\"fibonacci 25\") {\n        return fibonacci(25);\n    };\n}\n```\n\n_Note that benchmarks are not run by default, so you need to run it explicitly\nwith the `[!benchmark]` tag._\n\n\n## Catch2 v3 has been released!\n\nYou are on the `devel` branch, where the v3 version is being developed.\nv3 brings a bunch of significant changes, the big one being that Catch2\nis no longer a single-header library. Catch2 now behaves as a normal\nlibrary, with multiple headers and separately compiled implementation.\n\nThe documentation is slowly being updated to take these changes into\naccount, but this work is currently still ongoing.\n\nFor migrating from the v2 releases to v3, you should look at [our\ndocumentation](docs/migrate-v2-to-v3.md#top). It provides a simple\nguidelines on getting started, and collects most common migration\nproblems.\n\nFor the previous major version of Catch2 [look into the `v2.x` branch\nhere on GitHub](https://github.com/catchorg/Catch2/tree/v2.x).\n\n\n## How to use it\nThis documentation comprises these three parts:\n\n* [Why do we need yet another C++ Test Framework?](docs/why-catch.md#top)\n* [Tutorial](docs/tutorial.md#top) - getting started\n* [Reference section](docs/Readme.md#top) - all the details\n\n\n## More\n* Issues and bugs can be raised on the [Issue tracker on GitHub](https://github.com/catchorg/Catch2/issues)\n* For discussion or questions please use [our Discord](https://discord.gg/4CWS9zD)\n* See who else is using Catch2 in [Open Source Software](docs/opensource-users.md#top)\nor [commercially](docs/commercial-users.md#top).\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
-    "name": "Zig-ConsoleHelper",
-    "full_name": "bcrist/Zig-ConsoleHelper",
-    "created_at": "2023-06-17T17:55:03Z",
-    "description": "Console Helpers for command line applications",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/bcrist/Zig-ConsoleHelper/tags",
-    "license": "MIT",
-    "topics": [
-      "console",
-      "console-color",
-      "stdio",
-      "stdout",
-      "termcolor",
-      "terminal",
-      "zig",
-      "zig-library",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 24,
-    "fork": false,
-    "updated_at": "2025-03-22T07:07:13Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# Zig-ConsoleHelper\n## Console helpers for command line Zig applications\n\n* Configures Windows stdout/stderr for UTF-8 and enables virtual terminal escape processing\n* Generates escape sequences to change the current color/style\n* Prints file context information with optional line numbers and highlighting (e.g. for error messages)\n",
     "dependents": []
   },
   {
@@ -17645,50 +17645,6 @@
     ]
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/1552770?v=4",
-    "name": "flow-syntax",
-    "full_name": "neurocyte/flow-syntax",
-    "created_at": "2024-03-06T18:29:57Z",
-    "description": "Syntax highlighting module used by flow and zat",
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 9,
-    "forks_count": 8,
-    "watchers_count": 9,
-    "tags_url": "https://api.github.com/repos/neurocyte/flow-syntax/tags",
-    "license": "MIT",
-    "topics": [
-      "tree-sitter",
-      "zig",
-      "zig-package"
-    ],
-    "size": 97,
-    "fork": false,
-    "updated_at": "2025-04-19T10:44:51Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0-dev.3451+d8d2aa9af",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "tree_sitter",
-        "url": "https://github.com/neurocyte/tree-sitter/releases/download/master-86dd4d2536f2748c5b4ea0e1e70678039a569aac/source.tar.gz",
-        "commit": "master",
-        "tar_url": "https://github.com/neurocyte/tree-sitter/releases/download/master-86dd4d2536f2748c5b4ea0e1e70678039a569aac/source.tar.gz/archive/master.tar.gz",
-        "type": "remote"
-      },
-      {
-        "name": "cbor",
-        "url": "https://github.com/neurocyte/cbor",
-        "commit": "1fccb83c70cd84e1dff57cc53f7db8fb99909a94.tar.gz",
-        "tar_url": "https://github.com/neurocyte/cbor/archive/1fccb83c70cd84e1dff57cc53f7db8fb99909a94.tar.gz.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# flow-syntax\nSyntax highlighting module used by [flow](https://github.com/neurocyte/flow), [zat](https://github.com/neurocyte/zat) and [zine](https://github.com/kristoff-it/zine)\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/2242?v=4",
     "name": "zig-jwt",
     "full_name": "softprops/zig-jwt",
@@ -17755,6 +17711,50 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "<h1 align=\"center\">\n    \u267b\ufe0f zig retry\n</h1>\n\n<div align=\"center\">\n    A retry library for fault tolerant zig applications\n</div>\n\n---\n\n[![Main](https://github.com/softprops/zig-retry/actions/workflows/ci.yml/badge.svg)](https://github.com/softprops/zig-retry/actions/workflows/ci.yml) ![License Info](https://img.shields.io/github/license/softprops/zig-retry) ![Release](https://img.shields.io/github/v/release/softprops/zig-retry) [![Zig Support](https://img.shields.io/badge/zig-0.13.0-black?logo=zig)](https://ziglang.org/documentation/0.13.0/)\n\nA goal of any operation should be a successful outcome. This package gives operations a better chance at achieving that.\n\n## \ud83d\udcfc installing\n\nCreate a new exec project with `zig init`. Copy an example from the examples directory into your into `src/main.zig`\n\nCreate a `build.zig.zon` file to declare a dependency\n\n> .zon short for \"zig object notation\" files are essentially zig structs. `build.zig.zon` is zigs native package manager convention for where to declare dependencies\n\nStarting in zig 0.12.0, you can use and should prefer\n\n```sh\nzig fetch --save https://github.com/softprops/zig-retry/archive/refs/tags/v0.1.0.tar.gz\n```\n\notherwise, to manually add it, do so as follows\n\n```diff\n.{\n    .name = \"my-app\",\n    .version = \"0.1.0\",\n    .dependencies = .{\n+       // \ud83d\udc47 declare dep properties\n+        .jwt = .{\n+            // \ud83d\udc47 uri to download\n+            .url = \"https://github.com/softprops/zig-retry/archive/refs/tags/v0.1.0.tar.gz\",\n+            // \ud83d\udc47 hash verification\n+            .hash = \"...\",\n+        },\n    },\n}\n```\n\n> the hash below may vary. you can also depend any tag with `https://github.com/softprops/zig-retry/archive/refs/tags/v{version}.tar.gz` or current main with `https://github.com/softprops/zig-retry/archive/refs/heads/main/main.tar.gz`. to resolve a hash omit it and let zig tell you the expected value.\n\nAdd the following in your `build.zig` file\n\n```diff\nconst std = @import(\"std\");\n\npub fn build(b: *std.Build) void {\n    const target = b.standardTargetOptions(.{});\n\n    const optimize = b.standardOptimizeOption(.{});\n    // \ud83d\udc47 de-reference dep from build.zig.zon\n+    const retry = b.dependency(\"retry\", .{\n+        .target = target,\n+        .optimize = optimize,\n+    }).module(\"retry\");\n    var exe = b.addExecutable(.{\n        .name = \"your-exe\",\n        .root_source_file = .{ .path = \"src/main.zig\" },\n        .target = target,\n        .optimize = optimize,\n    });\n    // \ud83d\udc47 add the module to executable\n+    exe.root_mode.addImport(\"retry\", retry);\n\n    b.installArtifact(exe);\n}\n```\n\n## examples\n\nSee examples directory\n\n## \ud83e\udd79 for budding ziglings\n\nDoes this look interesting but you're new to zig and feel left out? No problem, zig is young so most us of our new are as well. Here are some resources to help get you up to speed on zig\n\n- [the official zig website](https://ziglang.org/)\n- [zig's one-page language documentation](https://ziglang.org/documentation/0.13.0/)\n- [ziglearn](https://ziglearn.org/)\n- [ziglings exercises](https://github.com/ratfactor/ziglings)\n\n\n\\- softprops 2024\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/1552770?v=4",
+    "name": "flow-syntax",
+    "full_name": "neurocyte/flow-syntax",
+    "created_at": "2024-03-06T18:29:57Z",
+    "description": "Syntax highlighting module used by flow and zat",
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 9,
+    "forks_count": 8,
+    "watchers_count": 9,
+    "tags_url": "https://api.github.com/repos/neurocyte/flow-syntax/tags",
+    "license": "MIT",
+    "topics": [
+      "tree-sitter",
+      "zig",
+      "zig-package"
+    ],
+    "size": 97,
+    "fork": false,
+    "updated_at": "2025-04-19T10:44:51Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0-dev.3451+d8d2aa9af",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "tree_sitter",
+        "url": "https://github.com/neurocyte/tree-sitter/releases/download/master-86dd4d2536f2748c5b4ea0e1e70678039a569aac/source.tar.gz",
+        "commit": "master",
+        "tar_url": "https://github.com/neurocyte/tree-sitter/releases/download/master-86dd4d2536f2748c5b4ea0e1e70678039a569aac/source.tar.gz/archive/master.tar.gz",
+        "type": "remote"
+      },
+      {
+        "name": "cbor",
+        "url": "https://github.com/neurocyte/cbor",
+        "commit": "1fccb83c70cd84e1dff57cc53f7db8fb99909a94.tar.gz",
+        "tar_url": "https://github.com/neurocyte/cbor/archive/1fccb83c70cd84e1dff57cc53f7db8fb99909a94.tar.gz.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# flow-syntax\nSyntax highlighting module used by [flow](https://github.com/neurocyte/flow), [zat](https://github.com/neurocyte/zat) and [zine](https://github.com/kristoff-it/zine)\n",
     "dependents": []
   },
   {
@@ -18444,6 +18444,37 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/49950206?v=4",
+    "name": "ac-library-zig",
+    "full_name": "Ryoga-exe/ac-library-zig",
+    "created_at": "2024-02-26T23:39:03Z",
+    "description": "Zig implementation of AtCoder Library",
+    "default_branch": "main",
+    "open_issues": 2,
+    "stargazers_count": 5,
+    "forks_count": 1,
+    "watchers_count": 5,
+    "tags_url": "https://api.github.com/repos/Ryoga-exe/ac-library-zig/tags",
+    "license": "CC0-1.0",
+    "topics": [
+      "atcoder-library",
+      "competitive-programming",
+      "zig",
+      "zig-library",
+      "zig-package"
+    ],
+    "size": 111,
+    "fork": false,
+    "updated_at": "2025-05-11T15:58:57Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# ac-library-zig\n\nac-library-zig is a Zig implementation of AtCoder Library (ACL).\n\nSee below for ACL.\n\n- [Original repository (implemented in C++)](https://github.com/atcoder/ac-library)\n- [AtCoder Library (ACL) - AtCoder](https://atcoder.jp/posts/517)\n- [AtCoder Library - Codeforces](https://codeforces.com/blog/entry/82400)\n\n## API Reference\n\nAutomatically generated API Reference for the project can be found at https://repos.ryoga.dev/ac-library-zig.\n\n> [!NOTE]\n> Zig autodoc is in beta;\n> the website may be broken or incomplete.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/36482619?v=4",
     "name": "zigqlite",
     "full_name": "jkoop/zigqlite",
@@ -18774,37 +18805,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/49950206?v=4",
-    "name": "ac-library-zig",
-    "full_name": "Ryoga-exe/ac-library-zig",
-    "created_at": "2024-02-26T23:39:03Z",
-    "description": "Zig implementation of AtCoder Library",
-    "default_branch": "main",
-    "open_issues": 2,
-    "stargazers_count": 4,
-    "forks_count": 1,
-    "watchers_count": 4,
-    "tags_url": "https://api.github.com/repos/Ryoga-exe/ac-library-zig/tags",
-    "license": "CC0-1.0",
-    "topics": [
-      "atcoder-library",
-      "competitive-programming",
-      "zig",
-      "zig-library",
-      "zig-package"
-    ],
-    "size": 111,
-    "fork": false,
-    "updated_at": "2025-03-19T10:45:33Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# ac-library-zig\n\nac-library-zig is a Zig implementation of AtCoder Library (ACL).\n\nSee below for ACL.\n\n- [Original repository (implemented in C++)](https://github.com/atcoder/ac-library)\n- [AtCoder Library (ACL) - AtCoder](https://atcoder.jp/posts/517)\n- [AtCoder Library - Codeforces](https://codeforces.com/blog/entry/82400)\n\n## API Reference\n\nAutomatically generated API Reference for the project can be found at https://repos.ryoga.dev/ac-library-zig.\n\n> [!NOTE]\n> Zig autodoc is in beta;\n> the website may be broken or incomplete.\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/57362253?v=4",
     "name": "glfw.zig",
     "full_name": "tiawl/glfw.zig",
@@ -19025,7 +19025,7 @@
     ],
     "size": 72,
     "fork": false,
-    "updated_at": "2025-05-03T20:57:21Z",
+    "updated_at": "2025-05-11T15:19:07Z",
     "has_build_zig": true,
     "has_build_zig_zon": true,
     "zig_minimum_version": "unknown",
@@ -19321,6 +19321,47 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/57362253?v=4",
+    "name": "vulkan.zig",
+    "full_name": "tiawl/vulkan.zig",
+    "created_at": "2024-02-28T15:40:13Z",
+    "description": "vulkan headers packaged for @ziglang",
+    "default_branch": "trunk",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 2,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/tiawl/vulkan.zig/tags",
+    "license": "Unlicense",
+    "topics": [
+      "binding",
+      "spaceporn",
+      "vulkan",
+      "vulkan-api",
+      "zig",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 6957,
+    "fork": false,
+    "updated_at": "2025-05-10T10:21:19Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "toolbox",
+        "url": "https://github.com/tiawl/toolbox",
+        "commit": "master",
+        "tar_url": "https://github.com/tiawl/toolbox/archive/master.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# vulkan.zig\n\nThis is a fork of [hexops/vulkan-headers][1] which is itself a fork of [KhronosGroup/Vulkan-Headers][2].\n\n## Why this forkception ?\n\nThe intention under this fork is the same as [hexops][6] had when they forked [KhronosGroup/Vulkan-Headers][2]: package the headers for [Zig][3]. So:\n* Unnecessary files have been deleted,\n* The build system has been replaced with `build.zig`.\n\nHowever this repository has subtle differences for maintainability tasks:\n* No shell scripting,\n* A cron runs every day to check [KhronosGroup/Vulkan-Headers][2]. Then it updates this repository if a new release is available.\n\n## How to use it\n\nThe current usage of this repository is centered around [tiawl/glfw.zig][3] compilation. But you could use it for your own projects. Headers are here and there are no planned evolution to modify them. See [tiawl/glfw.zig][3] to see how you can use it.\n\n## Dependencies\n\nThe [Zig][3] part of this package is relying on the latest [Zig][3] release (0.14.0) and will only be updated for the next one (so for the 0.14.1).\n\nHere the repositories' version used by this fork:\n* [KhronosGroup/Vulkan-Headers](https://github.com/tiawl/vulkan.zig/blob/trunk/.references/vulkan)\n\n## CICD reminder\n\nThese repositories are automatically updated when a new release is available:\n* [tiawl/glfw.zig][4]\n\nThis repository is automatically updated when a new release is available from these repositories:\n* [KhronosGroup/Vulkan-Headers][2]\n* [tiawl/toolbox][5]\n\n## `zig build` options\n\nThese additional options have been implemented for maintainability tasks:\n```\n  -Dfetch   Update .references folder and build.zig.zon then stop execution\n  -Dupdate  Update binding\n```\n\n## License\n\nThis repository is not subject to a unique License:\n\nThe parts of this repository originated from this repository are dedicated to the public domain. See the LICENSE file for more details.\n\n**For other parts, it is subject to the License restrictions their respective owners choosed. By design, the public domain code is incompatible with the License notion. In this case, the License prevails. So if you have any doubt about a file property, open an issue.**\n\n[1]:https://github.com/hexops/vulkan-headers\n[2]:https://github.com/KhronosGroup/Vulkan-Headers\n[3]:https://github.com/ziglang/zig\n[4]:https://github.com/tiawl/glfw.zig\n[5]:https://github.com/tiawl/toolbox\n[6]:https://github.com/hexops\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/5464072?v=4",
     "name": "zig-intrusive-parser",
     "full_name": "nektro/zig-intrusive-parser",
@@ -19404,47 +19445,6 @@
     "dependents": [
       "https://github.com/Zig-Sec/PassKeeZ"
     ]
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/57362253?v=4",
-    "name": "vulkan.zig",
-    "full_name": "tiawl/vulkan.zig",
-    "created_at": "2024-02-28T15:40:13Z",
-    "description": "vulkan headers packaged for @ziglang",
-    "default_branch": "trunk",
-    "open_issues": 0,
-    "stargazers_count": 2,
-    "forks_count": 2,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/tiawl/vulkan.zig/tags",
-    "license": "Unlicense",
-    "topics": [
-      "binding",
-      "spaceporn",
-      "vulkan",
-      "vulkan-api",
-      "zig",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 6957,
-    "fork": false,
-    "updated_at": "2025-05-10T10:21:19Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "toolbox",
-        "url": "https://github.com/tiawl/toolbox",
-        "commit": "master",
-        "tar_url": "https://github.com/tiawl/toolbox/archive/master.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# vulkan.zig\n\nThis is a fork of [hexops/vulkan-headers][1] which is itself a fork of [KhronosGroup/Vulkan-Headers][2].\n\n## Why this forkception ?\n\nThe intention under this fork is the same as [hexops][6] had when they forked [KhronosGroup/Vulkan-Headers][2]: package the headers for [Zig][3]. So:\n* Unnecessary files have been deleted,\n* The build system has been replaced with `build.zig`.\n\nHowever this repository has subtle differences for maintainability tasks:\n* No shell scripting,\n* A cron runs every day to check [KhronosGroup/Vulkan-Headers][2]. Then it updates this repository if a new release is available.\n\n## How to use it\n\nThe current usage of this repository is centered around [tiawl/glfw.zig][3] compilation. But you could use it for your own projects. Headers are here and there are no planned evolution to modify them. See [tiawl/glfw.zig][3] to see how you can use it.\n\n## Dependencies\n\nThe [Zig][3] part of this package is relying on the latest [Zig][3] release (0.14.0) and will only be updated for the next one (so for the 0.14.1).\n\nHere the repositories' version used by this fork:\n* [KhronosGroup/Vulkan-Headers](https://github.com/tiawl/vulkan.zig/blob/trunk/.references/vulkan)\n\n## CICD reminder\n\nThese repositories are automatically updated when a new release is available:\n* [tiawl/glfw.zig][4]\n\nThis repository is automatically updated when a new release is available from these repositories:\n* [KhronosGroup/Vulkan-Headers][2]\n* [tiawl/toolbox][5]\n\n## `zig build` options\n\nThese additional options have been implemented for maintainability tasks:\n```\n  -Dfetch   Update .references folder and build.zig.zon then stop execution\n  -Dupdate  Update binding\n```\n\n## License\n\nThis repository is not subject to a unique License:\n\nThe parts of this repository originated from this repository are dedicated to the public domain. See the LICENSE file for more details.\n\n**For other parts, it is subject to the License restrictions their respective owners choosed. By design, the public domain code is incompatible with the License notion. In this case, the License prevails. So if you have any doubt about a file property, open an issue.**\n\n[1]:https://github.com/hexops/vulkan-headers\n[2]:https://github.com/KhronosGroup/Vulkan-Headers\n[3]:https://github.com/ziglang/zig\n[4]:https://github.com/tiawl/glfw.zig\n[5]:https://github.com/tiawl/toolbox\n[6]:https://github.com/hexops\n",
-    "dependents": []
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/80367123?v=4",
@@ -20862,7 +20862,7 @@
     "topics": [
       "zig-package"
     ],
-    "size": 19128,
+    "size": 19144,
     "fork": false,
     "updated_at": "2025-05-09T21:11:52Z",
     "has_build_zig": true,
@@ -22885,6 +22885,34 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/127796005?v=4",
+    "name": "zml",
+    "full_name": "srmadrid/zml",
+    "created_at": "2024-09-17T07:09:56Z",
+    "description": "Zig Mathematics Library",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 6,
+    "forks_count": 0,
+    "watchers_count": 6,
+    "tags_url": "https://api.github.com/repos/srmadrid/zml/tags",
+    "license": "MIT",
+    "topics": [
+      "math",
+      "zig-package"
+    ],
+    "size": 6161,
+    "fork": false,
+    "updated_at": "2025-05-11T12:07:04Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# ZML: Zig Mathematics Library\n\nA Zig numerical and symbolic mathematics library.\n\n## Warning\n\nThis library is in the early stages of development and is not yet ready for use. Breaking changes are to be expected every commit, and only the most basic functionality is currently implemented.\n\n## Current Features\n\n- Core:\n  - Math:\n    - Accurate math functions for all floating point types\n  - Types:\n    - Complex floats\n    - Arbitrary precision integers, rationals, reals, and complex numbers: not implemented yet\n- Numerical System:\n  - N-dimensional arrays:\n    - Broadcasting\n    - Element-wise operations\n    - Views\n  - Blas implementation:\n    - `gemm` tests fail on debug mode, but pass on all release modes\n- Symbolic System:\n  - Nothing implemented yet\n\n## Installation\n\nTo use this library in your project, run\n\n```bash\nzig fetch --save git+https://github.com/srmadrid/zml\n```\n\nand add it to your build.zig file:\n\n```zig\nconst zml = b.dependency(\"zml\", .{});\nexe.root_module.addImport(\"zml\", zml.module(\"zml\"));\n```\n\n## Notes\n\nThis library is in the early stages of development and is not yet ready for use. Breaking changes are to be expected every commit, and only the most basic functionality is currently implemented (see [Current Features](#current-features) for more information). If you decide to use this library, please be aware that you may encounter bugs and incomplete features. If you find a bug, please report it via an issue on GitHub.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/9116281?v=4",
     "name": "beanstalkz",
     "full_name": "g41797/beanstalkz",
@@ -22917,34 +22945,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "![](_logo/1p0c_8c0637.jpg)\n\n# Zig client for Beanstalkd\n[![CI](https://github.com/g41797/beanstalkz/actions/workflows/ci.yml/badge.svg)](https://github.com/g41797/beanstalkz/actions/workflows/ci.yml)\n\n\n[Beanstalkd](https://pmatseykanets.github.io/beanstalkd-docs/) is\n>             Simple and fast general purpose work queue.\n>         The beauty of Beanstalkd is its absolute simplicity.\n\n\nActually you can use just 3 commands\n\n- submit(put) job into the queue\n- take(reserve) job from the queue for processing\n- delete job from the queue\n\n```zig\n    // On producer side\n    _ = try producer.put(1, 0, 120, \"job data\");\n    \n    // On worker side\n    var job: Job = .{};\n    try job.init(allocator);\n    defer job.deinit();\n    \n    try worker.reserve(10, &job);\n        \n    // job.body().? - contains \"job data\"\n    // process job\n    // ...........\n    \n    // job.id().?   - contains job id\n    try worker.delete(job.id().?);\n```\nBeanstalkd is the part of main distros, you can install it using [appropriate package manager](https://pmatseykanets.github.io/beanstalkd-docs/guide/installation.html).\n\nAnd of course you can use Beanstalkd [with Docker](https://hub.docker.com/search?q=beanstalkd).  \n\nIf you don't have experience using `Beanstalkd`, it's a good idea to read:\n- [beanstalkd protocol](https://pmatseykanets.github.io/beanstalkd-docs/protocol/)\n- [beanstalkd FAQ](https://pmatseykanets.github.io/beanstalkd-docs/resources/faq.html)\n\n## Job\n\n*Job* is opaque array of bytes. Beanstalkd does not force you to use a specific data format.\n\nAfter being placed in a queue, job can be in the following states:\n\n- delayed (waiting for time-out before moving to next state) \n- ready (for processing)\n- reserved (processed)\n- buried (failed)\n\n\n## Job lifecycle supported by beanstalkz\n```txt\n  'put' with delay                                'delete'             \n  ----------------> [DELAYED] ---------------------------X\n                        |     \n                        | 'kick-job' or time passes\n                        |              \n  'put'                 v     'reserve'           'delete'\n  -----------------> [READY] ---------> [RESERVED] ------X\n                       |  ^                 |  \n                       |  |                 | 'bury'\n                       |  |   'kick-job'    v     'delete'\n                       |   `------------ [BURIED]  ------X    \n                       |                  \n                       |                          'delete'\n                        `--------------------------------X\n```\n\n\n## Tube\n\nInstead of the term _queue_ Beanstalkd uses term _tube_,\nthis explains the picture above.\n\n*Tube* is _named queue_. \n>Tubes are created on demand whenever they are referenced.\n> \n> If a tube is empty (that is, it contains no ready, delayed, or buried jobs)\n> \n> and no client refers to it, it will be deleted.\n\nIf tube was not referenced, Beanstalkd creates *\"default\"* tube.\n\nEvery tube has 3 sub-queues:\n\n- delay - contains jobs in _delayed_ state\n- ready - contains jobs in _ready_ or _reserved_ states\n- bury (dead-letter) - contains failed jobs\n\n## Supported commands\n\n| Name                                                                                     |                 Description                  |                                                                API                                                                |\n|:-----------------------------------------------------------------------------------------|:--------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------:|\n| [use](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L178)        |           Set current tube(queue)            |                   [use(tname: []const u8)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L116)                    |\n| [put](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L124)        |          Submit job to current tube          |    [put(pri: u32, delay: u32, ttr: u32, job: []const u8)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L139)     |\n| [watch](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L347)      |   Subscribe to jobs submitted to the tube    |                  [watch(tname: []const u8)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L243)                   |\n| [reserve](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L203)    |                 Consume job                  |              [reserve(timeout: u32, job: *Job)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L272)               |\n| [bury](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L310)       |    Put job to the failed(\"buried\") state     |                   [bury(id: u32, pri: u32)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L308)                   |\n| [kick-job](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L424)   | Put delayed or failed job to the ready state |                      [kick_job(id: u32)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L342)                      |\n| [ignore](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L363)     |                 Un-subscribe                 |                  [ignore(tname: []const u8)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L383)                  |\n| [delete](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L271)     |          Remove job from the system          |                       [delete(id: u32)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L369)                       |\n| [state](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L465)      |                Get job state                 |                       [state(id: u32)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L198)                        |\n| connect                                                                                  |                   Connect                    | [connect(allocator: Allocator, addr: ?[]const u8, port: ?u16)](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L48) |\n| [disconnect](https://github.com/beanstalkd/beanstalkd/blob/master/doc/protocol.txt#L728) |                  Disconnect                  |                         [disconnect()](https://github.com/g41797/beanstalkz/blob/main/src/client.zig#L84)                         |\n  \n \n\n\n## Installation\n\nAdd *beanstalkz* to build.zig.zon:\n```bach\nzig fetch --save=beanstalkz git+https://github.com/g41797/beanstalkz\n```\n\nAdd *beanstalkz* to build.zig:\n```zig\n    const beanstalkz = b.dependency(\"beanstalkz\", .{\n        .target = target,\n        .optimize = optimize,\n    });\n\n    const lib = b.addStaticLibrary(..);\n    lib.root_module.addImport(\"beanstalkz\", beanstalkz.module(\"beanstalkz\"));\n\n    const lib_unit_tests = b.addTest(...);\n    lib_unit_tests.root_module.addImport(\"beanstalkz\", beanstalkz.module(\"beanstalkz\"));\n```\n\nImport *beanstalkz*:\n```zig\nconst beanstalkz = @import(\"beanstalkz\");\n```\n\n\n## Credits\nContent of README is heavily inspired by \n- [README of jackd](https://github.com/getjackd/jackd#jackd)\n- [Giant Killing with Beanstalkd](https://www.sitepoint.com/giant-killing-with-beanstalkd/)\n \n## License\n[MIT](LICENSE)\n\n<br />\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/127796005?v=4",
-    "name": "zml",
-    "full_name": "srmadrid/zml",
-    "created_at": "2024-09-17T07:09:56Z",
-    "description": "Zig Mathematics Library",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 6,
-    "forks_count": 0,
-    "watchers_count": 6,
-    "tags_url": "https://api.github.com/repos/srmadrid/zml/tags",
-    "license": "MIT",
-    "topics": [
-      "math",
-      "zig-package"
-    ],
-    "size": 6161,
-    "fork": false,
-    "updated_at": "2025-05-11T12:07:04Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# ZML: Zig Mathematics Library\n\nA Zig numerical and symbolic mathematics library.\n\n## Warning\n\nThis library is in the early stages of development and is not yet ready for use. Breaking changes are to be expected every commit, and only the most basic functionality is currently implemented.\n\n## Current Features\n\n- Core:\n  - Math:\n    - Accurate math functions for all floating point types\n  - Types:\n    - Complex floats\n    - Arbitrary precision integers, rationals, reals, and complex numbers: not implemented yet\n- Numerical System:\n  - N-dimensional arrays:\n    - Broadcasting\n    - Element-wise operations\n    - Views\n  - Blas implementation:\n    - `gemm` tests fail on debug mode, but pass on all release modes\n- Symbolic System:\n  - Nothing implemented yet\n\n## Installation\n\nTo use this library in your project, run\n\n```bash\nzig fetch --save git+https://github.com/srmadrid/zml\n```\n\nand add it to your build.zig file:\n\n```zig\nconst zml = b.dependency(\"zml\", .{});\nexe.root_module.addImport(\"zml\", zml.module(\"zml\"));\n```\n\n## Notes\n\nThis library is in the early stages of development and is not yet ready for use. Breaking changes are to be expected every commit, and only the most basic functionality is currently implemented (see [Current Features](#current-features) for more information). If you decide to use this library, please be aware that you may encounter bugs and incomplete features. If you find a bug, please report it via an issue on GitHub.\n",
     "dependents": []
   },
   {
@@ -26896,122 +26896,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/29165327?v=4",
-    "name": "pqc-zig",
-    "full_name": "OnlyF0uR/pqc-zig",
-    "created_at": "2025-04-30T08:38:33Z",
-    "description": "Post-Quantum Cryptography for Zig",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/OnlyF0uR/pqc-zig/tags",
-    "license": "Apache-2.0",
-    "topics": [
-      "cryptography",
-      "post-quantum-cryptography",
-      "pqc",
-      "pqcrypto",
-      "zig",
-      "zig-library",
-      "zig-package"
-    ],
-    "size": 40,
-    "fork": false,
-    "updated_at": "2025-05-01T14:20:14Z",
-    "has_build_zig": false,
-    "has_build_zig_zon": false,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# pqc-zig\nZig bindings to the [PQClean](https://github.com/PQClean/PQClean) C implementations of cryptographic algorithms proposed during the [NIST Post-Quantum Cryptography Competition](https://csrc.nist.gov/projects/post-quantum-cryptography). Additionally, there are light abstractions for convenient use present in the crypto.zig files.\n\n### Requirements\n- Make\n- GCC\n- Zig 0.15+\n\n### Supported schemes (KEM, and signature)\n- [ ] hqc-128 (Clean)\n- [ ] hqc-192 (Clean)\n- [ ] hqc-256 (Clean)\n- [ ] ml-kem-1024 (Clean, AVX2, AARCH64)\n- [ ] ml-kem-512 (Clean, AVX2, AARCH64)\n- [ ] ml-kem-768 (Clean, AVX2, AARCH64)\n- [x] falcon-1024 (Clean, AVX2, AARCH64)\n- [x] falcon-512 (Clean, AVX2, AARCH64)\n- [x] falcon-padded-1024 (Clean, AVX2, AARCH64)\n- [x] falcon-padded-512 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-44 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-65 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-87 (Clean, AVX2, AARCH64)\n- [ ] sphincs-sha2-128s-simple (Clean, AVX2)\n- [ ] sphincs-sha2-192f-simple (Clean, AVX2)\n- [ ] sphincs-sha2-192s-simple (Clean, AVX2)\n- [ ] sphincs-sha2-256f-simple (Clean, AVX2)\n- [ ] sphincs-sha2-256s-simple (Clean, AVX2)\n- [ ] sphincs-shake-128f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-128s-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-192f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-192s-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-256f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-256s-simple (Clean, AVX2, AARCH64)\n\n### Tests\nWhile more rigorous testing is to be implemented, you can run tests by navigating to the desired module and using:\n```bash\nzig build test\n```",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/76426234?v=4",
-    "name": "simpleble",
-    "full_name": "RoadRoller01/simpleble",
-    "created_at": "2025-04-22T19:10:09Z",
-    "description": "Simpleble packaged for Zig",
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/RoadRoller01/simpleble/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 444,
-    "fork": false,
-    "updated_at": "2025-05-01T12:05:31Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "fmt",
-        "url": "https://github.com/allyourcodebase/fmt-zig",
-        "commit": "72f037c03fc78dc615628959fafce03000086777",
-        "tar_url": "https://github.com/allyourcodebase/fmt-zig/archive/72f037c03fc78dc615628959fafce03000086777.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# Simpleble\nSimpleble with build.zig\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/22438427?v=4",
-    "name": "zvips",
-    "full_name": "bernardassan/zvips",
-    "created_at": "2025-04-05T13:03:18Z",
-    "description": "A blazingly fast image processing library in Zig using libvips",
-    "default_branch": "main",
-    "open_issues": 1,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/bernardassan/zvips/tags",
-    "license": "MIT",
-    "topics": [
-      "bindings",
-      "gir",
-      "gobject",
-      "libvips",
-      "zig",
-      "zig-package"
-    ],
-    "size": 1979,
-    "fork": false,
-    "updated_at": "2025-05-08T19:33:54Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.15.0-dev.208+8acedfd5b",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "gobject",
-        "url": "https://github.com/ianprime0509/zig-gobject",
-        "commit": "9500e7f21eb6858f78ea5eda26c90b0cc2ccdbbd.tar.gz",
-        "tar_url": "https://github.com/ianprime0509/zig-gobject/archive/9500e7f21eb6858f78ea5eda26c90b0cc2ccdbbd.tar.gz.tar.gz",
-        "type": "remote"
-      },
-      {
-        "name": "libvips",
-        "url": "bindings",
-        "commit": null,
-        "tar_url": null,
-        "type": "relative"
-      }
-    ],
-    "readme_content": "# Zivips\nLibvips bindings for Zig using GObject Introspection\n\n# System Dependencies\n\n## Arch Linux\n\n### Runtime dependencies\n\n```elvish\nsudo pacman -S libvips libheif glib2\n```\n\n### Build time dependencies\n\n```elvish\nsudo pacman -S libxslt\n```\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/199742861?v=4",
     "name": "bip39",
     "full_name": "loftafi/bip39",
@@ -27173,6 +27057,122 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/29165327?v=4",
+    "name": "pqc-zig",
+    "full_name": "OnlyF0uR/pqc-zig",
+    "created_at": "2025-04-30T08:38:33Z",
+    "description": "Post-Quantum Cryptography for Zig",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/OnlyF0uR/pqc-zig/tags",
+    "license": "Apache-2.0",
+    "topics": [
+      "cryptography",
+      "post-quantum-cryptography",
+      "pqc",
+      "pqcrypto",
+      "zig",
+      "zig-library",
+      "zig-package"
+    ],
+    "size": 40,
+    "fork": false,
+    "updated_at": "2025-05-01T14:20:14Z",
+    "has_build_zig": false,
+    "has_build_zig_zon": false,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# pqc-zig\nZig bindings to the [PQClean](https://github.com/PQClean/PQClean) C implementations of cryptographic algorithms proposed during the [NIST Post-Quantum Cryptography Competition](https://csrc.nist.gov/projects/post-quantum-cryptography). Additionally, there are light abstractions for convenient use present in the crypto.zig files.\n\n### Requirements\n- Make\n- GCC\n- Zig 0.15+\n\n### Supported schemes (KEM, and signature)\n- [ ] hqc-128 (Clean)\n- [ ] hqc-192 (Clean)\n- [ ] hqc-256 (Clean)\n- [ ] ml-kem-1024 (Clean, AVX2, AARCH64)\n- [ ] ml-kem-512 (Clean, AVX2, AARCH64)\n- [ ] ml-kem-768 (Clean, AVX2, AARCH64)\n- [x] falcon-1024 (Clean, AVX2, AARCH64)\n- [x] falcon-512 (Clean, AVX2, AARCH64)\n- [x] falcon-padded-1024 (Clean, AVX2, AARCH64)\n- [x] falcon-padded-512 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-44 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-65 (Clean, AVX2, AARCH64)\n- [x] ml-dsa-87 (Clean, AVX2, AARCH64)\n- [ ] sphincs-sha2-128s-simple (Clean, AVX2)\n- [ ] sphincs-sha2-192f-simple (Clean, AVX2)\n- [ ] sphincs-sha2-192s-simple (Clean, AVX2)\n- [ ] sphincs-sha2-256f-simple (Clean, AVX2)\n- [ ] sphincs-sha2-256s-simple (Clean, AVX2)\n- [ ] sphincs-shake-128f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-128s-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-192f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-192s-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-256f-simple (Clean, AVX2, AARCH64)\n- [ ] sphincs-shake-256s-simple (Clean, AVX2, AARCH64)\n\n### Tests\nWhile more rigorous testing is to be implemented, you can run tests by navigating to the desired module and using:\n```bash\nzig build test\n```",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/76426234?v=4",
+    "name": "simpleble",
+    "full_name": "RoadRoller01/simpleble",
+    "created_at": "2025-04-22T19:10:09Z",
+    "description": "Simpleble packaged for Zig",
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/RoadRoller01/simpleble/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 444,
+    "fork": false,
+    "updated_at": "2025-05-01T12:05:31Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "fmt",
+        "url": "https://github.com/allyourcodebase/fmt-zig",
+        "commit": "72f037c03fc78dc615628959fafce03000086777",
+        "tar_url": "https://github.com/allyourcodebase/fmt-zig/archive/72f037c03fc78dc615628959fafce03000086777.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# Simpleble\nSimpleble with build.zig\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/22438427?v=4",
+    "name": "zvips",
+    "full_name": "bernardassan/zvips",
+    "created_at": "2025-04-05T13:03:18Z",
+    "description": "A blazingly fast image processing library in Zig using libvips",
+    "default_branch": "main",
+    "open_issues": 1,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/bernardassan/zvips/tags",
+    "license": "MIT",
+    "topics": [
+      "bindings",
+      "gir",
+      "gobject",
+      "libvips",
+      "zig",
+      "zig-package"
+    ],
+    "size": 1979,
+    "fork": false,
+    "updated_at": "2025-05-08T19:33:54Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.15.0-dev.208+8acedfd5b",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "gobject",
+        "url": "https://github.com/ianprime0509/zig-gobject",
+        "commit": "9500e7f21eb6858f78ea5eda26c90b0cc2ccdbbd.tar.gz",
+        "tar_url": "https://github.com/ianprime0509/zig-gobject/archive/9500e7f21eb6858f78ea5eda26c90b0cc2ccdbbd.tar.gz.tar.gz",
+        "type": "remote"
+      },
+      {
+        "name": "libvips",
+        "url": "bindings",
+        "commit": null,
+        "tar_url": null,
+        "type": "relative"
+      }
+    ],
+    "readme_content": "# Zivips\nLibvips bindings for Zig using GObject Introspection\n\n# System Dependencies\n\n## Arch Linux\n\n### Runtime dependencies\n\n```elvish\nsudo pacman -S libvips libheif glib2\n```\n\n### Build time dependencies\n\n```elvish\nsudo pacman -S libxslt\n```\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/193276332?v=4",
     "name": "baogao",
     "full_name": "andoni-hazaiah/baogao",
@@ -27317,7 +27317,7 @@
     ],
     "size": 24295,
     "fork": false,
-    "updated_at": "2025-05-11T14:03:33Z",
+    "updated_at": "2025-05-11T15:38:33Z",
     "has_build_zig": false,
     "has_build_zig_zon": false,
     "zig_minimum_version": "unknown",
@@ -28085,6 +28085,39 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/51416554?v=4",
+    "name": "ansi-escape.zig",
+    "full_name": "hendriknielaender/ansi-escape.zig",
+    "created_at": "2025-01-03T16:32:25Z",
+    "description": "ANSI escape codes for manipulating the terminal",
+    "default_branch": "main",
+    "open_issues": 3,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/hendriknielaender/ansi-escape.zig/tags",
+    "license": "MIT",
+    "topics": [
+      "ansi",
+      "ansi-escape-codes",
+      "terminal",
+      "zig",
+      "zig-library",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 5225,
+    "fork": false,
+    "updated_at": "2025-03-14T22:32:37Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "<h1 align=\"center\">\n   <img src=\"ansi-escape.png\" width=\"40%\" height=\"40%\" alt=\"ansi-escape.zig logo\" title=\"ansi-escape.zig logo\">\n</h1>\n\n<div align=\"center\">A minimalistic Zig library for working with ANSI escape sequences. This library provides utilities for cursor control, screen manipulation, and terminal resetting through a simple and efficient API.<br></br></div>\n<div align=\"center\">\n   \n[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/hendriknielaender/ansi-escape.zig/blob/HEAD/LICENSE)\n![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/hendriknielaender/ansi-escape.zig)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hendriknielaender/ansi-escape.zig/blob/HEAD/CONTRIBUTING.md)\n</div>\n\n## Features\n\n- Cursor positioning and movement\n- Screen and line erasure\n- Terminal reset operations\n- Easy-to-use, lightweight API\n\n## Installation\n\n1. Run the following command to fetch the ansi-escape.zig package:\n   ```shell\n   zig fetch https://github.com/hendriknielaender/ansi-escape.zig/archive/<COMMIT>.tar.gz --save\n   ```\n   Using `zig fetch` simplifies managing dependencies by automatically handling the package hash, ensuring your `build.zig.zon` file is up to date.\n\n2. Add the module in `build.zig`:\n\n   ```diff\n   const std = @import(\"std\");\n\n   pub fn build(b: *std.Build) void {\n       const target = b.standardTargetOptions(.{});\n       const optimize = b.standardOptimizeOption(.{});\n\n   +   const opts = .{ .target = target, .optimize = optimize };\n   +   const ansi_module = b.dependency(\"ansi-escape\", opts).module(\"ansi-escape\");\n\n       const exe = b.addExecutable(.{\n           .name = \"test\",\n           .root_source_file = b.path(\"src/main.zig\"),\n           .target = target,\n           .optimize = optimize,\n       });\n   +   exe.root_module.addImport(\"ansi-escape\", ansi_module);\n       exe.install();\n       ...\n   }\n   ```\n\n## Quick Start\n\n```zig\nconst std = @import(\"std\");\nconst ansi = @import(\"ansi-escape\").ansi;\n\npub fn main() !void {\n    const stdout = std.io.getStdOut().writer();\n\n    // Print initial lines\n    try stdout.print(\"Line 1\\nLine 2\\nLine 3\\n\", .{});\n\n    // Move up one line, clear it, and replace it\n    try ansi.cursor.up(stdout, 1);\n    try ansi.erase.line(stdout);\n    try stdout.print(\"Updated Line 2\\n\", .{});\n\n    // Hide cursor, wait for user, and then restore\n    try ansi.cursor.hide(stdout);\n    try std.time.sleep(1_000_000_000); // 1 second\n    try ansi.cursor.show(stdout);\n}\n```\n\n## API\n\nThe `ansi-escape.zig` library offers a structured API organized into several key components: `Cursor`, `Scroll`, `Erase`, and `Clear`. Each component provides a set of functions to perform specific terminal manipulations. The `Cursor` struct allows precise control over cursor positioning and movement, including absolute and relative movements, hiding/showing the cursor, and saving/restoring cursor positions. The `Scroll` struct enables scrolling the terminal content up or down by a specified number of lines. The `Erase` struct provides functions to clear parts of the screen or lines, such as erasing the entire screen, clearing lines, or removing content above or below the cursor. Finally, the `Clear` struct includes functions to reset the terminal to its default state. Together, these components offer a flexible and powerful API for managing terminal behavior through ANSI escape codes.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/61627919?v=4",
     "name": "farbe",
     "full_name": "nuIIpointerexception/farbe",
@@ -28146,39 +28179,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# anyascii-zig\n\na Zig port of the `anyascii` C implementation.\n\nConverts Unicode characters to their best ASCII representation\nAnyAscii provides ASCII-only replacement strings for practically all Unicode characters. Text is converted character-by-character without considering the context. The mappings for each script are based on popular existing romanization systems. Symbolic characters are converted based on their meaning or appearance. All ASCII characters in the input are left unchanged, every other character is replaced with printable ASCII characters. Unknown characters and some known characters are replaced with an empty string and removed.\n\n| Symbols    | Input     | Output                |\n| ---------- | --------- | --------------------- |\n| Emojis     | \ud83d\udc51 \ud83c\udf34     | `:crown: :palm_tree:` |\n| Misc.      | \u2606 \u266f \u2670 \u2684 \u26cc | \\* # + 5 X            |\n| Letterlike | \u2116 \u2133 \u214b \u214d   | No M & A/S            |\n\nThis project uses `Zig mach` (0.14.0-dev.2577+271452d22)\nbut it is also compatible with:\n\n- `Zig 0.13.0`\n- `Zig master` (as of 1/11/25)\n\n# Use in your project\n\n```bash\n# or pick a specific branch or commit\nzig fetch --save https://github.com/sweetbbak/anyascii-zig/archive/refs/heads/main.zip\n```\n\nin `build.zig`:\n\n```zig\n// Add anyascii.zig dependency.\nconst anyascii = b.dependency(\"anyascii-zig\", .{\n    .target = target,\n    .optimize = optimize,\n});\nexe.root_module.addImport(\"anyascii\", anyascii.module(\"anyascii\"));\n```\n\n# Using the C library\n\nbuild the shared library and the static library\n\n```bash\nzig build -Doptimize=ReleaseFast\n```\n\ninstall the given header file at `include/anyascii.h` and the shared object (or static object) to your prefered location\n\n```c\n#include \"../include/anyascii.h\"\n\n#include <stdio.h>\n#include <stdlib.h>\n\nstatic char* actual;\n\nint main() {\n    actual = malloc(256);\n    anyascii(0xD55C, actual); // \ud55c\n    printf(\"anyascii: %s\\n\", actual);  // Han (Korean)\n\n    char* output = malloc(256);\n    anyascii_string(\"Ren\u00e9 Fran\u00e7ois Lac\u00f4te\", output);\n\n    printf(\"anyascii_string: %s\\n\", output);\n}\n\n```\n\nyou can try out the simple example in the `example` directory:\n\n```bash\nzig build -Doptimize=ReleaseFast\n\ngcc -o ascii example/anyascii.c \\\n    -Wall -Wextra -Werror -Os -fPIE \\\n    -I./include -L zig-out/lib \\\n    -l:libanyascii.a -lc\n\n./ascii\n```\n\n# Examples\n\n| input                     | got                         |\n| ------------------------- | --------------------------- |\n| 'Ren\u00e9 Fran\u00e7ois Lac\u00f4te'    | 'Rene Francois Lacote'      |\n| 'Bl\u00f6\u00dfe'                   | 'Blosse'                    |\n| 'Tr\u1ea7n H\u01b0ng \u0110\u1ea1o'           | 'Tran Hung Dao'             |\n| 'N\u00e6r\u00f8y'                   | 'Naeroy'                    |\n| '\u03a6\u03b5\u03b9\u03b4\u03b9\u03c0\u03c0\u03af\u03b4\u03b7\u03c2'             | 'Feidippidis'               |\n| '\u0394\u03b7\u03bc\u03ae\u03c4\u03c1\u03b7\u03c2 \u03a6\u03c9\u03c4\u03cc\u03c0\u03bf\u03c5\u03bb\u03bf\u03c2'     | 'Dimitris Fotopoylos'       |\n| '\u0411\u043e\u0440\u0438\u0441 \u041d\u0438\u043a\u043e\u043b\u0430\u0435\u0432\u0438\u0447 \u0415\u043b\u044c\u0446\u0438\u043d' | 'Boris Nikolaevich El'tsin' |\n| '\u0412\u043e\u043b\u043e\u0434\u0438\u043c\u0438\u0440 \u0413\u043e\u0440\u0431\u0443\u043b\u0456\u043d'      | 'Volodimir Gorbulin'        |\n| '\u0422\u044a\u0440\u0433\u043e\u0432\u0438\u0449\u0435'               | 'T'rgovishche'              |\n| '\u6df1\u5733'                    | 'ShenZhen'                  |\n| '\u6df1\u6c34\u57d7'                  | 'ShenShuiBu'                |\n| '\ud654\uc131\uc2dc'                  | 'HwaSeongSi'                |\n| '\u83ef\u57ce\u5e02'                  | 'HuaChengShi'               |\n| '\u3055\u3044\u305f\u307e'                | 'saitama'                   |\n| '\u57fc\u7389\u770c'                  | 'QiYuXian'                  |\n| '\u12f0\u1265\u1228 \u12d8\u12ed\u1275'                 | 'debre zeyt'                |\n| '\u12f0\u1240\u121d\u1213\u1228'                   | 'dek'emhare'                |\n| '\u062f\u0645\u0646\u0647\u0648\u0631'                  | 'dmnhwr'                    |\n| '\u0531\u0562\u0578\u057e\u0575\u0561\u0576'                 | 'Abovyan'                   |\n| '\u10e1\u10d0\u10db\u10e2\u10e0\u10d4\u10d3\u10d8\u10d0'               | 'samt'redia'                |\n| '\u05d0\u05d1\u05e8\u05d4\u05dd \u05d4\u05dc\u05d5\u05d9 \u05e4\u05e8\u05e0\u05e7\u05dc'        | ''vrhm hlvy frnkl'          |\n| '\u2820\u280e\u2801\u283d\u2800\u282d\u2800\u2801\u281b'               | '+say x ag'                 |\n| '\u09ae\u09df\u09ae\u09a8\u09b8\u09bf\u0982\u09b9'                | 'mymnsimh'                  |\n| '\u1011\u1014\u103a\u1010\u101c\u1014\u103a'                 | 'thntln'                    |\n| '\u0aaa\u0acb\u0ab0\u0aac\u0a82\u0aa6\u0ab0'                 | 'porbmdr'                   |\n\n# links\n\nupstream anyascii that this project is ported from:\n[anyascii](https://github.com/anyascii/anyascii)\n\nused this project for reference:\n[anyascii/go](https://github.com/anyascii/go)\n\nlearned about anyascii and got the idea from here:\n[zigzedd/anyascii.zig](https://github.com/zigzedd/anyascii.zig)\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/51416554?v=4",
-    "name": "ansi-escape.zig",
-    "full_name": "hendriknielaender/ansi-escape.zig",
-    "created_at": "2025-01-03T16:32:25Z",
-    "description": "ANSI escape codes for manipulating the terminal",
-    "default_branch": "main",
-    "open_issues": 3,
-    "stargazers_count": 2,
-    "forks_count": 0,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/hendriknielaender/ansi-escape.zig/tags",
-    "license": "MIT",
-    "topics": [
-      "ansi",
-      "ansi-escape-codes",
-      "terminal",
-      "zig",
-      "zig-library",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 5225,
-    "fork": false,
-    "updated_at": "2025-03-14T22:32:37Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "<h1 align=\"center\">\n   <img src=\"ansi-escape.png\" width=\"40%\" height=\"40%\" alt=\"ansi-escape.zig logo\" title=\"ansi-escape.zig logo\">\n</h1>\n\n<div align=\"center\">A minimalistic Zig library for working with ANSI escape sequences. This library provides utilities for cursor control, screen manipulation, and terminal resetting through a simple and efficient API.<br></br></div>\n<div align=\"center\">\n   \n[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/hendriknielaender/ansi-escape.zig/blob/HEAD/LICENSE)\n![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/hendriknielaender/ansi-escape.zig)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hendriknielaender/ansi-escape.zig/blob/HEAD/CONTRIBUTING.md)\n</div>\n\n## Features\n\n- Cursor positioning and movement\n- Screen and line erasure\n- Terminal reset operations\n- Easy-to-use, lightweight API\n\n## Installation\n\n1. Run the following command to fetch the ansi-escape.zig package:\n   ```shell\n   zig fetch https://github.com/hendriknielaender/ansi-escape.zig/archive/<COMMIT>.tar.gz --save\n   ```\n   Using `zig fetch` simplifies managing dependencies by automatically handling the package hash, ensuring your `build.zig.zon` file is up to date.\n\n2. Add the module in `build.zig`:\n\n   ```diff\n   const std = @import(\"std\");\n\n   pub fn build(b: *std.Build) void {\n       const target = b.standardTargetOptions(.{});\n       const optimize = b.standardOptimizeOption(.{});\n\n   +   const opts = .{ .target = target, .optimize = optimize };\n   +   const ansi_module = b.dependency(\"ansi-escape\", opts).module(\"ansi-escape\");\n\n       const exe = b.addExecutable(.{\n           .name = \"test\",\n           .root_source_file = b.path(\"src/main.zig\"),\n           .target = target,\n           .optimize = optimize,\n       });\n   +   exe.root_module.addImport(\"ansi-escape\", ansi_module);\n       exe.install();\n       ...\n   }\n   ```\n\n## Quick Start\n\n```zig\nconst std = @import(\"std\");\nconst ansi = @import(\"ansi-escape\").ansi;\n\npub fn main() !void {\n    const stdout = std.io.getStdOut().writer();\n\n    // Print initial lines\n    try stdout.print(\"Line 1\\nLine 2\\nLine 3\\n\", .{});\n\n    // Move up one line, clear it, and replace it\n    try ansi.cursor.up(stdout, 1);\n    try ansi.erase.line(stdout);\n    try stdout.print(\"Updated Line 2\\n\", .{});\n\n    // Hide cursor, wait for user, and then restore\n    try ansi.cursor.hide(stdout);\n    try std.time.sleep(1_000_000_000); // 1 second\n    try ansi.cursor.show(stdout);\n}\n```\n\n## API\n\nThe `ansi-escape.zig` library offers a structured API organized into several key components: `Cursor`, `Scroll`, `Erase`, and `Clear`. Each component provides a set of functions to perform specific terminal manipulations. The `Cursor` struct allows precise control over cursor positioning and movement, including absolute and relative movements, hiding/showing the cursor, and saving/restoring cursor positions. The `Scroll` struct enables scrolling the terminal content up or down by a specified number of lines. The `Erase` struct provides functions to clear parts of the screen or lines, such as erasing the entire screen, clearing lines, or removing content above or below the cursor. Finally, the `Clear` struct includes functions to reset the terminal to its default state. Together, these components offer a flexible and powerful API for managing terminal behavior through ANSI escape codes.\n",
     "dependents": []
   },
   {
@@ -29307,6 +29307,45 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/23480513?v=4",
+    "name": "gnu-m4-zig",
+    "full_name": "cbilz/gnu-m4-zig",
+    "created_at": "2025-02-01T18:59:18Z",
+    "description": "GNU M4 packaged for Zig",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/cbilz/gnu-m4-zig/tags",
+    "license": "MIT",
+    "topics": [
+      "gnu",
+      "gnu-m4",
+      "m4",
+      "zig",
+      "zig-package"
+    ],
+    "size": 170,
+    "fork": false,
+    "updated_at": "2025-02-26T17:19:23Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "upstream",
+        "url": "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz",
+        "commit": null,
+        "tar_url": null,
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# GNU M4 packaged for Zig\n\nWork in progress.\n\n## Goal\n\nThis project aims to provide a Zig package for GNU M4 that runs on Linux, macOS\nand Windows without system dependencies. The longer-term goal is to extract a\nreusable Zig library for compiling projects that rely on Autotools and Gnulib.\n\n## Status\n\nCompiles and appears to run correctly on my Linux system when built in\n`ReleaseFast` or `ReleaseSmall` mode. However, with safety checks enabled, the\nexecutable hits an illegal instruction immediately on startup, presumably due to\nundefined behavior.\n\n## Next steps\n\n1. Fix the illegal instruction issue.\n2. Port the test suite and integrate it as a build step.\n3. Implement those configuration checks that do not depend on preprocessing,\n   compilation or execution of probing code. Exclude any unused or redundant\n   checks.\n4. Implement a `LazyValue` system to allow other build steps to pass\n   configuration values to `ConfigHeader`.\n5. Implement remaining configuration checks, again excluding unused or redundant\n   ones.\n6. Extract a reusable configuration library for projects using Autotools or\n   Gnulib.\n\n## Requirements\n\n- Uses Zig 0.14.0-dev.3367+1cc388d52.\n\n## Limitations\n\n- Native language support is disabled.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/130330524?v=4",
     "name": "otimorm",
     "full_name": "takuma-shishido/otimorm",
@@ -29389,45 +29428,6 @@
     "dependents": [
       "https://github.com/jerome-trc/viletech-2022"
     ]
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/23480513?v=4",
-    "name": "gnu-m4-zig",
-    "full_name": "cbilz/gnu-m4-zig",
-    "created_at": "2025-02-01T18:59:18Z",
-    "description": "GNU M4 packaged for Zig",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/cbilz/gnu-m4-zig/tags",
-    "license": "MIT",
-    "topics": [
-      "gnu",
-      "gnu-m4",
-      "m4",
-      "zig",
-      "zig-package"
-    ],
-    "size": 170,
-    "fork": false,
-    "updated_at": "2025-02-26T17:19:23Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "upstream",
-        "url": "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz",
-        "commit": null,
-        "tar_url": null,
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# GNU M4 packaged for Zig\n\nWork in progress.\n\n## Goal\n\nThis project aims to provide a Zig package for GNU M4 that runs on Linux, macOS\nand Windows without system dependencies. The longer-term goal is to extract a\nreusable Zig library for compiling projects that rely on Autotools and Gnulib.\n\n## Status\n\nCompiles and appears to run correctly on my Linux system when built in\n`ReleaseFast` or `ReleaseSmall` mode. However, with safety checks enabled, the\nexecutable hits an illegal instruction immediately on startup, presumably due to\nundefined behavior.\n\n## Next steps\n\n1. Fix the illegal instruction issue.\n2. Port the test suite and integrate it as a build step.\n3. Implement those configuration checks that do not depend on preprocessing,\n   compilation or execution of probing code. Exclude any unused or redundant\n   checks.\n4. Implement a `LazyValue` system to allow other build steps to pass\n   configuration values to `ConfigHeader`.\n5. Implement remaining configuration checks, again excluding unused or redundant\n   ones.\n6. Extract a reusable configuration library for projects using Autotools or\n   Gnulib.\n\n## Requirements\n\n- Uses Zig 0.14.0-dev.3367+1cc388d52.\n\n## Limitations\n\n- Native language support is disabled.\n",
-    "dependents": []
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/8630600?v=4",
@@ -30468,40 +30468,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/5805468?v=4",
-    "name": "s2s",
-    "full_name": "Madeorsk/s2s",
-    "created_at": "2024-12-30T22:51:35Z",
-    "description": "A zig binary serialization format.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/Madeorsk/s2s/tags",
-    "license": "MIT",
-    "topics": [
-      "binary-data",
-      "serialization",
-      "serialization-library",
-      "zig",
-      "zig-package"
-    ],
-    "size": 3808,
-    "fork": true,
-    "updated_at": "2024-12-31T16:58:52Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# struct to stream | stream to struct\n\nA Zig binary serialization format and library.\n\n![Project logo](design/logo.png)\n\n## Features\n\n- Convert (nearly) any Zig runtime datatype to binary data and back.\n- Computes a stream signature that prevents deserialization of invalid data.\n- No support for graph like structures. Everything is considered to be tree data.\n\n**Unsupported types**:\n\n- All `comptime` only types\n- Unbound pointers (c pointers, pointer to many)\n- `volatile` pointers\n- Untagged or `external` unions\n- Opaque types\n- Function pointers\n- Frames\n\n## Madeorsk's fork\n\nThis is a fork from [`ziglibs/s2s`](https://github.com/ziglibs/s2s) which provides more features for real-world usage.\n\n- Usable with zig's dependency manager.\n- Support `[]u8` with sentinels.\n- Support hash maps.\n\n## API\n\nThe library itself provides only some APIs, as most of the serialization process is not configurable.\n\n```zig\n/// Serializes the given `value: T` into the `stream`.\n/// - `stream` is a instance of `std.io.Writer`\n/// - `T` is the type to serialize\n/// - `value` is the instance to serialize.\nfn serialize(stream: anytype, comptime T: type, value: T) StreamError!void;\n\n/// Deserializes a value of type `T` from the `stream`.\n/// - `stream` is a instance of `std.io.Reader`\n/// - `T` is the type to deserialize\nfn deserialize(stream: anytype, comptime T: type) (StreamError || error{UnexpectedData,EndOfStream})!T;\n\n/// Deserializes a value of type `T` from the `stream`.\n/// - `stream` is a instance of `std.io.Reader`\n/// - `T` is the type to deserialize\n/// - `allocator` is an allocator require to allocate slices and pointers.\n/// Result must be freed by using `free()`.\nfn deserializeAlloc(stream: anytype, comptime T: type, allocator: std.mem.Allocator) (StreamError || error{ UnexpectedData, OutOfMemory,EndOfStream })!T;\n\n/// Releases all memory allocated by `deserializeAlloc`.\n/// - `allocator` is the allocator passed to `deserializeAlloc`.\n/// - `T` is the type that was passed to `deserializeAlloc`.\n/// - `value` is the value that was returned by `deserializeAlloc`.\nfn free(allocator: std.mem.Allocator, comptime T: type, value: T) void;\n```\n\n## Usage and Development\n\n### Adding the library\n\nThe current latest version is 0.3.0 for zig 0.13.0.\n\n```sh-session\n[user@host s2s]$ zig fetch --save git+https://github.com/madeorsk/s2s#v0.3.0\n```\n\nIn `build.zig`.\n\n```zig\n// Add s2s dependency.\nconst s2s = b.dependency(\"s2s\", .{\n\t.target = target,\n\t.optimize = optimize,\n});\nexe.root_module.addImport(\"s2s\", s2s.module(\"s2s\"));\n```\n\n## Project Status\n\nMost of the serialization/deserialization is implemented for the _trivial_ case.\n\nPointers/slices with non-standard alignment aren't properly supported yet.\n",
-    "dependents": [
-      "https://github.com/bernardassan/recblock",
-      "https://github.com/ziglibs/antiphony"
-    ]
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/37661824?v=4",
     "name": "zig-flags",
     "full_name": "LvMalware/zig-flags",
@@ -30556,6 +30522,40 @@
     "dependencies": [],
     "readme_content": "# Zdist\n\nString distance library written in zig\n\n## Algorithms\n\n- [x] Hamming distance\n- [ ] Levenshtein distance\n- [ ] Longest common subsequence (LCS) distance\n- [ ] Jaro-Winkler distance\n\n## Usage\n\n```zig\nconst std = @import(\"std\");\nconst zdist =  @import(\"zdist\");\n\npub fn main() !void {\n    const a_str = \"abcdef\";\n    const b_str = \"cdefgh\";\n\n    const distance = zdist.lcs_distance(a_str, b_str);\n\n    std.debug.println(\"Distance between {s} and {s} is: {d}\\n\", .{a_str, b_str, distance});\n}\n```\n\n## Install (Per 0.14 beta)\n\nRun this command in the parent directory of your project\n\n```sh\nzig fetch --save https://github.com/Jafagervik/zdist/tarball/v0.1.0\n```\n\nOr alternatively use master or another version\n\nThen add these lines to build.zig before b.installArtifact(exe)\n\n```zig\nconst zdist = b.dependency(\"zdist\", .{});\n\nexe.root_module.addImport(\"zdist\", zdist.module(\"zdist\"));\n\n```\n",
     "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/5805468?v=4",
+    "name": "s2s",
+    "full_name": "Madeorsk/s2s",
+    "created_at": "2024-12-30T22:51:35Z",
+    "description": "A zig binary serialization format.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/Madeorsk/s2s/tags",
+    "license": "MIT",
+    "topics": [
+      "binary-data",
+      "serialization",
+      "serialization-library",
+      "zig",
+      "zig-package"
+    ],
+    "size": 3808,
+    "fork": true,
+    "updated_at": "2024-12-31T16:58:52Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# struct to stream | stream to struct\n\nA Zig binary serialization format and library.\n\n![Project logo](design/logo.png)\n\n## Features\n\n- Convert (nearly) any Zig runtime datatype to binary data and back.\n- Computes a stream signature that prevents deserialization of invalid data.\n- No support for graph like structures. Everything is considered to be tree data.\n\n**Unsupported types**:\n\n- All `comptime` only types\n- Unbound pointers (c pointers, pointer to many)\n- `volatile` pointers\n- Untagged or `external` unions\n- Opaque types\n- Function pointers\n- Frames\n\n## Madeorsk's fork\n\nThis is a fork from [`ziglibs/s2s`](https://github.com/ziglibs/s2s) which provides more features for real-world usage.\n\n- Usable with zig's dependency manager.\n- Support `[]u8` with sentinels.\n- Support hash maps.\n\n## API\n\nThe library itself provides only some APIs, as most of the serialization process is not configurable.\n\n```zig\n/// Serializes the given `value: T` into the `stream`.\n/// - `stream` is a instance of `std.io.Writer`\n/// - `T` is the type to serialize\n/// - `value` is the instance to serialize.\nfn serialize(stream: anytype, comptime T: type, value: T) StreamError!void;\n\n/// Deserializes a value of type `T` from the `stream`.\n/// - `stream` is a instance of `std.io.Reader`\n/// - `T` is the type to deserialize\nfn deserialize(stream: anytype, comptime T: type) (StreamError || error{UnexpectedData,EndOfStream})!T;\n\n/// Deserializes a value of type `T` from the `stream`.\n/// - `stream` is a instance of `std.io.Reader`\n/// - `T` is the type to deserialize\n/// - `allocator` is an allocator require to allocate slices and pointers.\n/// Result must be freed by using `free()`.\nfn deserializeAlloc(stream: anytype, comptime T: type, allocator: std.mem.Allocator) (StreamError || error{ UnexpectedData, OutOfMemory,EndOfStream })!T;\n\n/// Releases all memory allocated by `deserializeAlloc`.\n/// - `allocator` is the allocator passed to `deserializeAlloc`.\n/// - `T` is the type that was passed to `deserializeAlloc`.\n/// - `value` is the value that was returned by `deserializeAlloc`.\nfn free(allocator: std.mem.Allocator, comptime T: type, value: T) void;\n```\n\n## Usage and Development\n\n### Adding the library\n\nThe current latest version is 0.3.0 for zig 0.13.0.\n\n```sh-session\n[user@host s2s]$ zig fetch --save git+https://github.com/madeorsk/s2s#v0.3.0\n```\n\nIn `build.zig`.\n\n```zig\n// Add s2s dependency.\nconst s2s = b.dependency(\"s2s\", .{\n\t.target = target,\n\t.optimize = optimize,\n});\nexe.root_module.addImport(\"s2s\", s2s.module(\"s2s\"));\n```\n\n## Project Status\n\nMost of the serialization/deserialization is implemented for the _trivial_ case.\n\nPointers/slices with non-standard alignment aren't properly supported yet.\n",
+    "dependents": [
+      "https://github.com/bernardassan/recblock",
+      "https://github.com/ziglibs/antiphony"
+    ]
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/30945458?v=4",
