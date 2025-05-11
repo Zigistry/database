@@ -57,7 +57,7 @@
     ],
     "size": 3046,
     "fork": false,
-    "updated_at": "2025-05-10T07:52:30Z",
+    "updated_at": "2025-05-11T14:30:06Z",
     "has_build_zig": true,
     "has_build_zig_zon": true,
     "zig_minimum_version": "0.14.0",
@@ -7259,6 +7259,33 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/48649707?v=4",
+    "name": "zig-exhaustigen",
+    "full_name": "tensorush/zig-exhaustigen",
+    "created_at": "2024-07-17T18:44:59Z",
+    "description": "Zig port of exhaustigen-rs library for exhaustive testing.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/tensorush/zig-exhaustigen/tags",
+    "license": "MIT",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 12,
+    "fork": false,
+    "updated_at": "2025-05-04T02:07:17Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# zig-exhaustigen\n\n## Zig port of [exhaustigen-rs library](https://github.com/graydon/exhaustigen-rs) for exhaustive testing.\n\n### Usage\n\n- Add `exhaustigen` dependency to `build.zig.zon`.\n\n```sh\nzig fetch --save git+https://github.com/tensorush/zig-exhaustigen\n```\n\n- Use `exhaustigen` dependency in `build.zig`.\n\n```zig\nconst exhaustigen_dep = b.dependency(\"exhaustigen\", .{\n    .target = target,\n    .optimize = optimize,\n});\nconst exhaustigen_mod = exhaustigen_dep.module(\"Gen\");\n<compile>.root_module.addImport(\"Gen\", exhaustigen_mod);\n```\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/4185906?v=4",
     "name": "zig-ulid",
     "full_name": "Vemahk/zig-ulid",
@@ -7388,6 +7415,34 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/41784264?v=4",
+    "name": "zTroy",
+    "full_name": "jinzhongjia/zTroy",
+    "created_at": "2024-06-25T13:34:56Z",
+    "description": "a zig library",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/jinzhongjia/zTroy/tags",
+    "license": "-",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 26,
+    "fork": false,
+    "updated_at": "2025-05-03T19:19:22Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.12.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# zTroy\n\nA versatile libary.\n\nThe goal of this library is to create a general library of basic functional functions\n\n> Now, this library is developing!\n\n## Feature\n\n`.ini` parse\n\n## Install\n\nzig version: `0.12.0` or higher!\n\n1. Add to `build.zig.zon`\n\n```sh\n# It is recommended to replace the following branch with commit id\nzig fetch --save https://github.com/jinzhongjia/zTroy/archive/main.tar.gz\n# Of course, you can also use git+https to fetch this package!\n```\n\n2. Config `build.zig`\n\nAdd this:\n\n```zig\n// To standardize development, maybe you should use `lazyDependency()` instead of `dependency()`\n// more info to see: https://ziglang.org/download/0.12.0/release-notes.html#toc-Lazy-Dependencies\nconst zTroy = b.dependency(\"zTroy\", .{\n    .target = target,\n    .optimize = optimize,\n});\n\n// add module\nexe.root_module.addImport(\"tory\", zTroy.module(\"troy\"));\n```\n\n## Document\n\nWaiting to be added!",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/164784529?v=4",
     "name": "ja3-spoof",
     "full_name": "bstrdlord/ja3-spoof",
@@ -7452,62 +7507,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# clipboard\n[![zig version](https://img.shields.io/badge/0.13.0-orange?style=flat&logo=zig&label=Zig&color=%23eba742)](https://ziglang.org/download/)\n[![reference Zig](https://img.shields.io/badge/zigdoc%20-pages-orange?color=%23eba742)](https://dgv.dev.br/clipboard/)\n[![reference Zig](https://img.shields.io/badge/deps%20-0-orange?color=%23eba742)](https://github.com/dgv/clipboard/blob/main/build.zig.zon)\n[![0 dependencies!](https://0dependencies.dev/0dependencies.svg)](https://0dependencies.dev)\n[![build](https://github.com/dgv/clipboard/actions/workflows/build.yml/badge.svg)](https://github.com/dgv/clipboard/actions/workflows/build.yml)\n[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n\nProvide copying and pasting text (UTF-8) to the clipboard for Zig.\n\n### platform support\n- MacOS\n- Linux, Unix (requires 'xclip' or 'xsel' command to be installed)\n- Windows\n\n### usage\n#### install\n```\nzig fetch --save https://github.com/dgv/clipboard/archive/refs/heads/main.zip\n```\n#### import (build.zig)\n```zig\n...\nexe.root_module.addImport(\"clipboard\", b.dependency(\"clipboard\", .{}).module(\"clipboard\"));\nb.installArtifact(exe);\n```\n\n#### sample\n```zig\nconst clipboard = @import(\"clipboard\");\nconst std = @import(\"std\");\n\npub fn main() !void {\n    try clipboard.write(\"Zig \u26a1\");\n    std.debug.print(\"{s}\\n\", .{clipboard.read() catch \"\"});\n}\n```\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/49950206?v=4",
-    "name": "proconio-zig",
-    "full_name": "Ryoga-exe/proconio-zig",
-    "created_at": "2024-02-26T21:09:56Z",
-    "description": "proconio for the Zig programming language. useful and easy io library for programming contests.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/Ryoga-exe/proconio-zig/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 21,
-    "fork": false,
-    "updated_at": "2025-03-11T03:11:12Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# proconio-zig\n\nproconio for the Zig programming language. useful and easy IO library for programming contests.\n\n## usage\n\n```zig\nconst std = @import(\"std\");\nconst proconio = @import(\"proconio\");\n\npub fn main() !void {\n    const allocator = std.heap.page_allocator;\n    var io = try proconio.init(allocator);\n    defer io.deinit();\n\n    const in = try io.input(struct {\n        n: u8,\n        m: u32,\n        l: i32,\n    });\n    std.debug.print(\"{}, {}, {}\\n\", .{in.n, in.m, in.l});\n}\n```\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/41784264?v=4",
-    "name": "zTroy",
-    "full_name": "jinzhongjia/zTroy",
-    "created_at": "2024-06-25T13:34:56Z",
-    "description": "a zig library",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/jinzhongjia/zTroy/tags",
-    "license": "-",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 26,
-    "fork": false,
-    "updated_at": "2025-05-03T19:19:22Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.12.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# zTroy\n\nA versatile libary.\n\nThe goal of this library is to create a general library of basic functional functions\n\n> Now, this library is developing!\n\n## Feature\n\n`.ini` parse\n\n## Install\n\nzig version: `0.12.0` or higher!\n\n1. Add to `build.zig.zon`\n\n```sh\n# It is recommended to replace the following branch with commit id\nzig fetch --save https://github.com/jinzhongjia/zTroy/archive/main.tar.gz\n# Of course, you can also use git+https to fetch this package!\n```\n\n2. Config `build.zig`\n\nAdd this:\n\n```zig\n// To standardize development, maybe you should use `lazyDependency()` instead of `dependency()`\n// more info to see: https://ziglang.org/download/0.12.0/release-notes.html#toc-Lazy-Dependencies\nconst zTroy = b.dependency(\"zTroy\", .{\n    .target = target,\n    .optimize = optimize,\n});\n\n// add module\nexe.root_module.addImport(\"tory\", zTroy.module(\"troy\"));\n```\n\n## Document\n\nWaiting to be added!",
     "dependents": []
   },
   {
@@ -8875,6 +8874,33 @@
     ]
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/4678790?v=4",
+    "name": "zli",
+    "full_name": "dweiller/zli",
+    "created_at": "2023-08-18T13:45:59Z",
+    "description": "Simple CLI parsing for Zig",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 3,
+    "forks_count": 0,
+    "watchers_count": 3,
+    "tags_url": "https://api.github.com/repos/dweiller/zli/tags",
+    "license": "MIT",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 62,
+    "fork": false,
+    "updated_at": "2025-03-18T05:05:26Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# zli\n\nzli is a CLI argument parsing module for Zig. The aim is to provide CLI parameters in a simple, declarative way and have zli parse them as well as generate `--help` and `--version` flags and usage error messages.\n\n## features\n\n  - [x] short options\n    + boolean short options be be given in clusters e.g. `ls -lhF`\n    + the last short option in a cluster may take an argument as the next command line word, e.g.\n      `tar -xf file.tar`\n  - [x] long options\n    + arguments to long options may be the next command line word or separated from the option by an\n      equals sign\n  - [x] automatic handling of `--help` and `--version` options\n  - [x] typed argument parsing\n    + supports booleans, floats, integers, enums, `[]u8` and `[:s]u8` (for some sentinel `s`)\n  - [x] git-style subcommands\n\n## usage\nA usage example is given by `src/main.zig`. CLI parameters are declared like so:\n```zig\nconst arg_spec = [_]zli.Arg{\n    .{\n        .name = .{ .long = .{ .full = \"file\", .short = 'f' } },\n        .short_help = \"file name\",\n        .type = []const u8,\n    },\n    .{\n        .name = .{ .short = 'a' },\n        .short_help = \"short only option\",\n        .type = u8,\n    },\n    .{\n        .name = .{ .long = .{ .full = \"a-really-long-arg\" } },\n        .short_help = \"How does this look?\",\n        .type = enum { yes, no },\n    },\n    .{\n        .name = .{ .long = .{ .full = \"complicated\", .short = 'k' } },\n        .short_help = \"This option is very complicated and the 'short' help message included here is so long that we want some nice line breaking to occur\",\n    },\n    .{\n        .name = .{ .long = .{ .full = \"flag-1\", .short = '1' } },\n        .short_help = \"just a flag\",\n        .type = bool,\n    },\n    .{\n        .name = .{ .short = '2' },\n        .short_help = \"another flag\",\n        .type = bool,\n    },\n};\n\nconst version = std.SemanticVersion{\n    .major = 0,\n    .minor = 0,\n    .patch = 0,\n};\n\nconst Cli = zli.CliCommand(\"zli-example-app\", .{ .parameters = &arg_spec, .version = version });\n```\nCLI parameters can then be parsed with `try Cli.parse(allocator)`.\nThe auto-generated help message generated by the example is:\n```\nzli-example-app 0.0.0\n\nOptions:\n\n  -f, --file                     file name\n  -a                             short only option\n      --a-really-long-arg        How does this look?\n  -k, --complicated              This option is very complicated and the 'short' help message\n                                   included here is so long that we want some nice line\n                                   breaking to occur\n  -1, --flag-1                   just a flag\n  -2                             another flag\n      --help                     Print this help message\n      --version                  Print version information\n```\nwhich can you can see by running `zig build run -- --help`.\n\nTo use zli in a project you can use the Zig package manager by using `https://github.com/dweiller/zli/archive/[[COMMIT-SHA]].tar.gz` as the dependency URL and then grabbing the 'zli' module, e.g.:\n\nadd zli to your `build.zig.zon`:\n```sh\nzig fetch --save=zli https://github.com/dweiller/zli/archive/[[COMMIT-SHA]].tar.gz\n```\n\n`build.zig`:\n```zig\npub fn build(b: *std.Build) void {\n\n    // -- snip --\n\n    const exe = ...; // your executable\n\n    const zli = b.dependency(\"zli\").module(\"zli\");\n    exe.root_module.addImport(\"zli\", zli);\n\n    // -- snip --\n}\n```\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/2567177?v=4",
     "name": "biscuit-zig",
     "full_name": "malcolmstill/biscuit-zig",
@@ -8900,33 +8926,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# biscuit-zig\n\n> [!WARNING]\n> The implementation is WIP and should not be used in production\n\nZig implementation of https://www.biscuitsec.org/\n\n## Usage\n\n### Authorizing a token\n\n```zig\nvar biscuit = try Biscuit.fromBytes(allocator, token, root_public_key);\ndefer biscuit.deinit();\n\nvar authorizer = try biscuit.authorizer();\ndefer authorizer.deinit();\n\nvar errors = std.ArrayList(AuthorizerError).init(allocator);\ndefer errors.deinit();\n\ntry authorizer.authorize(&errors);\n```\n\n### Attenuating a token\n\n```zig\nvar biscuit = try Biscuit.fromBytes(allocator, token, root_public_key);\ndefer biscuit.deinit();\n\nvar authorizer = try biscuit.authorizer();\ndefer authorizer.deinit();\n\nvar errors = std.ArrayList(AuthorizerError).init(allocator);\ndefer errors.deinit();\n\ntry authorizer.authorize(&errors);\n```\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/4678790?v=4",
-    "name": "zli",
-    "full_name": "dweiller/zli",
-    "created_at": "2023-08-18T13:45:59Z",
-    "description": "Simple CLI parsing for Zig",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 3,
-    "forks_count": 0,
-    "watchers_count": 3,
-    "tags_url": "https://api.github.com/repos/dweiller/zli/tags",
-    "license": "MIT",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 62,
-    "fork": false,
-    "updated_at": "2025-03-18T05:05:26Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# zli\n\nzli is a CLI argument parsing module for Zig. The aim is to provide CLI parameters in a simple, declarative way and have zli parse them as well as generate `--help` and `--version` flags and usage error messages.\n\n## features\n\n  - [x] short options\n    + boolean short options be be given in clusters e.g. `ls -lhF`\n    + the last short option in a cluster may take an argument as the next command line word, e.g.\n      `tar -xf file.tar`\n  - [x] long options\n    + arguments to long options may be the next command line word or separated from the option by an\n      equals sign\n  - [x] automatic handling of `--help` and `--version` options\n  - [x] typed argument parsing\n    + supports booleans, floats, integers, enums, `[]u8` and `[:s]u8` (for some sentinel `s`)\n  - [x] git-style subcommands\n\n## usage\nA usage example is given by `src/main.zig`. CLI parameters are declared like so:\n```zig\nconst arg_spec = [_]zli.Arg{\n    .{\n        .name = .{ .long = .{ .full = \"file\", .short = 'f' } },\n        .short_help = \"file name\",\n        .type = []const u8,\n    },\n    .{\n        .name = .{ .short = 'a' },\n        .short_help = \"short only option\",\n        .type = u8,\n    },\n    .{\n        .name = .{ .long = .{ .full = \"a-really-long-arg\" } },\n        .short_help = \"How does this look?\",\n        .type = enum { yes, no },\n    },\n    .{\n        .name = .{ .long = .{ .full = \"complicated\", .short = 'k' } },\n        .short_help = \"This option is very complicated and the 'short' help message included here is so long that we want some nice line breaking to occur\",\n    },\n    .{\n        .name = .{ .long = .{ .full = \"flag-1\", .short = '1' } },\n        .short_help = \"just a flag\",\n        .type = bool,\n    },\n    .{\n        .name = .{ .short = '2' },\n        .short_help = \"another flag\",\n        .type = bool,\n    },\n};\n\nconst version = std.SemanticVersion{\n    .major = 0,\n    .minor = 0,\n    .patch = 0,\n};\n\nconst Cli = zli.CliCommand(\"zli-example-app\", .{ .parameters = &arg_spec, .version = version });\n```\nCLI parameters can then be parsed with `try Cli.parse(allocator)`.\nThe auto-generated help message generated by the example is:\n```\nzli-example-app 0.0.0\n\nOptions:\n\n  -f, --file                     file name\n  -a                             short only option\n      --a-really-long-arg        How does this look?\n  -k, --complicated              This option is very complicated and the 'short' help message\n                                   included here is so long that we want some nice line\n                                   breaking to occur\n  -1, --flag-1                   just a flag\n  -2                             another flag\n      --help                     Print this help message\n      --version                  Print version information\n```\nwhich can you can see by running `zig build run -- --help`.\n\nTo use zli in a project you can use the Zig package manager by using `https://github.com/dweiller/zli/archive/[[COMMIT-SHA]].tar.gz` as the dependency URL and then grabbing the 'zli' module, e.g.:\n\nadd zli to your `build.zig.zon`:\n```sh\nzig fetch --save=zli https://github.com/dweiller/zli/archive/[[COMMIT-SHA]].tar.gz\n```\n\n`build.zig`:\n```zig\npub fn build(b: *std.Build) void {\n\n    // -- snip --\n\n    const exe = ...; // your executable\n\n    const zli = b.dependency(\"zli\").module(\"zli\");\n    exe.root_module.addImport(\"zli\", zli);\n\n    // -- snip --\n}\n```\n",
     "dependents": []
   },
   {
@@ -9297,6 +9296,42 @@
     ]
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/22280250?v=4",
+    "name": "export_ppm",
+    "full_name": "Durobot/export_ppm",
+    "created_at": "2023-12-13T14:11:24Z",
+    "description": "A couple of functions to export data as a PPM/PGM image file from your Zig code",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/Durobot/export_ppm/tags",
+    "license": "MIT",
+    "topics": [
+      "pgm",
+      "pgm-format",
+      "pgm-image",
+      "pgm-writer",
+      "ppm",
+      "ppm-format",
+      "ppm-image",
+      "zig",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 19,
+    "fork": false,
+    "updated_at": "2025-01-07T23:48:10Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.12.0-dev.3097+5c0766b6c",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# export_ppm\n\nJust a couple of functions in Zig that export image data, RGB/RGBA/grayscale/grayscale+alpha (but alpha channel is ignored), 8 or 16 bits per channel, as PPM/PGM files. Not enough code to be called a library.\n\nPPM and PGM are very simple graphic file formats, but they are widespread enough for popular editors, like [Gimp](https://www.gimp.org/), [Krita](https://krita.org) or [Adobe Photoshop](https://www.adobe.com/creativecloud/file-types/image/raster/ppm-file.html) to be able to open them. Meaning you can quickly dump whatever you want from your Zig programs as a PPM/PGM file and open it in an editor.\n\nSee https://en.wikipedia.org/wiki/Netpbm?useskin=vector, https://netpbm.sourceforge.net/doc/ppm.html.\n\nCheck out the tests in  `export_ppm.zig` for examples of use.\n\n**test_data_src** folder contains PNG images I used as test data, ignore them or use them however you want. I release them in public domain.\n\n**export_ppm.zig** is licensed under [the MIT License](https://en.wikipedia.org/w/index.php?title=MIT_License&useskin=vector).\n\nJust drop `export_ppm.zig` into your project and add `const eppm = @import(\"export_ppm.zig\");`, or use the Zig package manager:\n\n1. In your project's `build.zig.zon`, in `.dependencies`, add\n\n   ```zig\n   .export_ppm =\n   .{\n       .url = \"https://github.com/Durobot/export_ppm/archive/<GIT COMMIT HASH, 40 HEX DIGITS>.tar.gz\",\n       .hash = \"<ZIG PACKAGE HASH, 68 HEX DIGITS>\" // Use arbitrary hash, get correct hash from the error \n   }\n   ```\n\n2. In your project's `build.zig`, in `pub fn build`, before `b.installArtifact(exe);`, add\n\n   ```zig\n   const eppm = b.dependency(\"export_ppm\",\n   .{\n       .target = target,\n       .optimize = optimize,\n   });\n   exe.root_module.addImport(\"export_ppm\", eppm.module(\"export_ppm\"));\n   ```\n\n3. Add `const eppm = @import(\"export_ppm\");`in your source file(s).\n\n4. Build your project with `zig build`, as you normally do.",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/6756180?v=4",
     "name": "libzmq",
     "full_name": "kassane/libzmq",
@@ -9392,42 +9427,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# zig-iso-3166-countrys\n\nISO 3166 Country Codes\n\nhttps://www.iso.org/iso-3166-country-codes.html\n\n## License\n\n0BSD\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/22280250?v=4",
-    "name": "export_ppm",
-    "full_name": "Durobot/export_ppm",
-    "created_at": "2023-12-13T14:11:24Z",
-    "description": "A couple of functions to export data as a PPM/PGM image file from your Zig code",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 2,
-    "forks_count": 0,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/Durobot/export_ppm/tags",
-    "license": "MIT",
-    "topics": [
-      "pgm",
-      "pgm-format",
-      "pgm-image",
-      "pgm-writer",
-      "ppm",
-      "ppm-format",
-      "ppm-image",
-      "zig",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 19,
-    "fork": false,
-    "updated_at": "2025-01-07T23:48:10Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.12.0-dev.3097+5c0766b6c",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# export_ppm\n\nJust a couple of functions in Zig that export image data, RGB/RGBA/grayscale/grayscale+alpha (but alpha channel is ignored), 8 or 16 bits per channel, as PPM/PGM files. Not enough code to be called a library.\n\nPPM and PGM are very simple graphic file formats, but they are widespread enough for popular editors, like [Gimp](https://www.gimp.org/), [Krita](https://krita.org) or [Adobe Photoshop](https://www.adobe.com/creativecloud/file-types/image/raster/ppm-file.html) to be able to open them. Meaning you can quickly dump whatever you want from your Zig programs as a PPM/PGM file and open it in an editor.\n\nSee https://en.wikipedia.org/wiki/Netpbm?useskin=vector, https://netpbm.sourceforge.net/doc/ppm.html.\n\nCheck out the tests in  `export_ppm.zig` for examples of use.\n\n**test_data_src** folder contains PNG images I used as test data, ignore them or use them however you want. I release them in public domain.\n\n**export_ppm.zig** is licensed under [the MIT License](https://en.wikipedia.org/w/index.php?title=MIT_License&useskin=vector).\n\nJust drop `export_ppm.zig` into your project and add `const eppm = @import(\"export_ppm.zig\");`, or use the Zig package manager:\n\n1. In your project's `build.zig.zon`, in `.dependencies`, add\n\n   ```zig\n   .export_ppm =\n   .{\n       .url = \"https://github.com/Durobot/export_ppm/archive/<GIT COMMIT HASH, 40 HEX DIGITS>.tar.gz\",\n       .hash = \"<ZIG PACKAGE HASH, 68 HEX DIGITS>\" // Use arbitrary hash, get correct hash from the error \n   }\n   ```\n\n2. In your project's `build.zig`, in `pub fn build`, before `b.installArtifact(exe);`, add\n\n   ```zig\n   const eppm = b.dependency(\"export_ppm\",\n   .{\n       .target = target,\n       .optimize = optimize,\n   });\n   exe.root_module.addImport(\"export_ppm\", eppm.module(\"export_ppm\"));\n   ```\n\n3. Add `const eppm = @import(\"export_ppm\");`in your source file(s).\n\n4. Build your project with `zig build`, as you normally do.",
     "dependents": []
   },
   {
@@ -10048,6 +10047,35 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/435029?v=4",
+    "name": "zig-js",
+    "full_name": "footearth/zig-js",
+    "created_at": "2023-08-28T19:09:12Z",
+    "description": "Access the JS host environment from Zig compiled to WebAssembly.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/footearth/zig-js/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-library",
+      "zig-package"
+    ],
+    "size": 223,
+    "fork": true,
+    "updated_at": "2023-08-28T20:10:05Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": false,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# zig-js\n\nzig-js is a Zig library (and accompanying JS glue) that enables Zig\nrunning in a WebAssembly environment to interact with a JavaScript-based\nhost.\n\nNote this makes it particularly easy for Zig to call into JS. This\ndoesn't help for JS calling into Zig. This is more akin to Go's\n`syscall/js` package and not like Rust's `wasm-bindgen`.\n\nNote: the main branch of this repository attempts to remain compatible\nwith the latest nightly release of Zig, and therefore may not be compatible\nwith official Zig releases.\n\n## Example\n\n```zig\n// Get and set objects and properties\nconst document = try js.global.get(js.Object, \"document\");\ndefer document.deinit();\n\nconst title = try document.getAlloc(js.String, alloc, \"title\");\ndefer alloc.free(title);\nstd.log.info(\"the title is: {s}\", .{str});\n\ntry document.set(\"title\", js.string(\"A new title.\"));\n\n// Call functions\njs.global.call(void, \"alert\", .{js.string(\"Hello from Zig!\")});\n```\n\nThe code is a bit verbose with the error handling but since JS is a\ndynamic language there are potential invalid types at every step of the\nway. Additionally, `deinit` calls are necessary to dereference garbage-collected\nvalues on the host side.\n\nUnder the covers, this is hiding a lot of complexity since the JS/WASM\nABI only allows passing numeric types and sharing memory.\n\n## Usage\n\nTo use this library, you must integrate a component in both the Zig\nand JS environment. For Zig, vendor this repository and add the package.\nFor example in your build.zig:\n\n```zig\nconst js = @import(\"zig-js\");\n\npub fn build(b: *std.build.Builder) !void {\n  // ... other stuff\n\n  exe.addPackage(js.pkg);\n}\n```\n\nFrom JS, install and import the package in the `js/` directory (in the future\nthis will be published to npm). A TypeScript example is shown below but\nJS could just as easily be used:\n\n```typescript\nimport { ZigJS } from 'zig-js-glue';\n\n// Initialize the stateful zigjs class. You should use one per wasm instance.\nconst zigjs = new ZigJS();\n\nfetch('my-wasm-file.wasm').then(response =>\n  response.arrayBuffer()\n).then(bytes =>\n  // When creating your Wasm instance, pass along the zigjs import\n  // object. You can merge this import object with your own since zigjs\n  // uses its own namespace.\n  WebAssembly.instantiate(bytes, zigjs.importObject())\n).then(results => {\n  const { memory, my_func } = results.instance.exports;\n\n  // Set the memory since zigjs interfaces with memory.\n  zigjs.memory = memory;\n\n  // Run any of your exported functions!\n  my_func();\n});\n```\n\n**WARNING:** The zig-js version used in your Zig code and JS code must match.\nI'm not promising any protocol stability right now so pin your versions\nappropriately. To determine what version is compatible, look up the tagged\nversion in this repository and the corresponding commits.\n\n## Internals\n\nThe fundamental idea in this is based on the Go\n[syscall/js](https://pkg.go.dev/syscall/js) package. The implementation\nis relatively diverged since Zig doesn't have a runtime or garbage collection,\nbut the fundamental idea of sharing \"refs\" and the format of those refs is\nbased on Go's implementation.\n\nThe main idea is that Zig communicates to JS what values it would like\nto request, such as the \"global\" object. JS generates a \"ref\" for this\nobject (a unique 64-bit numeric value) and sends that to Zig. This ref now\nuniquely identifies the value for future calls such as \"give me the\n'document' property on this ref.\"\n\nThe ref itself is a 64-bit value. For numeric types, the ref _is_ the\nvalue. We take advantage of the fact that all numbers in JavaScript are\nIEEE 754 encoded 64-bit floats and use NaN as a way to send non-numeric values\nto Zig (NaN-boxing).\n\nNaN in IEEE 754 encoding is `0111_1111_1111_<anything but all 0s>` in binary.\nWe use a common NaN value of `0111_1111_1111_1000_0000...` so that we can use\nthe bottom (least-significant) 49 bits to store type information and\na 32-bit ID.\n\nThe 32-bit ID is just an index into an array on the JS side. A simple scheme\nis used to reuse IDs after they're dereferenced.\n\n## Performance\n\nUsage of this package causes the WASM/JS boundary to be crossed a LOT\nand this is generally not very fast and not an optimal way to use wasm.\nThe optimal way to use WASM is more like a GPU: have the host (or wasm\nmodule) preload a bunch of work into a byte buffer and send it over\nin one single call. However, this approach is pretty painful.\nThis packge makes interfacing with JS very, very easy. Consider the\ntradeoffs and choose what is best for you.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
     "name": "zbox",
     "full_name": "bcrist/zbox",
@@ -10148,35 +10176,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# Priority Queue in ZIG\n\n## Foreword\n\nHow fast is PieQ? On the Apple M1 CPU, inserting in random order and removing 100,000,000 unsigned 32-bit integer pairs in ReleaseFast mode takes `1.5` seconds for insert and about `20` seconds for remove. The cumulative time stayed within `22` seconds for many attempts, which pushes PieQ a bit into HashMap territory. And PieQ does not warp under heavy load because there are no recursive calls. Add+remove time compared to ZIG's standard PriorityQueue library shows that PieQ is twice as fast.\n\nThe API is designed to be as literal and self-explanatory as possible. PieQ uses an implicit data structure, so there is no memory allocation routine. The possible error interface is reduced to a bare minimum, like warning you if the queue is empty and you still want to pull something from it; that must be an error. Every public method has a comprehensive doc string where needed, and the full API is used in the test section. Interesting uncommon features like changing the root or locking the root are also implemented.\n\nPieQ has two modes of operation, min-oriented and max-oriented, which are turned on by passing `.min` or `.max` parameters during initiation. This is along with the general idea of a priority queue. However, keys can also be complex types. PieQ gives you the ability to define what is min and what is max, and is designed to handle any key, anything you know how to compare; if not, invent how. For example, PieQ can be easily used as a data filter, sorting multi-valued elements together, such as enum's literals. Or you can filter items with certain keys you are interested in and put them strictly in front of the queue to pop them earlier than the rest. Maybe you want to queue vectors as keys, or functions that call other functions, you can do that.\n\nThere could be many dozens of possible use cases, I can't mention them all, but the testing section is a good place to start.\nApplications that come to mind are heavy load balancers, stock market or large financial tasks - schedulers, medical solutions; then graphs, Dijkstra, of course, statistics, and anywhere you need scheduled event processing.\n\n## Benchmark\nIf you are interested in how well PieQ runs on your system, try `bench` step. Run this:\n```zig\nzig build bench -- 12345678\n```\nand you will get stats for your machine\n\n```\nPieQ:        12_345_678 items\n|action  |push    |pop     |sum     |\n|time:sec|0.1563  |2.0006  |2.1569  |\n|ns:item |12.6578 |162.0510|174.7088|\n```\n\nRunning `zig build bench` without arguments tests on the default 1Mil. With modern CPUs, it makes sense to test harder, at least above 10Mils. Or if you know in advance the amount of data you intend to run, it is great to do such a test; or against other priority queue implementations to find the best option for your code.\n\n\n## Usage\n\n1. Add `PieQ` as a dependency in your `build.zig.zon`.\n\n    <!-- <details> -->\n\n    <!-- <summary><code>build.zig.zon</code> example </summary> -->\n\n    ```zig\n    .{\n        .name = \"name_of_your_package\",\n        .version = \"version_of_your_package\",\n        .dependencies = .{\n            .PieQ = .{\n                .url = \"https://github.com/bogwi/pieQ/archive/master.tar.gz\",\n                .hash = \"1220dbe03c05ad89578e9522d3f2ff1fa611495f770773c711979ac00e48fd2825e9\",\n            },\n        },\n    }\n    ```\n    If the hash has changed, you will get a gentle  `error: hash mismatch` where in the field `found:` ZIG brings you the correct value.\n\n    <!-- </details> -->\n\n2. Add `PieQ` as a module in your `build.zig`.\n\n    <!-- <details> -->\n\n    <!-- <summary><code>build.zig</code> example </summary> -->\n\n    ```zig\n    const pieQ = b.dependency(\"PieQ\", .{});\n    exe.addModule(\"PieQ\", pieQ.module(\"PieQ\"));\n    ```\n    Using the module in test scopes, requires one more declaration with the same constant (if you need the module in tests, of course).\n    ```zig\n    unit_tests.addModule(\"PieQ\", pieQ.module(\"PieQ\"));\n\n    ``` \n\n    <!-- </details> -->\n\n3. Import the module.\n    ```zig\n        const PieQ = @import(\"PieQ\").PieQ;\n    ```\n4. This is your comparison function if you want numbers.\n    ```zig\n        fn compareU32(isMin: bool, a: u32, b: u32) bool {\n            while (isMin)\n                return a <= b;\n            return a >= b;\n        }\n    ```\n5. And this this how you initiate the Queue.\n    ```zig\n        var minQueue = PieQ(u32, u32, .min, compareU32).init(your_allocator);\n        defer minQueue.deinit();\n    ```\n\nTo find out more, see the testing section, file `pieq.zig`. Tests and code are placed together so you can explore the implementation better, hovering over the functions and all. Thanks.\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/435029?v=4",
-    "name": "zig-js",
-    "full_name": "footearth/zig-js",
-    "created_at": "2023-08-28T19:09:12Z",
-    "description": "Access the JS host environment from Zig compiled to WebAssembly.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/footearth/zig-js/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-library",
-      "zig-package"
-    ],
-    "size": 223,
-    "fork": true,
-    "updated_at": "2023-08-28T20:10:05Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": false,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# zig-js\n\nzig-js is a Zig library (and accompanying JS glue) that enables Zig\nrunning in a WebAssembly environment to interact with a JavaScript-based\nhost.\n\nNote this makes it particularly easy for Zig to call into JS. This\ndoesn't help for JS calling into Zig. This is more akin to Go's\n`syscall/js` package and not like Rust's `wasm-bindgen`.\n\nNote: the main branch of this repository attempts to remain compatible\nwith the latest nightly release of Zig, and therefore may not be compatible\nwith official Zig releases.\n\n## Example\n\n```zig\n// Get and set objects and properties\nconst document = try js.global.get(js.Object, \"document\");\ndefer document.deinit();\n\nconst title = try document.getAlloc(js.String, alloc, \"title\");\ndefer alloc.free(title);\nstd.log.info(\"the title is: {s}\", .{str});\n\ntry document.set(\"title\", js.string(\"A new title.\"));\n\n// Call functions\njs.global.call(void, \"alert\", .{js.string(\"Hello from Zig!\")});\n```\n\nThe code is a bit verbose with the error handling but since JS is a\ndynamic language there are potential invalid types at every step of the\nway. Additionally, `deinit` calls are necessary to dereference garbage-collected\nvalues on the host side.\n\nUnder the covers, this is hiding a lot of complexity since the JS/WASM\nABI only allows passing numeric types and sharing memory.\n\n## Usage\n\nTo use this library, you must integrate a component in both the Zig\nand JS environment. For Zig, vendor this repository and add the package.\nFor example in your build.zig:\n\n```zig\nconst js = @import(\"zig-js\");\n\npub fn build(b: *std.build.Builder) !void {\n  // ... other stuff\n\n  exe.addPackage(js.pkg);\n}\n```\n\nFrom JS, install and import the package in the `js/` directory (in the future\nthis will be published to npm). A TypeScript example is shown below but\nJS could just as easily be used:\n\n```typescript\nimport { ZigJS } from 'zig-js-glue';\n\n// Initialize the stateful zigjs class. You should use one per wasm instance.\nconst zigjs = new ZigJS();\n\nfetch('my-wasm-file.wasm').then(response =>\n  response.arrayBuffer()\n).then(bytes =>\n  // When creating your Wasm instance, pass along the zigjs import\n  // object. You can merge this import object with your own since zigjs\n  // uses its own namespace.\n  WebAssembly.instantiate(bytes, zigjs.importObject())\n).then(results => {\n  const { memory, my_func } = results.instance.exports;\n\n  // Set the memory since zigjs interfaces with memory.\n  zigjs.memory = memory;\n\n  // Run any of your exported functions!\n  my_func();\n});\n```\n\n**WARNING:** The zig-js version used in your Zig code and JS code must match.\nI'm not promising any protocol stability right now so pin your versions\nappropriately. To determine what version is compatible, look up the tagged\nversion in this repository and the corresponding commits.\n\n## Internals\n\nThe fundamental idea in this is based on the Go\n[syscall/js](https://pkg.go.dev/syscall/js) package. The implementation\nis relatively diverged since Zig doesn't have a runtime or garbage collection,\nbut the fundamental idea of sharing \"refs\" and the format of those refs is\nbased on Go's implementation.\n\nThe main idea is that Zig communicates to JS what values it would like\nto request, such as the \"global\" object. JS generates a \"ref\" for this\nobject (a unique 64-bit numeric value) and sends that to Zig. This ref now\nuniquely identifies the value for future calls such as \"give me the\n'document' property on this ref.\"\n\nThe ref itself is a 64-bit value. For numeric types, the ref _is_ the\nvalue. We take advantage of the fact that all numbers in JavaScript are\nIEEE 754 encoded 64-bit floats and use NaN as a way to send non-numeric values\nto Zig (NaN-boxing).\n\nNaN in IEEE 754 encoding is `0111_1111_1111_<anything but all 0s>` in binary.\nWe use a common NaN value of `0111_1111_1111_1000_0000...` so that we can use\nthe bottom (least-significant) 49 bits to store type information and\na 32-bit ID.\n\nThe 32-bit ID is just an index into an array on the JS side. A simple scheme\nis used to reuse IDs after they're dereferenced.\n\n## Performance\n\nUsage of this package causes the WASM/JS boundary to be crossed a LOT\nand this is generally not very fast and not an optimal way to use wasm.\nThe optimal way to use WASM is more like a GPU: have the host (or wasm\nmodule) preload a bunch of work into a byte buffer and send it over\nin one single call. However, this approach is pretty painful.\nThis packge makes interfacing with JS very, very easy. Consider the\ntradeoffs and choose what is best for you.\n",
     "dependents": []
   },
   {
@@ -10774,6 +10773,49 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
+    "name": "Zig-ROM-Compress",
+    "full_name": "bcrist/Zig-ROM-Compress",
+    "created_at": "2023-10-28T15:56:51Z",
+    "description": "Simple compression scheme for sparse ROM data",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/bcrist/Zig-ROM-Compress/tags",
+    "license": "MIT",
+    "topics": [
+      "compression",
+      "compression-algorithm",
+      "embedded",
+      "encoding",
+      "rom",
+      "zig",
+      "zig-library",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 10,
+    "fork": false,
+    "updated_at": "2024-06-22T15:18:22Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.12.0-dev.2063+804cee3b9",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "Zig-BitHelper",
+        "url": "https://github.com/bcrist/Zig-BitHelper",
+        "commit": "98cfaaae0abfe7a8bc396846dcca148a75e0b6ed.tar.gz",
+        "tar_url": "https://github.com/bcrist/Zig-BitHelper/archive/98cfaaae0abfe7a8bc396846dcca148a75e0b6ed.tar.gz.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# Zig-Rom-Compress\n\nA simple algorithm for in-storage compression of potentially sparse data where the data will be fully uncompressed before usage.\n\nThe motivating use case is when using a microcontroller to bootstrap an SRAM at reset, which will thereafter function as a lookup table/ROM.\nOften times such lookup tables may contain several megabytes of highly patterned data, but you'd like to initialize it with just a small/cheap microcontroller, and typically these will have much less than 1MB of flash memory.\n\nNote for most data, an LZ-based compressor like DEFLATE will achieve a better compression ratio, but doesn't support sparse data without adding additional metadata.\nThe decompressor for this scheme is also very simple and requires only a few bytes of working RAM.\n\n## Algorithm\n\nThe key insight that we make use of is that many data words are likely to be repeated many times,\nand there may be many \"don't care\" addresses that we need not initialize at all.\nFurthermore, the data need not be reconstructed in linear order.\n\nThe compressor begins by partitioning the data into lists of addresses which point to the same data value.\nThen it sorts the addresses within those lists, and sorts the partitions based on the data value.\nIt can then use delta compression and RLE on the transformed data.\n\nThe algorithm works well in most real-world cases where there are many addresses with the same data value,\nand even better if those addresses appear in contiguous blocks.\nIt is possible, however, (particularly with encrypted or random-like data) that the compressed version may actually be larger.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/6756180?v=4",
     "name": "benchmark",
     "full_name": "kassane/benchmark",
@@ -10935,49 +10977,6 @@
     "dependents": [
       "https://github.com/allyourcodebase/boost-libraries-zig"
     ]
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/2828351?v=4",
-    "name": "Zig-ROM-Compress",
-    "full_name": "bcrist/Zig-ROM-Compress",
-    "created_at": "2023-10-28T15:56:51Z",
-    "description": "Simple compression scheme for sparse ROM data",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/bcrist/Zig-ROM-Compress/tags",
-    "license": "MIT",
-    "topics": [
-      "compression",
-      "compression-algorithm",
-      "embedded",
-      "encoding",
-      "rom",
-      "zig",
-      "zig-library",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 10,
-    "fork": false,
-    "updated_at": "2024-06-22T15:18:22Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.12.0-dev.2063+804cee3b9",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "Zig-BitHelper",
-        "url": "https://github.com/bcrist/Zig-BitHelper",
-        "commit": "98cfaaae0abfe7a8bc396846dcca148a75e0b6ed.tar.gz",
-        "tar_url": "https://github.com/bcrist/Zig-BitHelper/archive/98cfaaae0abfe7a8bc396846dcca148a75e0b6ed.tar.gz.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# Zig-Rom-Compress\n\nA simple algorithm for in-storage compression of potentially sparse data where the data will be fully uncompressed before usage.\n\nThe motivating use case is when using a microcontroller to bootstrap an SRAM at reset, which will thereafter function as a lookup table/ROM.\nOften times such lookup tables may contain several megabytes of highly patterned data, but you'd like to initialize it with just a small/cheap microcontroller, and typically these will have much less than 1MB of flash memory.\n\nNote for most data, an LZ-based compressor like DEFLATE will achieve a better compression ratio, but doesn't support sparse data without adding additional metadata.\nThe decompressor for this scheme is also very simple and requires only a few bytes of working RAM.\n\n## Algorithm\n\nThe key insight that we make use of is that many data words are likely to be repeated many times,\nand there may be many \"don't care\" addresses that we need not initialize at all.\nFurthermore, the data need not be reconstructed in linear order.\n\nThe compressor begins by partitioning the data into lists of addresses which point to the same data value.\nThen it sorts the addresses within those lists, and sorts the partitions based on the data value.\nIt can then use delta compression and RLE on the transformed data.\n\nThe algorithm works well in most real-world cases where there are many addresses with the same data value,\nand even better if those addresses appear in contiguous blocks.\nIt is possible, however, (particularly with encrypted or random-like data) that the compressed version may actually be larger.\n",
-    "dependents": []
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/6756180?v=4",
@@ -14237,36 +14236,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/6881800?v=4",
-    "name": "zig-recover",
-    "full_name": "dimdin/zig-recover",
-    "created_at": "2024-02-05T15:36:56Z",
-    "description": "zig panic recover",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 12,
-    "forks_count": 0,
-    "watchers_count": 12,
-    "tags_url": "https://api.github.com/repos/dimdin/zig-recover/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-library",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 18,
-    "fork": false,
-    "updated_at": "2025-03-14T08:40:13Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "Zig Panic Recover\n=================\n\nRecover calls a function and regains control of the calling thread when the\nfunction panics or behaves undefined.\nRecover is licensed under the terms of the [MIT License](LICENSE).\n\nHow to use\n----------\n\nRecover `call`, calls `function` with `args`, if the function does not panic,\nwill return the called function's return value. If the function panics, will\nreturn `error.Panic`.\n```\nconst recover = @import(\"recover\");\n\ntry recover.call(function, args);\n```\n\nPrerequisites\n-------------\n\n1. Enabled runtime safety checks, such as unreachable, index out of bounds,\noverflow, division by zero, incorrect pointer alignment, etc.\n\n2. In the root source file define panic as recover.panic or override the default panic handler and call recover\n`panicked`.\n```\npub const panic = recover.panic;\n```\n3. Excluding Windows, linking to C standard library is required.\n\nExample\n-------\n\nReturns error.Panic because function division panics with runtime error\n\"division by zero\".\n```\nfn division(num: u32, den: u32) u32 {\n    return num / den;\n}\n\ntry recover.call(division, .{1, 0});\n```\n\nTesting\n-------\n\nFor recover to work for testing, you need a custom test runner with a panic handler:\n```\npub const panic = @import(\"recover\").panic;\n```\n\nTo test that `foo(0)` panics:\n```\ntest \"foo(0) panics\" {\n     const err = recover.call(foo, .{0});\n     std.testing.expectError(error.Panic, err).\n}    \n```\n\nProper Usage\n------------\n\n- Recover is useful for testing panic and undefined behavior runtime\nsafety checks.\n- It is **not** recommended to use recover as a general exception mechanism.\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/24609692?v=4",
     "name": "webgpu-wasm-zig",
     "full_name": "seyhajin/webgpu-wasm-zig",
@@ -14297,6 +14266,36 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "\n<div align=\"center\">\n<h1>webgpu-wasm-zig</h1>\n\n<p>A minimal WebGPU example written in Zig, compiled to WebAssembly (wasm).</p>\n\n<img src=\"screen.png\"/>\n  \n![\ud83d\udc41\ufe0f](https://views.whatilearened.today/views/github/seyhajin/webgpu-wasm-zig.svg)\n\n</div>\n\n## Getting started\n\n### Clone\n\n```bash\ngit clone https://github.com/seyhajin/webgpu-wasm-zig.git\n```\n\nAlternatively, download [zip](https://github.com/seyhajin/webgpu-wasm-zig/archive/refs/heads/master.zip) from Github repository and extract wherever you want.\n\n### Build\n\nBuild the example with `zig build` command, which will generate 3 new files (`.html`, `.js`, `.wasm`).\n\n#### Command\n```\nzig build --sysroot [path/to/emsdk]/upstream/emscripten/cache/sysroot\n```\n\nExample with Emscripten installed with Homebrew (`brew install emscripten`, v3.1.51) on macOS :\n```\nzig build --sysroot /usr/local/Cellar/emscripten/3.1.51/libexec/cache/sysroot\n```\n\n> [!NOTE] \n> `build.zig` is preconfigured to build to `wasm32-emscripten` target only. \n\n> [!CAUTION] \n> Must provide Emscripten sysroot via `--sysroot` argument. \n\n### Run\n\nLaunch a web server to run example before open it to WebGPU compatible web browser (Chrome Canary, Brave Nightly, etc.).\n\ne.g. : launch `python3 -m http.server` and open web browser to `localhost:8000`.\n\n> [!TIP]\n> Use [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension in Visual Studio Code to open the HTML file. This extension will update automatically page in real-time when you rebuild the example.\n\n## Prerequisites\n\n* [zig](https://www.zig.org/download), works with Zig 0.12+dev version\n* [emscripten](https://emscripten.org), version 3.1+\n* git (optional)\n* python3 (optional)\n\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/6881800?v=4",
+    "name": "zig-recover",
+    "full_name": "dimdin/zig-recover",
+    "created_at": "2024-02-05T15:36:56Z",
+    "description": "zig panic recover",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 12,
+    "forks_count": 0,
+    "watchers_count": 12,
+    "tags_url": "https://api.github.com/repos/dimdin/zig-recover/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-library",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 18,
+    "fork": false,
+    "updated_at": "2025-03-14T08:40:13Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "Zig Panic Recover\n=================\n\nRecover calls a function and regains control of the calling thread when the\nfunction panics or behaves undefined.\nRecover is licensed under the terms of the [MIT License](LICENSE).\n\nHow to use\n----------\n\nRecover `call`, calls `function` with `args`, if the function does not panic,\nwill return the called function's return value. If the function panics, will\nreturn `error.Panic`.\n```\nconst recover = @import(\"recover\");\n\ntry recover.call(function, args);\n```\n\nPrerequisites\n-------------\n\n1. Enabled runtime safety checks, such as unreachable, index out of bounds,\noverflow, division by zero, incorrect pointer alignment, etc.\n\n2. In the root source file define panic as recover.panic or override the default panic handler and call recover\n`panicked`.\n```\npub const panic = recover.panic;\n```\n3. Excluding Windows, linking to C standard library is required.\n\nExample\n-------\n\nReturns error.Panic because function division panics with runtime error\n\"division by zero\".\n```\nfn division(num: u32, den: u32) u32 {\n    return num / den;\n}\n\ntry recover.call(division, .{1, 0});\n```\n\nTesting\n-------\n\nFor recover to work for testing, you need a custom test runner with a panic handler:\n```\npub const panic = @import(\"recover\").panic;\n```\n\nTo test that `foo(0)` panics:\n```\ntest \"foo(0) panics\" {\n     const err = recover.call(foo, .{0});\n     std.testing.expectError(error.Panic, err).\n}    \n```\n\nProper Usage\n------------\n\n- Recover is useful for testing panic and undefined behavior runtime\nsafety checks.\n- It is **not** recommended to use recover as a general exception mechanism.\n",
     "dependents": []
   },
   {
@@ -15231,7 +15230,7 @@
     "zig_minimum_version": "unknown",
     "repo_from": "github",
     "dependencies": [],
-    "readme_content": "# wolfSSL Embedded SSL/TLS Library\n\nThe [wolfSSL embedded SSL library](https://www.wolfssl.com/products/wolfssl/)\n(formerly CyaSSL) is a lightweight SSL/TLS library written in ANSI C and\ntargeted for embedded, RTOS, and resource-constrained environments - primarily\nbecause of its small size, speed, and feature set.  It is commonly used in\nstandard operating environments as well because of its royalty-free pricing\nand excellent cross platform support. wolfSSL supports industry standards up\nto the current [TLS 1.3](https://www.wolfssl.com/tls13) and DTLS 1.3, is up to\n20 times smaller than OpenSSL, and offers progressive ciphers such as ChaCha20,\nCurve25519, Blake2b and Post-Quantum TLS 1.3 groups. User benchmarking and\nfeedback reports dramatically better performance when using wolfSSL over\nOpenSSL.\n\nwolfSSL is powered by the wolfCrypt cryptography library. Two versions of\nwolfCrypt have been FIPS 140-2 validated (Certificate #2425 and\ncertificate #3389). FIPS 140-3 validation is in progress. For additional\ninformation, visit the [wolfCrypt FIPS FAQ](https://www.wolfssl.com/license/fips/)\nor contact fips@wolfssl.com.\n\n## Why Choose wolfSSL?\n\nThere are many reasons to choose wolfSSL as your embedded, desktop, mobile, or\nenterprise SSL/TLS solution. Some of the top reasons include size (typical\nfootprint sizes range from 20-100 kB), support for the newest standards\n(SSL 3.0, TLS 1.0, TLS 1.1, TLS 1.2, TLS 1.3, DTLS 1.0, DTLS 1.2, and DTLS 1.3),\ncurrent and progressive cipher support (including stream ciphers), multi-platform,\nroyalty free, and an OpenSSL compatibility API to ease porting into existing\napplications which have previously used the OpenSSL package. For a complete\nfeature list, see [Chapter 4](https://www.wolfssl.com/docs/wolfssl-manual/ch4/)\nof the wolfSSL manual.\n\n## Notes, Please Read\n\n### Note 1\nwolfSSL as of 3.6.6 no longer enables SSLv3 by default.  wolfSSL also no longer\nsupports static key cipher suites with PSK, RSA, or ECDH. This means if you\nplan to use TLS cipher suites you must enable DH (DH is on by default), or\nenable ECC (ECC is on by default), or you must enable static key cipher suites\nwith one or more of the following defines:\n\n```\nWOLFSSL_STATIC_DH\nWOLFSSL_STATIC_RSA\nWOLFSSL_STATIC_PSK\n```\nThough static key cipher suites are deprecated and will be removed from future\nversions of TLS.  They also lower your security by removing PFS.\n\nWhen compiling `ssl.c`, wolfSSL will now issue a compiler error if no cipher\nsuites are available. You can remove this error by defining\n`WOLFSSL_ALLOW_NO_SUITES` in the event that you desire that, i.e., you're\nnot using TLS cipher suites.\n\n### Note 2\nwolfSSL takes a different approach to certificate verification than OpenSSL\ndoes. The default policy for the client is to verify the server, this means\nthat if you don't load CAs to verify the server you'll get a connect error,\nno signer error to confirm failure (-188).\n\nIf you want to mimic OpenSSL behavior of having `SSL_connect` succeed even if\nverifying the server fails and reducing security you can do this by calling:\n\n```c\nwolfSSL_CTX_set_verify(ctx, WOLFSSL_VERIFY_NONE, NULL);\n```\n\nbefore calling `wolfSSL_new();`. Though it's not recommended.\n\n### Note 3\nThe enum values SHA, SHA256, SHA384, SHA512 are no longer available when\nwolfSSL is built with `--enable-opensslextra` (`OPENSSL_EXTRA`) or with the\nmacro `NO_OLD_SHA_NAMES`. These names get mapped to the OpenSSL API for a\nsingle call hash function. Instead the name `WC_SHA`, `WC_SHA256`, `WC_SHA384` and\n`WC_SHA512` should be used for the enum name.\n\n\n# wolfSSL Release 5.7.4 (Oct 24, 2024)\n\nRelease 5.7.4 has been developed according to wolfSSL's development and QA\nprocess (see link below) and successfully passed the quality criteria.\nhttps://www.wolfssl.com/about/wolfssl-software-development-process-quality-assurance\n\nNOTE: * --enable-heapmath is being deprecated and will be removed by end of 2024\n\nPR stands for Pull Request, and PR <NUMBER> references a GitHub pull request\n number where the code change was added.\n\n\n## Vulnerabilities\n* [Low] When the OpenSSL compatibility layer is enabled, certificate\n verification behaved differently in wolfSSL than OpenSSL, in the\n X509_STORE_add_cert() and X509_STORE_load_locations() implementations.\n Previously, in cases where an application explicitly loaded an intermediate\n certificate, wolfSSL was verifying only up to that intermediate certificate,\n rather than verifying up to the root CA. This only affects use cases where the\n API is called directly, and does not affect TLS connections. Users that call\n the API X509_STORE_add_cert() or X509_STORE_load_locations() directly in their\n applications are recommended to update the version of wolfSSL used or to have\n additional sanity checks on certificates loaded into the X509_STORE when\n verifying a certificate. (https://github.com/wolfSSL/wolfssl/pull/8087)\n\n\n## PQC TLS Experimental Build Fix\n* When using TLS with post quantum algorithms enabled, the connection uses a\n smaller EC curve than agreed on. Users building with --enable-experimental and\n enabling PQC cipher suites with TLS connections are recommended to update the\n version of wolfSSL used. Thanks to Daniel Correa for the report.\n (https://github.com/wolfSSL/wolfssl/pull/8084)\n\n\n## New Feature Additions\n* RISC-V 64 new assembly optimizations added for SHA-256, SHA-512, ChaCha20,\n Poly1305, and SHA-3 (PR 7758,7833,7818,7873,7916)\n* Implement support for Connection ID (CID) with DTLS 1.2 (PR 7995)\n* Add support for (DevkitPro)libnds (PR 7990)\n* Add port for Mosquitto OSP (Open Source Project) (PR 6460)\n* Add port for init sssd (PR 7781)\n* Add port for eXosip2 (PR 7648)\n* Add support for STM32G4 (PR 7997)\n* Add support for MAX32665 and MAX32666 TPU HW and ARM ASM Crypto Callback\n Support (PR 7777)\n* Add support for building wolfSSL to be used in libspdm (PR 7869)\n* Add port for use with Nucleus Plus 2.3 (PR 7732)\n* Initial support for RFC5755 x509 attribute certificates (acerts). Enabled with\n --enable-acert (PR 7926)\n* PKCS#11 RSA Padding offload allows tokens to perform CKM_RSA_PKCS\n (sign/encrypt), CKM_RSA_PKCS_PSS (sign), and CKM_RSA_PKCS_OAEP (encrypt).\n (PR 7750)\n* Added \u201cnew\u201d and \u201cdelete\u201d style functions for heap/pool allocation and freeing\n of low level crypto structures (PR 3166 and 8089)\n\n\n## Enhancements and Optimizations\n* Increase default max alt. names from 128 to 1024 (PR 7762)\n* Added new constant time DH agree function wc_DhAgree_ct (PR 7802)\n* Expanded compatibility layer with the API EVP_PKEY_is_a (PR 7804)\n* Add option to disable cryptocb test software test using\n --disable-cryptocb-sw-test (PR 7862)\n* Add a call to certificate verify callback before checking certificate dates\n (PR 7895)\n* Expanded algorithms supported with the wolfCrypt CSharp wrapper. Adding\n support for RNG, ECC(ECIES and ECDHE), RSA, ED25519/Curve25519, AES-GCM, and\n Hashing (PR 3166)\n* Expand MMCAU support for use with DES ECB (PR 7960)\n* Update AES SIV to handle multiple associated data inputs (PR 7911)\n* Remove HAVE_NULL_CIPHER from --enable-openssh (PR 7811)\n* Removed duplicate if(NULL) checks when calling XFREE (macro does) (PR 7839)\n* Set RSA_MIN_SIZE default to 2048 bits (PR 7923)\n* Added support for wolfSSL to be used as the default TLS in the zephyr kernel\n (PR 7731)\n* Add enable provider build using --enable-wolfprovider with autotools (PR 7550)\n* Renesas RX TSIP ECDSA support (PR 7685)\n* Support DTLS1.3 downgrade when the server supports CID (PR 7841)\n* Server-side checks OCSP even if it uses v2 multi (PR 7828)\n* Add handling of absent hash params in PKCS7 bundle parsing and creation\n (PR 7845)\n* Add the use of w64wrapper for Poly1305, enabling Poly1305 to be used in\n environments that do not have a word64 type (PR 7759)\n* Update to the maxq10xx support (PR 7824)\n* Add support for parsing over optional PKCS8 attributes (PR 7944)\n* Add support for either side method with DTLS 1.3 (PR 8012)\n* Added PKCS7 PEM support for parsing PEM data with BEGIN/END PKCS7 (PR 7704)\n* Add CMake support for WOLFSSL_CUSTOM_CURVES (PR 7962)\n* Add left-most wildcard matching support to X509_check_host() (PR 7966)\n* Add option to set custom SKID with PKCS7 bundle creation (PR 7954)\n* Building wolfSSL as a library with Ada and corrections to Alire manifest\n (PR 7303,7940)\n* Renesas RX72N support updated (PR 7849)\n* New option WOLFSSL_COPY_KEY added to always copy the key to the SSL object\n (PR 8005)\n* Add the new option WOLFSSL_COPY_CERT to always copy the cert buffer for each\n SSL object (PR 7867)\n* Add an option to use AES-CBC with HMAC for default session ticket enc/dec.\n Defaults to AES-128-CBC with HMAC-SHA256 (PR 7703)\n* Memory usage improvements in wc_PRF, sha256 (for small code when many\n registers are available) and sp_int objects (PR 7901)\n* Change in the configure script to work around \">>\" with no command. In older\n /bin/sh it can be ambiguous, as used in OS\u2019s such as FreeBSD 9.2 (PR 7876)\n* Don't attempt to include system headers when not required (PR 7813)\n* Certificates: DER encoding of ECC signature algorithm parameter is now\n allowed to be NULL with a define (PR 7903)\n* SP x86_64 asm: check for AVX2 support for VMs (PR 7979)\n* Update rx64n support on gr-rose (PR 7889)\n* Update FSP version to v5.4.0 for RA6M4 (PR 7994)\n* Update TSIP driver version to v1.21 for RX65N RSK (PR 7993)\n* Add a new crypto callback for RSA with padding (PR 7907)\n* Replaced the use of pqm4 with wolfSSL implementations of Kyber/MLDSA\n (PR 7924)\n* Modernized memory fence support for C11 and clang (PR 7938)\n* Add a CRL error override callback (PR 7986)\n* Extend the X509 unknown extension callback for use with a user context\n (PR 7730)\n* Additional debug error tracing added with TLS (PR 7917)\n* Added runtime support for library call stack traces with\n \u2013enable-debug-trace-errcodes=backtrace, using libbacktrace (PR 7846)\n* Expanded C89 conformance (PR 8077)\n* Expanded support for WOLFSSL_NO_MALLOC (PR 8065)\n* Added support for cross-compilation of Linux kernel module (PR 7746)\n* Updated Linux kernel module with support for kernel 6.11 and 6.12 (PR 7826)\n* Introduce WOLFSSL_ASN_ALLOW_0_SERIAL to allow parsing of certificates with a\n serial number of 0 (PR 7893)\n* Add conditional repository_owner to all wolfSSL GitHub workflows (PR 7871)\n\n### Espressif / Arduino Updates\n* Update wolfcrypt settings.h for Espressif ESP-IDF, template update (PR 7953)\n* Update Espressif sha, util, mem, time helpers (PR 7955)\n* Espressif _thread_local_start and _thread_local_end fix (PR 8030)\n* Improve benchmark for Espressif devices (PR 8037)\n* Introduce Espressif common CONFIG_WOLFSSL_EXAMPLE_NAME, Kconfig (PR 7866)\n* Add wolfSSL esp-tls and Certificate Bundle Support for Espressif ESP-IDF\n (PR 7936)\n* Update wolfssl Release for Arduino (PR 7775)\n\n### Post Quantum Crypto Updates\n* Dilithium: support fixed size arrays in dilithium_key (PR 7727)\n* Dilithium: add option to use precalc with small sign (PR 7744)\n* Allow Kyber to be built with FIPS (PR 7788)\n* Allow Kyber asm to be used in the Linux kernel module (PR 7872)\n* Dilithium, Kyber: Update to final specification (PR 7877)\n* Dilithium: Support FIPS 204 Draft and Final Draft (PR 7909,8016)\n\n### ARM Assembly Optimizations\n* ARM32 assembly optimizations added for ChaCha20 and Poly1305 (PR 8020)\n* Poly1305 assembly optimizations improvements for Aarch64 (PR 7859)\n* Poly1305 assembly optimizations added for Thumb-2 (PR 7939)\n* Adding ARM ASM build option to STM32CubePack (PR 7747)\n* Add ARM64 to Visual Studio Project (PR 8010)\n* Kyber assembly optimizations for ARM32 and Aarch64 (PR 8040,7998)\n* Kyber assembly optimizations for ARMv7E-M/ARMv7-M (PR 7706)\n\n\n## Fixes\n* ECC key load: fixes for certificates with parameters that are not default for\n size (PR 7751)\n* Fixes for building x86 in Visual Studio for non-windows OS (PR 7884)\n* Fix for TLS v1.2 secret callback, incorrectly detecting bad master secret\n (PR 7812)\n* Fixes for PowerPC assembly use with Darwin and SP math all (PR 7931)\n* Fix for detecting older versions of Mac OS when trying to link with\n libdispatch (PR 7932)\n* Fix for DTLS1.3 downgrade to DTLS1.2 when the server sends multiple handshake\n packets combined into a single transmission. (PR 7840)\n* Fix for OCSP to save the request if it was stored in ssl->ctx->certOcspRequest\n (PR 7779)\n* Fix to OCSP for searching for CA by key hash instead of ext. key id (PR 7934)\n* Fix for staticmemory and singlethreaded build (PR 7737)\n* Fix to not allow Shake128/256 with Xilinx AFALG (PR 7708)\n* Fix to support PKCS11 without RSA key generation (PR 7738)\n* Fix not calling the signing callback when using PK callbacks + TLS 1.3\n (PR 7761)\n* Cortex-M/Thumb2 ASM fix label for IAR compiler (PR 7753)\n* Fix with PKCS11 to iterate correctly over slotId (PR 7736)\n* Stop stripping out the sequence header on the AltSigAlg extension (PR 7710)\n* Fix ParseCRL_AuthKeyIdExt with ASN template to set extAuthKeyIdSet value\n (PR 7742)\n* Use max key length for PSK encrypt buffer size (PR 7707)\n* DTLS 1.3 fix for size check to include headers and CID fixes (PR 7912,7951)\n* Fix STM32 Hash FIFO and add support for STM32U5A9xx (PR 7787)\n* Fix CMake build error for curl builds (PR 8021)\n* SP Maths: PowerPC ASM fix to use XOR instead of LI (PR 8038)\n* SSL loading of keys/certs: testing and fixes (PR 7789)\n* Misc. fixes for Dilithium and Kyber (PR 7721,7765,7803,8027,7904)\n* Fixes for building wolfBoot sources for PQ LMS/XMSS (PR 7868)\n* Fixes for building with Kyber enabled using CMake and zephyr port (PR 7773)\n* Fix for edge cases with session resumption with TLS 1.2 (PR 8097)\n* Fix issue with ARM ASM with AES CFB/OFB not initializing the \"left\" member\n (PR 8099)\n\nFor additional vulnerability information visit the vulnerability page at:\nhttps://www.wolfssl.com/docs/security-vulnerabilities/\n\nSee INSTALL file for build instructions.\nMore info can be found on-line at: https://wolfssl.com/wolfSSL/Docs.html\n\n# Resources\n\n[wolfSSL Website](https://www.wolfssl.com/)\n\n[wolfSSL Wiki](https://github.com/wolfSSL/wolfssl/wiki)\n\n[FIPS 140-2/140-3 FAQ](https://wolfssl.com/license/fips)\n\n[wolfSSL Documentation](https://wolfssl.com/wolfSSL/Docs.html)\n\n[wolfSSL Manual](https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-toc.html)\n\n[wolfSSL API Reference](https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-17-wolfssl-api-reference.html)\n\n[wolfCrypt API Reference](https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-18-wolfcrypt-api-reference.html)\n\n[TLS 1.3](https://www.wolfssl.com/docs/tls13/)\n\n[wolfSSL Vulnerabilities](https://www.wolfssl.com/docs/security-vulnerabilities/)\n\n[Additional wolfSSL Examples](https://github.com/wolfssl/wolfssl-examples)\n\n# Directory structure\n\n```\n<wolfssl_root>\n\u251c\u2500\u2500 certs   [Certificates used in tests and examples]\n\u251c\u2500\u2500 cmake   [Cmake build utilities]\n\u251c\u2500\u2500 debian  [Debian packaging files]\n\u251c\u2500\u2500 doc     [Documentation for wolfSSL (Doxygen)]\n\u251c\u2500\u2500 Docker  [Prebuilt Docker environments]\n\u251c\u2500\u2500 examples    [wolfSSL examples]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 asn1    [ASN.1 printing example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 async   [Asynchronous Cryptography example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 benchmark   [TLS benchmark example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 client  [Client example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 configs [Example build configurations]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 echoclient  [Echoclient example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 echoserver  [Echoserver example]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 pem [Example for convert between PEM and DER]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 sctp    [Servers and clients that demonstrate wolfSSL's DTLS-SCTP support]\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 server  [Server example]\n\u251c\u2500\u2500 IDE     [Contains example projects for various development environments]\n\u251c\u2500\u2500 linuxkm [Linux Kernel Module implementation]\n\u251c\u2500\u2500 m4      [Autotools utilities]\n\u251c\u2500\u2500 mcapi   [wolfSSL MPLAB X Project Files]\n\u251c\u2500\u2500 mplabx  [wolfSSL MPLAB X Project Files]\n\u251c\u2500\u2500 mqx     [wolfSSL Freescale CodeWarrior Project Files]\n\u251c\u2500\u2500 rpm     [RPM packaging metadata]\n\u251c\u2500\u2500 RTOS\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 nuttx   [Port of wolfSSL for NuttX]\n\u251c\u2500\u2500 scripts [Testing scripts]\n\u251c\u2500\u2500 src     [wolfSSL source code]\n\u251c\u2500\u2500 sslSniffer  [wolfSSL sniffer can be used to passively sniff SSL traffic]\n\u251c\u2500\u2500 support [Contains the pkg-config file]\n\u251c\u2500\u2500 tests   [Unit and configuration testing]\n\u251c\u2500\u2500 testsuite   [Test application that orchestrates tests]\n\u251c\u2500\u2500 tirtos  [Port of wolfSSL for TI RTOS]\n\u251c\u2500\u2500 wolfcrypt   [The wolfCrypt component]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 benchmark   [Cryptography benchmarking application]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 src         [wolfCrypt source code]\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 port    [Supported hardware acceleration ports]\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 test        [Cryptography testing application]\n\u251c\u2500\u2500 wolfssl [Header files]\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 openssl [Compatibility layer headers]\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 wolfcrypt   [Header files]\n\u251c\u2500\u2500 wrapper [wolfSSL language wrappers]\n\u2514\u2500\u2500 zephyr  [Port of wolfSSL for Zephyr RTOS]\n```\n",
+    "readme_content": "*** Description ***\n\nThe wolfSSL embedded SSL library (formerly CyaSSL) is a lightweight SSL/TLS\nlibrary written in ANSI C and targeted for embedded, RTOS, and\nresource-constrained environments - primarily because of its small size, speed,\nand feature set.  It is commonly used in standard operating environments as well\nbecause of its royalty-free pricing and excellent cross platform support.\nwolfSSL supports industry standards up to the current TLS 1.3 and DTLS 1.3\nlevels, is up to 20 times smaller than OpenSSL, and offers progressive ciphers\nsuch as ChaCha20, Curve25519, and Blake2b. User benchmarking and feedback\nreports dramatically better performance when using wolfSSL over OpenSSL.\n\nwolfSSL is powered by the wolfCrypt library. Two versions of the wolfCrypt\ncryptography library have been FIPS 140-2 validated (Certificate #2425 and\ncertificate #3389). For additional information, visit the wolfCrypt FIPS FAQ\n(https://www.wolfssl.com/license/fips/) or contact fips@wolfssl.com\n\n*** Why choose wolfSSL? ***\n\nThere are many reasons to choose wolfSSL as your embedded SSL solution. Some of\nthe top reasons include size (typical footprint sizes range from 20-100 kB),\nsupport for the newest standards (SSL 3.0, TLS 1.0, TLS 1.1, TLS 1.2, TLS 1.3,\nDTLS 1.0, DTLS 1.2, and DTLS 1.3), current and progressive cipher support\n(including stream ciphers), multi-platform, royalty free, and an OpenSSL\ncompatibility API to ease porting into existing applications which have\npreviously used the OpenSSL package. For a complete feature list, see chapter 4\nof the wolfSSL manual. (https://www.wolfssl.com/docs/wolfssl-manual/ch4/)\n\n*** Notes, Please read ***\n\nNote 1)\nwolfSSL as of 3.6.6 no longer enables SSLv3 by default.  wolfSSL also no longer\nsupports static key cipher suites with PSK, RSA, or ECDH. This means if you\nplan to use TLS cipher suites you must enable DH (DH is on by default), or\nenable ECC (ECC is on by default), or you must enable static key cipher suites\nwith\n\n    WOLFSSL_STATIC_DH\n    WOLFSSL_STATIC_RSA\n      or\n    WOLFSSL_STATIC_PSK\n\nthough static key cipher suites are deprecated and will be removed from future\nversions of TLS.  They also lower your security by removing PFS.\n\nWhen compiling ssl.c, wolfSSL will now issue a compiler error if no cipher\nsuites are available. You can remove this error by defining\nWOLFSSL_ALLOW_NO_SUITES in the event that you desire that, i.e., you're not\nusing TLS cipher suites.\n\nNote 2)\nwolfSSL takes a different approach to certificate verification than OpenSSL\ndoes. The default policy for the client is to verify the server, this means\nthat if you don't load CAs to verify the server you'll get a connect error,\nno signer error to confirm failure (-188).\n\nIf you want to mimic OpenSSL behavior of having SSL_connect succeed even if\nverifying the server fails and reducing security you can do this by calling:\n\n    wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);\n\nbefore calling wolfSSL_new();. Though it's not recommended.\n\nNote 3)\nThe enum values SHA, SHA256, SHA384, SHA512 are no longer available when\nwolfSSL is built with --enable-opensslextra (OPENSSL_EXTRA) or with the macro\nNO_OLD_SHA_NAMES. These names get mapped to the OpenSSL API for a single call\nhash function. Instead the name WC_SHA, WC_SHA256, WC_SHA384 and WC_SHA512\nshould be used for the enum name.\n\n*** end Notes ***\n\n# wolfSSL Release 5.7.4 (Oct 24, 2024)\n\nRelease 5.7.4 has been developed according to wolfSSL's development and QA\nprocess (see link below) and successfully passed the quality criteria.\nhttps://www.wolfssl.com/about/wolfssl-software-development-process-quality-assurance\n\nNOTE: * --enable-heapmath is being deprecated and will be removed by end of 2024\n\nPR stands for Pull Request, and PR <NUMBER> references a GitHub pull request\n number where the code change was added.\n\n\n## Vulnerabilities\n* [Low] When the OpenSSL compatibility layer is enabled, certificate\n verification behaved differently in wolfSSL than OpenSSL, in the\n X509_STORE_add_cert() and X509_STORE_load_locations() implementations.\n Previously, in cases where an application explicitly loaded an intermediate\n certificate, wolfSSL was verifying only up to that intermediate certificate,\n rather than verifying up to the root CA. This only affects use cases where the\n API is called directly, and does not affect TLS connections. Users that call\n the API X509_STORE_add_cert() or X509_STORE_load_locations() directly in their\n applications are recommended to update the version of wolfSSL used or to have\n additional sanity checks on certificates loaded into the X509_STORE when\n verifying a certificate. (https://github.com/wolfSSL/wolfssl/pull/8087)\n\n\n## PQC TLS Experimental Build Fix\n* When using TLS with post quantum algorithms enabled, the connection uses a\n smaller EC curve than agreed on. Users building with --enable-experimental and\n enabling PQC cipher suites with TLS connections are recommended to update the\n version of wolfSSL used. Thanks to Daniel Correa for the report.\n (https://github.com/wolfSSL/wolfssl/pull/8084)\n\n\n## New Feature Additions\n* RISC-V 64 new assembly optimizations added for SHA-256, SHA-512, ChaCha20,\n Poly1305, and SHA-3 (PR 7758,7833,7818,7873,7916)\n* Implement support for Connection ID (CID) with DTLS 1.2 (PR 7995)\n* Add support for (DevkitPro)libnds (PR 7990)\n* Add port for Mosquitto OSP (Open Source Project) (PR 6460)\n* Add port for init sssd (PR 7781)\n* Add port for eXosip2 (PR 7648)\n* Add support for STM32G4 (PR 7997)\n* Add support for MAX32665 and MAX32666 TPU HW and ARM ASM Crypto Callback\n Support (PR 7777)\n* Add support for building wolfSSL to be used in libspdm (PR 7869)\n* Add port for use with Nucleus Plus 2.3 (PR 7732)\n* Initial support for RFC5755 x509 attribute certificates (acerts). Enabled with\n --enable-acert (PR 7926)\n* PKCS#11 RSA Padding offload allows tokens to perform CKM_RSA_PKCS\n (sign/encrypt), CKM_RSA_PKCS_PSS (sign), and CKM_RSA_PKCS_OAEP (encrypt).\n (PR 7750)\n* Added \u201cnew\u201d and \u201cdelete\u201d style functions for heap/pool allocation and freeing\n of low level crypto structures (PR 3166 and 8089)\n\n\n## Enhancements and Optimizations\n* Increase default max alt. names from 128 to 1024 (PR 7762)\n* Added new constant time DH agree function wc_DhAgree_ct (PR 7802)\n* Expanded compatibility layer with the API EVP_PKEY_is_a (PR 7804)\n* Add option to disable cryptocb test software test using\n --disable-cryptocb-sw-test (PR 7862)\n* Add a call to certificate verify callback before checking certificate dates\n (PR 7895)\n* Expanded algorithms supported with the wolfCrypt CSharp wrapper. Adding\n support for RNG, ECC(ECIES and ECDHE), RSA, ED25519/Curve25519, AES-GCM, and\n Hashing (PR 3166)\n* Expand MMCAU support for use with DES ECB (PR 7960)\n* Update AES SIV to handle multiple associated data inputs (PR 7911)\n* Remove HAVE_NULL_CIPHER from --enable-openssh (PR 7811)\n* Removed duplicate if(NULL) checks when calling XFREE (macro does) (PR 7839)\n* Set RSA_MIN_SIZE default to 2048 bits (PR 7923)\n* Added support for wolfSSL to be used as the default TLS in the zephyr kernel\n (PR 7731)\n* Add enable provider build using --enable-wolfprovider with autotools (PR 7550)\n* Renesas RX TSIP ECDSA support (PR 7685)\n* Support DTLS1.3 downgrade when the server supports CID (PR 7841)\n* Server-side checks OCSP even if it uses v2 multi (PR 7828)\n* Add handling of absent hash params in PKCS7 bundle parsing and creation\n (PR 7845)\n* Add the use of w64wrapper for Poly1305, enabling Poly1305 to be used in\n environments that do not have a word64 type (PR 7759)\n* Update to the maxq10xx support (PR 7824)\n* Add support for parsing over optional PKCS8 attributes (PR 7944)\n* Add support for either side method with DTLS 1.3 (PR 8012)\n* Added PKCS7 PEM support for parsing PEM data with BEGIN/END PKCS7 (PR 7704)\n* Add CMake support for WOLFSSL_CUSTOM_CURVES (PR 7962)\n* Add left-most wildcard matching support to X509_check_host() (PR 7966)\n* Add option to set custom SKID with PKCS7 bundle creation (PR 7954)\n* Building wolfSSL as a library with Ada and corrections to Alire manifest\n (PR 7303,7940)\n* Renesas RX72N support updated (PR 7849)\n* New option WOLFSSL_COPY_KEY added to always copy the key to the SSL object\n (PR 8005)\n* Add the new option WOLFSSL_COPY_CERT to always copy the cert buffer for each\n SSL object (PR 7867)\n* Add an option to use AES-CBC with HMAC for default session ticket enc/dec.\n Defaults to AES-128-CBC with HMAC-SHA256 (PR 7703)\n* Memory usage improvements in wc_PRF, sha256 (for small code when many\n registers are available) and sp_int objects (PR 7901)\n* Change in the configure script to work around \">>\" with no command. In older\n /bin/sh it can be ambiguous, as used in OS\u2019s such as FreeBSD 9.2 (PR 7876)\n* Don't attempt to include system headers when not required (PR 7813)\n* Certificates: DER encoding of ECC signature algorithm parameter is now\n allowed to be NULL with a define (PR 7903)\n* SP x86_64 asm: check for AVX2 support for VMs (PR 7979)\n* Update rx64n support on gr-rose (PR 7889)\n* Update FSP version to v5.4.0 for RA6M4 (PR 7994)\n* Update TSIP driver version to v1.21 for RX65N RSK (PR 7993)\n* Add a new crypto callback for RSA with padding (PR 7907)\n* Replaced the use of pqm4 with wolfSSL implementations of Kyber/MLDSA\n (PR 7924)\n* Modernized memory fence support for C11 and clang (PR 7938)\n* Add a CRL error override callback (PR 7986)\n* Extend the X509 unknown extension callback for use with a user context\n (PR 7730)\n* Additional debug error tracing added with TLS (PR 7917)\n* Added runtime support for library call stack traces with\n \u2013enable-debug-trace-errcodes=backtrace, using libbacktrace (PR 7846)\n* Expanded C89 conformance (PR 8077)\n* Expanded support for WOLFSSL_NO_MALLOC (PR 8065)\n* Added support for cross-compilation of Linux kernel module (PR 7746)\n* Updated Linux kernel module with support for kernel 6.11 and 6.12 (PR 7826)\n* Introduce WOLFSSL_ASN_ALLOW_0_SERIAL to allow parsing of certificates with a\n serial number of 0 (PR 7893)\n* Add conditional repository_owner to all wolfSSL GitHub workflows (PR 7871)\n\n### Espressif / Arduino Updates\n* Update wolfcrypt settings.h for Espressif ESP-IDF, template update (PR 7953)\n* Update Espressif sha, util, mem, time helpers (PR 7955)\n* Espressif _thread_local_start and _thread_local_end fix (PR 8030)\n* Improve benchmark for Espressif devices (PR 8037)\n* Introduce Espressif common CONFIG_WOLFSSL_EXAMPLE_NAME, Kconfig (PR 7866)\n* Add wolfSSL esp-tls and Certificate Bundle Support for Espressif ESP-IDF\n (PR 7936)\n* Update wolfssl Release for Arduino (PR 7775)\n\n### Post Quantum Crypto Updates\n* Dilithium: support fixed size arrays in dilithium_key (PR 7727)\n* Dilithium: add option to use precalc with small sign (PR 7744)\n* Allow Kyber to be built with FIPS (PR 7788)\n* Allow Kyber asm to be used in the Linux kernel module (PR 7872)\n* Dilithium, Kyber: Update to final specification (PR 7877)\n* Dilithium: Support FIPS 204 Draft and Final Draft (PR 7909,8016)\n\n### ARM Assembly Optimizations\n* ARM32 assembly optimizations added for ChaCha20 and Poly1305 (PR 8020)\n* Poly1305 assembly optimizations improvements for Aarch64 (PR 7859)\n* Poly1305 assembly optimizations added for Thumb-2 (PR 7939)\n* Adding ARM ASM build option to STM32CubePack (PR 7747)\n* Add ARM64 to Visual Studio Project (PR 8010)\n* Kyber assembly optimizations for ARM32 and Aarch64 (PR 8040,7998)\n* Kyber assembly optimizations for ARMv7E-M/ARMv7-M (PR 7706)\n\n\n## Fixes\n* ECC key load: fixes for certificates with parameters that are not default for\n size (PR 7751)\n* Fixes for building x86 in Visual Studio for non-windows OS (PR 7884)\n* Fix for TLS v1.2 secret callback, incorrectly detecting bad master secret\n (PR 7812)\n* Fixes for PowerPC assembly use with Darwin and SP math all (PR 7931)\n* Fix for detecting older versions of Mac OS when trying to link with\n libdispatch (PR 7932)\n* Fix for DTLS1.3 downgrade to DTLS1.2 when the server sends multiple handshake\n packets combined into a single transmission. (PR 7840)\n* Fix for OCSP to save the request if it was stored in ssl->ctx->certOcspRequest\n (PR 7779)\n* Fix to OCSP for searching for CA by key hash instead of ext. key id (PR 7934)\n* Fix for staticmemory and singlethreaded build (PR 7737)\n* Fix to not allow Shake128/256 with Xilinx AFALG (PR 7708)\n* Fix to support PKCS11 without RSA key generation (PR 7738)\n* Fix not calling the signing callback when using PK callbacks + TLS 1.3\n (PR 7761)\n* Cortex-M/Thumb2 ASM fix label for IAR compiler (PR 7753)\n* Fix with PKCS11 to iterate correctly over slotId (PR 7736)\n* Stop stripping out the sequence header on the AltSigAlg extension (PR 7710)\n* Fix ParseCRL_AuthKeyIdExt with ASN template to set extAuthKeyIdSet value\n (PR 7742)\n* Use max key length for PSK encrypt buffer size (PR 7707)\n* DTLS 1.3 fix for size check to include headers and CID fixes (PR 7912,7951)\n* Fix STM32 Hash FIFO and add support for STM32U5A9xx (PR 7787)\n* Fix CMake build error for curl builds (PR 8021)\n* SP Maths: PowerPC ASM fix to use XOR instead of LI (PR 8038)\n* SSL loading of keys/certs: testing and fixes (PR 7789)\n* Misc. fixes for Dilithium and Kyber (PR 7721,7765,7803,8027,7904)\n* Fixes for building wolfBoot sources for PQ LMS/XMSS (PR 7868)\n* Fixes for building with Kyber enabled using CMake and zephyr port (PR 7773)\n* Fix for edge cases with session resumption with TLS 1.2 (PR 8097)\n* Fix issue with ARM ASM with AES CFB/OFB not initializing the \"left\" member\n (PR 8099)\n\n\n\nFor additional vulnerability information visit the vulnerability page at:\nhttps://www.wolfssl.com/docs/security-vulnerabilities/\n\nSee INSTALL file for build instructions.\nMore info can be found on-line at: https://wolfssl.com/wolfSSL/Docs.html\n\n*** Resources ***\n\n\n[wolfSSL Website](https://www.wolfssl.com/)\n\n[wolfSSL Wiki](https://github.com/wolfSSL/wolfssl/wiki)\n\n[FIPS FAQ](https://wolfssl.com/license/fips)\n\n[wolfSSL Documents](https://wolfssl.com/wolfSSL/Docs.html)\n\n[wolfSSL Manual](https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-toc.html)\n\n[wolfSSL API Reference]\n(https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-17-wolfssl-api-reference.html)\n\n[wolfCrypt API Reference]\n(https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-18-wolfcrypt-api-reference.html)\n\n[TLS 1.3](https://www.wolfssl.com/docs/tls13/)\n\n[wolfSSL Vulnerabilities]\n(https://www.wolfssl.com/docs/security-vulnerabilities/)\n\nAdditional wolfSSL Examples](https://github.com/wolfssl/wolfssl-examples)\n",
     "dependents": []
   },
   {
@@ -15659,9 +15658,9 @@
     "description": "Fine-grained parallelism with sub-nanosecond overhead in Zig",
     "default_branch": "main",
     "open_issues": 4,
-    "stargazers_count": 835,
+    "stargazers_count": 836,
     "forks_count": 15,
-    "watchers_count": 835,
+    "watchers_count": 836,
     "tags_url": "https://api.github.com/repos/judofyr/spice/tags",
     "license": "0BSD",
     "topics": [
@@ -15673,7 +15672,7 @@
     ],
     "size": 79,
     "fork": false,
-    "updated_at": "2025-05-09T01:51:10Z",
+    "updated_at": "2025-05-11T14:52:27Z",
     "has_build_zig": true,
     "has_build_zig_zon": true,
     "zig_minimum_version": "0.11.0",
@@ -19294,6 +19293,34 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/49950206?v=4",
+    "name": "proconio-zig",
+    "full_name": "Ryoga-exe/proconio-zig",
+    "created_at": "2024-02-26T21:09:56Z",
+    "description": "proconio for the Zig programming language. useful and easy io library for programming contests.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/Ryoga-exe/proconio-zig/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 21,
+    "fork": false,
+    "updated_at": "2025-05-11T14:29:32Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# proconio-zig\n\nproconio for the Zig programming language. useful and easy IO library for programming contests.\n\n## usage\n\n```zig\nconst std = @import(\"std\");\nconst proconio = @import(\"proconio\");\n\npub fn main() !void {\n    const allocator = std.heap.page_allocator;\n    var io = try proconio.init(allocator);\n    defer io.deinit();\n\n    const in = try io.input(struct {\n        n: u8,\n        m: u32,\n        l: i32,\n    });\n    std.debug.print(\"{}, {}, {}\\n\", .{in.n, in.m, in.l});\n}\n```\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/5464072?v=4",
     "name": "zig-intrusive-parser",
     "full_name": "nektro/zig-intrusive-parser",
@@ -19611,33 +19638,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# Zig Package Aggregator\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/48649707?v=4",
-    "name": "zig-exhaustigen",
-    "full_name": "tensorush/zig-exhaustigen",
-    "created_at": "2024-07-17T18:44:59Z",
-    "description": "Zig port of exhaustigen-rs library for exhaustive testing.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/tensorush/zig-exhaustigen/tags",
-    "license": "MIT",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 12,
-    "fork": false,
-    "updated_at": "2025-05-04T02:07:17Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# zig-exhaustigen\n\n## Zig port of [exhaustigen-rs library](https://github.com/graydon/exhaustigen-rs) for exhaustive testing.\n\n### Usage\n\n- Add `exhaustigen` dependency to `build.zig.zon`.\n\n```sh\nzig fetch --save git+https://github.com/tensorush/zig-exhaustigen\n```\n\n- Use `exhaustigen` dependency in `build.zig`.\n\n```zig\nconst exhaustigen_dep = b.dependency(\"exhaustigen\", .{\n    .target = target,\n    .optimize = optimize,\n});\nconst exhaustigen_mod = exhaustigen_dep.module(\"Gen\");\n<compile>.root_module.addImport(\"Gen\", exhaustigen_mod);\n```\n",
     "dependents": []
   },
   {
@@ -20590,36 +20590,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/35976402?v=4",
-    "name": "fzwatch",
-    "full_name": "freref/fzwatch",
-    "created_at": "2024-11-03T22:33:03Z",
-    "description": "A lightweight and cross-platform file watcher for your Zig projects",
-    "default_branch": "master",
-    "open_issues": 1,
-    "stargazers_count": 17,
-    "forks_count": 3,
-    "watchers_count": 17,
-    "tags_url": "https://api.github.com/repos/freref/fzwatch/tags",
-    "license": "MIT",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 22,
-    "fork": false,
-    "updated_at": "2025-04-18T14:22:15Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# fzwatch\n\nA lightweight and cross-platform file watcher for your Zig projects.\n\n> [!NOTE]\n> This project exists to support [fancy-cat](https://github.com/freref/fancy-cat) and has limited features.\n\n## Instructions\n\n### Run example\n\nYou can run the [examples](./examples/) like so:\n\n```sh\nzig build run-<filename>\n```\n\n### Usage\n\nA basic example can be found under [examples](./examples/basic.zig). The API is defined as follows:\n\n```zig\npub const Event = enum { modified };\npub const Callback = fn (context: *anyopaque, event: Event) void;\npub const Opts = struct { latency: f16 = 1.0 };\n\npub fn init(allocator: std.mem.Allocator) !Watcher;\npub fn deinit(self: *Watcher) void;\npub fn addFile(self: *Watcher, path: []const u8) !void;\npub fn removeFile(self: *Watcher, path: []const u8) !void;\npub fn setCallback(self: *Watcher, callback: Callback) void;\npub fn start(self: *Watcher, opts: Opts) !void;\npub fn stop(self: *Watcher) !void;\n```\n\n### Testing\n\nRun the test suite:\n\n```sh\nzig build test\n```\n",
-    "dependents": [
-      "https://github.com/freref/fancy-cat"
-    ]
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/42583079?v=4",
     "name": "zig-prompter",
     "full_name": "GabrieleInvernizzi/zig-prompter",
@@ -20657,6 +20627,36 @@
     ],
     "readme_content": "# zig-prompter\n\n**zig-prompter** is a lightweight and flexible library for building and managing interactive text-based prompts in the [Zig programming language](https://ziglang.org/). Whether you're creating command-line tools, text-based games, or utilities requiring user input, **zig-prompter** simplifies the process with intuitive APIs and a robust feature set.\n\n## Installation\n\nFirst, add zig-prompter to your `build.zig.zon` file:\n```bash\nzig fetch --save git+https://github.com/GabrieleInvernizzi/zig-prompter/\n```\n\nUpdate your `build.zig` file to include the dependency:\n```zig\nconst prompter_dep = b.dependency(\"prompter\", .{\n        .target = target,\n        .optimize = optimize,\n    });\n\nexe.root_module.addImport(\"prompter\", prompter_dep.module(\"prompter\"));\n```\n\nHere\u2019s an example of using **zig-prompter** to create a simple selection prompt:\n```zig\nconst std = @import(\"std\");\nconst Prompter = @import(\"prompter\");\n\npub fn main() !void {\n    var gpa = std.heap.GeneralPurposeAllocator(.{}){};\n    defer _ = gpa.deinit();\n    const allocator = gpa.allocator();\n    const stdout = std.io.getStdOut();\n\n    const theme = Prompter.Themes.SimpleTheme{};\n    var p = Prompter.Prompt.init(allocator, theme.theme());\n\n    const opts = [_][]const u8{ \"Option 1\", \"Option 2\", \"Option 3\" };\n    const sel_opt = try p.option(\"Select an option\", &opts, 1);\n    if (sel_opt) |o| {\n        try stdout.writer().print(\"The selected option was: {s} (idx: {d})\\n\", .{ opts[o], o });\n    } else {\n        try stdout.writer().writeAll(\"The selection was aborted.\\n\");\n    }\n}\n```\n\nFor a more exhaustive example, take a look at the [example](https://github.com/GabrieleInvernizzi/zig-prompter/tree/main/example) directory.\n\n## Features\n- [x] String prompt\n- [x] Interactive option selection prompt\n- [x] Confirmation prompt\n- [x] Password prompt\n- [x] Input validation\n- [x] Advanced support for themes and personalization\n- [ ] Include more themes\n- [ ] Windows support\n\n## Contributions\nContributions are always welcome and greatly appreciated! Whether it's fixing bugs, adding features, improving documentation, or enhancing examples, your input helps make **zig-prompter** even better. Feel free to open issues to discuss potential improvements or submit pull requests directly.\n\nThank you for your support!\n\n## Acknowledgments  \nThis library was inspired by the fantastic **Rust** library [Dialoguer](https://github.com/mitsuhiko/dialoguer).\n",
     "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/35976402?v=4",
+    "name": "fzwatch",
+    "full_name": "freref/fzwatch",
+    "created_at": "2024-11-03T22:33:03Z",
+    "description": "A lightweight and cross-platform file watcher for your Zig projects",
+    "default_branch": "master",
+    "open_issues": 1,
+    "stargazers_count": 17,
+    "forks_count": 3,
+    "watchers_count": 17,
+    "tags_url": "https://api.github.com/repos/freref/fzwatch/tags",
+    "license": "MIT",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 22,
+    "fork": false,
+    "updated_at": "2025-04-18T14:22:15Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# fzwatch\n\nA lightweight and cross-platform file watcher for your Zig projects.\n\n> [!NOTE]\n> This project exists to support [fancy-cat](https://github.com/freref/fancy-cat) and has limited features.\n\n## Instructions\n\n### Run example\n\nYou can run the [examples](./examples/) like so:\n\n```sh\nzig build run-<filename>\n```\n\n### Usage\n\nA basic example can be found under [examples](./examples/basic.zig). The API is defined as follows:\n\n```zig\npub const Event = enum { modified };\npub const Callback = fn (context: *anyopaque, event: Event) void;\npub const Opts = struct { latency: f16 = 1.0 };\n\npub fn init(allocator: std.mem.Allocator) !Watcher;\npub fn deinit(self: *Watcher) void;\npub fn addFile(self: *Watcher, path: []const u8) !void;\npub fn removeFile(self: *Watcher, path: []const u8) !void;\npub fn setCallback(self: *Watcher, callback: Callback) void;\npub fn start(self: *Watcher, opts: Opts) !void;\npub fn stop(self: *Watcher) !void;\n```\n\n### Testing\n\nRun the test suite:\n\n```sh\nzig build test\n```\n",
+    "dependents": [
+      "https://github.com/freref/fancy-cat"
+    ]
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/174537044?v=4",
@@ -22025,36 +22025,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/8823448?v=4",
-    "name": "jaysan",
-    "full_name": "lawrence-laz/jaysan",
-    "created_at": "2024-09-18T23:20:56Z",
-    "description": "A fast json serializer",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 11,
-    "forks_count": 0,
-    "watchers_count": 11,
-    "tags_url": "https://api.github.com/repos/lawrence-laz/jaysan/tags",
-    "license": "MIT",
-    "topics": [
-      "json",
-      "json-serializer",
-      "zig",
-      "zig-package"
-    ],
-    "size": 26,
-    "fork": false,
-    "updated_at": "2025-01-02T16:43:37Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "<h1 align=\"center\">\n  <img src=\"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/JSON_vector_logo.svg/160px-JSON_vector_logo.svg.png\" width=\"64\"><br>\n  Jay\u3055\u3093\n  <br>\n</h1>\n\nJaysan is a fast json library written in Zig. Currently supports serialization only.\n\n```zig\nvar gpa = std.heap.GeneralPurposeAllocator(.{}){};\n\nconst Foo = struct {\n    foo: i32,\n    bar: []const u8,\n};\n\nconst string = try json.stringifyAlloc(\n    gpa.allocator(),\n    Foo{\n        .foo = 123,\n        .bar = \"Hello, world!\",\n    },\n);\n\n// {\"foo\":123,\"bar\":\"Hello, world!\"}\n```\n\n```md\nBenchmark 1: zig-stdjson\n  Time (mean \u00b1 \u03c3):     141.9 ms \u00b1   1.1 ms    [User: 140.4 ms, System: 1.0 ms]\n  Range (min \u2026 max):   140.1 ms \u2026 144.1 ms    20 runs\n\nBenchmark 2: zig-jaysan\n  Time (mean \u00b1 \u03c3):      46.8 ms \u00b1   1.3 ms    [User: 46.2 ms, System: 0.4 ms]\n  Range (min \u2026 max):    43.1 ms \u2026  49.2 ms    61 runs\n\nBenchmark 3: rust-serde\n  Time (mean \u00b1 \u03c3):      46.9 ms \u00b1   0.9 ms    [User: 45.8 ms, System: 0.9 ms]\n  Range (min \u2026 max):    45.9 ms \u2026  50.9 ms    62 runs\n\nSummary\n  zig-jaysan\n    1.00 \u00b1 0.03 times faster than rust-serde\n    3.03 \u00b1 0.09 times faster than zig-stdjson\n```\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/174537044?v=4",
     "name": "Zex",
     "full_name": "Games-by-Mason/Zex",
@@ -22101,6 +22071,36 @@
       }
     ],
     "readme_content": "# Zex\n\nA texture utility for Zig.\n\n## Rationale\n\nGames typically ship with a lot of texture data. It may be tempting to ship texture data as images, but image formats are typically a poor representation for texture data:\n\n* Image formats typically must be uncompressed before being uploaded to the GPU\n* Image formats typically can't contain prebaked [mipmaps](https://en.wikipedia.org/wiki/Mipmap)\n* Image formats typically can't contain [cubemaps](https://en.wikipedia.org/wiki/Cube_mapping)\n* Image formats typically do not indicate if their alpha is [premultiplied](https://tomforsyth1000.github.io/blog.wiki.html#%5B%5BPremultiplied%20alpha%5D%5D)\n* etc...\n\nTexture formats like Khronos' [KTX](https://www.khronos.org/ktx/) and Microsoft's [DDS](https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide) are designed for exactly this use case.\n\nNot only do these texture formats support the aforementioned features, they also support lossy GPU compression formats that don't need to be decompressed because the GPU can sample from the compressed data, increasing performance while decreasing memory usage.\n\nWhile convenient, these formats do not provide compression ratios competitive with normal image formats, so it is typical to apply additional lossless compression in a strategy called \"supercompression\". Typically one would attempt to apply the former lossy compression in such a way as to reduce entropy increasing the effectiveness of the lossless compression.\n\nThis high level strategy is effective, but it's hard to come by tools that make employing it easy, so it's typical for small games to either reinvent the wheel, or miss out on the benefits of these formats entirely. This library aims to fill that gap.\n\nIn particular, Zig is uniquely suited to make this process easy via its build system which can be extended with tools like Zex to compress textures at build time, automatically providing caching and parallelism.\n\n## What's Provided\n\n### Command Line Tool\n\nThe command line tool encodes can be called manually, or automatically from Zig's build system.\n\nIt can read any image format supported by [STB Image](https://github.com/nothings/stb/blob/master/stb_image.h), and encode it to the following formats:\n\n* `r8g8b8a8_uint`\n* `r8g8b8a8_srgb`\n* `r32g32b32a32_sfloat`\n* `bc7_srgb_block`\n* `bc7_unorm_block`\n\nBC7 compression is achieved with [bc7enc_rdo](https://github.com/richgel999/bc7enc_rdo/). Bc7 encoding optionally supports a reduced entropy mode, and rate distortion optimization, both of which typically increase the effectiveness of lossless compression.\n\nSupports premultiplying alpha while encoding.\n\nOutput files are stored as [KTX2](https://www.khronos.org/ktx/).\n\nSupercompression with KTX2's zlib mode is supported.\n\n### Library\n\nThis package exports a Ktx2 library for loading KTX2 files in engine.\n\n## Viewing Textures\n\nZex is not a texture viewer, and KTX2 files can't be opened in typical image editors. This is to be expected since textures store a lot of data normal image editors don't expect, in formats that don't make sense for normal interchange.\n\nI recommend [Tacent View](https://github.com/bluescan/tacentview) for inspecting textures.\n\n## Development Links\n\n* [KTX2 spec](https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html#prohibitedFormats)\n* [Data Format Descriptor spec](https://registry.khronos.org/DataFormat/specs/1.3/dataformat.1.3.html)\n* [Reference KTX implementation and validator](https://github.com/KhronosGroup/KTX-Software)\n\n## Zex is a work in progress\n\nPlanned features for 1.0 can be found [here](https://github.com/Games-by-Mason/Zex/milestone/1).\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/8823448?v=4",
+    "name": "jaysan",
+    "full_name": "lawrence-laz/jaysan",
+    "created_at": "2024-09-18T23:20:56Z",
+    "description": "A fast json serializer",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 11,
+    "forks_count": 0,
+    "watchers_count": 11,
+    "tags_url": "https://api.github.com/repos/lawrence-laz/jaysan/tags",
+    "license": "MIT",
+    "topics": [
+      "json",
+      "json-serializer",
+      "zig",
+      "zig-package"
+    ],
+    "size": 26,
+    "fork": false,
+    "updated_at": "2025-01-02T16:43:37Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "<h1 align=\"center\">\n  <img src=\"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/JSON_vector_logo.svg/160px-JSON_vector_logo.svg.png\" width=\"64\"><br>\n  Jay\u3055\u3093\n  <br>\n</h1>\n\nJaysan is a fast json library written in Zig. Currently supports serialization only.\n\n```zig\nvar gpa = std.heap.GeneralPurposeAllocator(.{}){};\n\nconst Foo = struct {\n    foo: i32,\n    bar: []const u8,\n};\n\nconst string = try json.stringifyAlloc(\n    gpa.allocator(),\n    Foo{\n        .foo = 123,\n        .bar = \"Hello, world!\",\n    },\n);\n\n// {\"foo\":123,\"bar\":\"Hello, world!\"}\n```\n\n```md\nBenchmark 1: zig-stdjson\n  Time (mean \u00b1 \u03c3):     141.9 ms \u00b1   1.1 ms    [User: 140.4 ms, System: 1.0 ms]\n  Range (min \u2026 max):   140.1 ms \u2026 144.1 ms    20 runs\n\nBenchmark 2: zig-jaysan\n  Time (mean \u00b1 \u03c3):      46.8 ms \u00b1   1.3 ms    [User: 46.2 ms, System: 0.4 ms]\n  Range (min \u2026 max):    43.1 ms \u2026  49.2 ms    61 runs\n\nBenchmark 3: rust-serde\n  Time (mean \u00b1 \u03c3):      46.9 ms \u00b1   0.9 ms    [User: 45.8 ms, System: 0.9 ms]\n  Range (min \u2026 max):    45.9 ms \u2026  50.9 ms    62 runs\n\nSummary\n  zig-jaysan\n    1.00 \u00b1 0.03 times faster than rust-serde\n    3.03 \u00b1 0.09 times faster than zig-stdjson\n```\n",
     "dependents": []
   },
   {
@@ -26665,6 +26665,83 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/12786150?v=4",
+    "name": "trie.zig",
+    "full_name": "hedzr/trie.zig",
+    "created_at": "2025-04-16T07:06:19Z",
+    "description": "key-value storage identified by dotted path",
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/hedzr/trie.zig/tags",
+    "license": "Apache-2.0",
+    "topics": [
+      "radix-tree",
+      "trie",
+      "trie-tree",
+      "zig",
+      "zig-lib",
+      "zig-library",
+      "zig-package"
+    ],
+    "size": 65,
+    "fork": false,
+    "updated_at": "2025-04-17T11:01:50Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# trie.zig\n\n`trie.zig` implement a Trie-tree structure in zig-lang.\n\n`trie.zig` provides a key value storage identified by the dotted path, such as `app.logging.file` => `/var/log/app/stdout.log`.\n\n`trie.zig` allows these value to be inserted: string, int, float, and boolean. The future vision includes supporting a broader array of data types, which is dependent on the usefulness of zig-lang's syntax as it evolves.\n\n## Usage\n\nThe usage is,\n\n```zig\nconst std = @import(\"std\");\nconst trie = @import(\"trie_lib\");\n\nfn trie_test(writer: anytype) !void {\n    const GPA = std.heap.GeneralPurposeAllocator;\n    // var general_purpose_allocator = GPA(.{}){};\n    // const gpa = general_purpose_allocator.allocator();\n    var gpa = GPA(.{ .enable_memory_limit = true }){};\n    const allocator = gpa.allocator();\n    defer _ = gpa.deinit();\n\n    var t = try trie.Trie(trie.NodeValue).init(allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n    try t.set(\"logging.interval\", 3 * 24 * 60 * 60 * 1000 * 1000); // 3 days\n    try t.set(\"debug\", false);\n    try t.set(\"deb.install\", false);\n    try t.set(\"deb.target\", \"app-debug.deb\");\n    try t.set(\"debfile\", \"app-release.deb\");\n\n    // print(\"t: {s} \\n\", .{try t.dump()});\n    const dstr = try t.dump();\n    try writer.print(\"\\nt.dump: \\n{s} \\n\", .{dstr});\n\n    var v = try t.get(\"deb.target\");\n    try writer.print(\"\\ndeb.target: {s} \\n\", .{v.string});\n\n    v = try t.get(\"debfile\");\n    try writer.print(\"debfile: {s} \\n\", .{v.string});\n    v = try t.get(\"deb.install\");\n    try writer.print(\"deb.install: {} \\n\", .{v.boolean});\n    v = try t.get(\"logging.interval\");\n    try writer.print(\"logging.interval: {} \\n\", .{v.int});\n    v = try t.get(\"logging.rotate\");\n    try writer.print(\"logging.rotate: {} \\n\", .{v.boolean});\n    v = try t.get(\"debug\");\n    try writer.print(\"debug: {} \\n\", .{v.boolean});\n}\n```\n\n### Import `trie.zig`\n\n#### Dependency in `build.zig.zon`\n\nIn your `build.zig.zon`, add a reference to `trie.zig`:\n\n```zig\n.{\n  .name = \"my-app\",\n  .paths = .{\"\"},\n  .version = \"0.0.0\",\n  .dependencies = .{\n    .trie = .{\n      .url = \"https://github.com/hedzr/trie.zig/archive/master.tar.gz\",\n      .hash = \"$INSERT_HASH_HERE\"\n    },\n  },\n}\n```\n\nThe hash can also be written and updated by this command line:\n\n```bash\nzig fetch https://github.com/hedzr/trie.zig/archive/master.tar.gz --save\n```\n\n> Instead of `master` you can use a specific commit/tag.\n\n#### Dependency in `build.zig`\n\nSuppose you should already have an executable, something like:\n\n```zig\n    const exe = b.addExecutable(.{\n        .name = \"my-app\",\n        .root_module = exe_mod,\n    });\n```\n\nAdd the following line:\n\n```zig\n    const trie_dep = b.dependency(\"trie\", .{\n        .target = target,\n        .optimize = optimize,\n    });\n    std.debug.print(\"trie_dep: {s} \\n\", .{trie_dep.builder.modules.keys()});\n    exe.root_module.addImport(\"trie\", trie_dep.module(\"trie\"));\n```\n\nYou can now `const trie = @import(\"trie\");` in your project.\n\n### In your `main.zig`\n\nNow insert these codes as a first look,\n\n```zig\nconst trie = @import(\"trie\");\n\nfn trie_test(writer: anytype) !void {\n    const GPA = std.heap.GeneralPurposeAllocator;\n    // var general_purpose_allocator = GPA(.{}){};\n    // const gpa = general_purpose_allocator.allocator();\n    var gpa = GPA(.{ .enable_memory_limit = true }){};\n    const allocator = gpa.allocator();\n    defer _ = gpa.deinit();\n\n    var t = try trie.Trie(trie.NodeValue).init(allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n}\n```\n\n## APIs\n\n### get\n\nGet leaf node value by its dotted path, or an `Error` on unexisted node or branch node.\n\n### set\n\nSet `(key, value)` pair into trie tree.\n\n### dump\n\nDump internal structure for debugging purpose.\n\n### walk\n\nWalk on all nodes.\n\n```zig\ntest \"walker\" {\n    print(\"\\n\", .{});\n\n    var t = try Trie(NodeValue).init(test_allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n    try t.set(\"logging.interval\", 3 * 24 * 60 * 60 * 1000 * 1000); // 3 days\n    try t.set(\"debug\", false);\n    try t.set(\"deb.install\", false);\n    try t.set(\"deb.target\", \"app-debug.deb\");\n    try t.set(\"debfile\", \"app-release.deb\");\n\n    try t.walk(walkOnTTree);\n}\n\nfn walkOnTTree(key: []const u8, val: ?*NodeValue, props: anytype) bool {\n    _ = props.level;\n    const delim = props.trie.delimiter;\n    const alloc = props.trie.alloc.allocator();\n    const node = props.node;\n    if (node.endsWith(delim) and node.isBranch()) {\n        print(\"{}. {s}/\\n\", .{ props.level, key });\n    } else if (node.isLeaf()) {\n        var vs: []const u8 = \"(null)\";\n        if (val) |v| {\n            vs = v.toString(alloc) catch \"(nothing)\";\n        }\n        print(\"{}. {s} => {s}  ; '{s}'\\n\", .{ props.level, key, vs, node.fragment.? });\n    }\n    return false;\n}\n```\n\n## LICENSE\n\nApache 2.0\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/11627921?v=4",
+    "name": "jolt",
+    "full_name": "Thomvanoorschot/jolt",
+    "created_at": "2025-03-29T16:30:13Z",
+    "description": "This repository contains a basic, non-blocking WebSocket client written in the Zig programming language. It leverages the xev event loop for asynchronous operations and is able to run non-blocking on a single thread.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/Thomvanoorschot/jolt/tags",
+    "license": "MIT",
+    "topics": [
+      "eventloop",
+      "libuv",
+      "libxev",
+      "non-blocking",
+      "tcp-client",
+      "websocket-client",
+      "websockets",
+      "wss",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 34,
+    "fork": false,
+    "updated_at": "2025-05-10T11:47:44Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.15.0-dev.45+24db007cd",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "libxev",
+        "url": "https://github.com/mitchellh/libxev",
+        "commit": "main.tar.gz",
+        "tar_url": "https://github.com/mitchellh/libxev/archive/main.tar.gz.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# Zig WebSocket Client\n\n## Overview\n\nThis project implements a basic, non-blocking WebSocket client in the Zig programming language. It leverages the `xev` event loop library for asynchronous I/O operations, providing a foundation for building applications that require real-time communication over WebSockets. The client can run on a single thread a non blocking fashion due to the event loop. The development process emphasizes learning Zig's features and low-level networking concepts.\n\n## Goals\n\n*   Implement a functional client compliant with core aspects of RFC 6455 (WebSocket Protocol).\n*   Explore asynchronous I/O patterns in Zig using the `xev` event loop library.\n*   Gain a practical understanding of the WebSocket handshake, framing, masking, and control frame handling (Ping/Pong, Close).\n*   Develop a reasonably straightforward API for sending and receiving WebSocket messages.\n*   Serve as an educational example for network programming and `xev` usage in Zig.\n\n## Key Aspects\n\n*   **Asynchronous Operations:** Built entirely on `xev` for non-blocking network I/O.\n*   **WebSocket Handshake:** Performs the client-side HTTP upgrade request.\n*   **Frame Parsing:** Decodes incoming Text, Binary, Close, Ping, and Pong frames.\n*   **Frame Creation:** Encodes and masks outgoing Text, Close, Ping, and Pong frames.\n*   **Control Frame Handling:** Automatically responds to server Pings with Pongs and handles the Close handshake.\n*   **Write Queuing:** Includes logic to queue write operations initiated before the connection is fully established.\n\n## Learning Outcomes\n\nDeveloping this client provides hands-on experience with:\n\n*   Event loop integration and asynchronous callbacks (`xev`).\n*   Implementing a network protocol based on an RFC specification.\n*   Manual buffer management and parsing binary data.\n*   Memory management techniques (allocators, resource pooling).\n\n## Getting Started\n\n**(Instructions for building, integrating, and using the client library will be added as development progresses.)**\n\nExample Usage (Conceptual):\n\n```zig\nconst std = @import(\"std\");\nconst Client = @import(\"client.zig\").Client; // Adjust import path as necessary\nconst xev = @import(\"xev\"); // Assuming xev is available\n\n// Define your client configuration\nconst client_config = Client.ClientConfig{\n    .host = \"your_server_host_or_ip\",\n    .port = your_server_port, // e.g. 80 or 443\n    .path = \"/your_websocket_path\", // e.g. \"/\" or \"/ws\"\n};\n\n// Define your callback context (if any, can be null if not used by callback)\nvar my_context: u32 = 123; // Example context\n\nconst client = try Client.init(\n    std.heap.page_allocator, // Or your preferred allocator\n    my_event_loop,           // Your initialized xev.Loop instance\n    client_config,\n    myReadCallback,\n    &my_context\n);\ntry client.connect();\n\n// Later, once connected...\ntry client.write(\"Hello, WebSocket Server!\");\n\nfn myReadCallback(context: *anyopaque, payload: []const u8) !void {\n    const app_context = @as(*u32, @ptrCast(@alignCast(context)));\n    std.debug.print(\"Context: {d}, Received message: {s}\\n\", .{app_context.*, payload});\n}\n```\n\n## Project Status\n\n\ud83d\udea7 **Functional / Early Development** - The client can connect, perform the handshake, send/receive text messages, and handle basic Ping/Pong/Close control frames.\n\n**Current Limitations:**\n\n*   Does not support fragmented messages.\n*   Limited configuration options.\n*   Error handling and recovery strategies could be more robust.\n*   Missing comprehensive tests.\n",
+    "dependents": []
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/146390816?v=4",
     "name": "osslsigncode",
     "full_name": "allyourcodebase/osslsigncode",
@@ -26816,83 +26893,6 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# z-queap\nZig implementation of a Queap data structure\n\n## Based on Queap by John Iacono, Stefan Langerman.\nSee the article: https://nyuscholars.nyu.edu/en/publications/queaps <br>\n\nSupports the operations `init()`, `deinit()`, `insert(element)`, `minimum()`, `remove(element)`, and `remove_min()`.\n\n### Add the Queap to your project through the package manager:\n1. To add the module to your project folder run:\n```sh\nzig fetch --save git+https://github.com/StanWeerman/z-queap.git\n```\n\n2. Then, get the module in your build.zig file\n```zig\nconst queap_dependency = b.dependency(\"queap\", .{\n    .target = target,\n    .optimize = optimize,\n});\n\nexe.root_module.addImport(\"queap\", queap_dependency.module(\"queap\"));\n```\n***\n\n### Example code with a basic less than function and inserts:\n\n```zig\nconst std = @import(\"std\");\n\nconst queap = @import(\"queap\");\n\npub fn main() !void {\n    var gpa = std.heap.GeneralPurposeAllocator(.{}){};\n    const allocator = gpa.allocator();\n    defer _ = gpa.deinit();\n\n    // Initialize a new queap\n    const Qlt = queap.Queap(u8, void, lessThan);\n    var qlt = try Qlt.init(allocator, {});\n\n    // Don't forget to deinit the Queap!\n    defer qlt.deinit();\n\n    // Try inserting and removing from the Queap!\n    try qlt.insert(1);\n    try qlt.insert(2);\n    try qlt.insert(3);\n    _ = try qlt.remove_min();\n\n    std.debug.print(\"Min: {?}\\n\", .{qlt.minimum()});\n}\n\nfn lessThan(context: void, a: u8, b: u8) std.math.Order {\n    _ = context;\n    return std.math.order(a, b);\n}\n\n```\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/12786150?v=4",
-    "name": "trie.zig",
-    "full_name": "hedzr/trie.zig",
-    "created_at": "2025-04-16T07:06:19Z",
-    "description": "key-value storage identified by dotted path",
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/hedzr/trie.zig/tags",
-    "license": "Apache-2.0",
-    "topics": [
-      "radix-tree",
-      "trie",
-      "trie-tree",
-      "zig",
-      "zig-lib",
-      "zig-library",
-      "zig-package"
-    ],
-    "size": 65,
-    "fork": false,
-    "updated_at": "2025-04-17T11:01:50Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# trie.zig\n\n`trie.zig` implement a Trie-tree structure in zig-lang.\n\n`trie.zig` provides a key value storage identified by the dotted path, such as `app.logging.file` => `/var/log/app/stdout.log`.\n\n`trie.zig` allows these value to be inserted: string, int, float, and boolean. The future vision includes supporting a broader array of data types, which is dependent on the usefulness of zig-lang's syntax as it evolves.\n\n## Usage\n\nThe usage is,\n\n```zig\nconst std = @import(\"std\");\nconst trie = @import(\"trie_lib\");\n\nfn trie_test(writer: anytype) !void {\n    const GPA = std.heap.GeneralPurposeAllocator;\n    // var general_purpose_allocator = GPA(.{}){};\n    // const gpa = general_purpose_allocator.allocator();\n    var gpa = GPA(.{ .enable_memory_limit = true }){};\n    const allocator = gpa.allocator();\n    defer _ = gpa.deinit();\n\n    var t = try trie.Trie(trie.NodeValue).init(allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n    try t.set(\"logging.interval\", 3 * 24 * 60 * 60 * 1000 * 1000); // 3 days\n    try t.set(\"debug\", false);\n    try t.set(\"deb.install\", false);\n    try t.set(\"deb.target\", \"app-debug.deb\");\n    try t.set(\"debfile\", \"app-release.deb\");\n\n    // print(\"t: {s} \\n\", .{try t.dump()});\n    const dstr = try t.dump();\n    try writer.print(\"\\nt.dump: \\n{s} \\n\", .{dstr});\n\n    var v = try t.get(\"deb.target\");\n    try writer.print(\"\\ndeb.target: {s} \\n\", .{v.string});\n\n    v = try t.get(\"debfile\");\n    try writer.print(\"debfile: {s} \\n\", .{v.string});\n    v = try t.get(\"deb.install\");\n    try writer.print(\"deb.install: {} \\n\", .{v.boolean});\n    v = try t.get(\"logging.interval\");\n    try writer.print(\"logging.interval: {} \\n\", .{v.int});\n    v = try t.get(\"logging.rotate\");\n    try writer.print(\"logging.rotate: {} \\n\", .{v.boolean});\n    v = try t.get(\"debug\");\n    try writer.print(\"debug: {} \\n\", .{v.boolean});\n}\n```\n\n### Import `trie.zig`\n\n#### Dependency in `build.zig.zon`\n\nIn your `build.zig.zon`, add a reference to `trie.zig`:\n\n```zig\n.{\n  .name = \"my-app\",\n  .paths = .{\"\"},\n  .version = \"0.0.0\",\n  .dependencies = .{\n    .trie = .{\n      .url = \"https://github.com/hedzr/trie.zig/archive/master.tar.gz\",\n      .hash = \"$INSERT_HASH_HERE\"\n    },\n  },\n}\n```\n\nThe hash can also be written and updated by this command line:\n\n```bash\nzig fetch https://github.com/hedzr/trie.zig/archive/master.tar.gz --save\n```\n\n> Instead of `master` you can use a specific commit/tag.\n\n#### Dependency in `build.zig`\n\nSuppose you should already have an executable, something like:\n\n```zig\n    const exe = b.addExecutable(.{\n        .name = \"my-app\",\n        .root_module = exe_mod,\n    });\n```\n\nAdd the following line:\n\n```zig\n    const trie_dep = b.dependency(\"trie\", .{\n        .target = target,\n        .optimize = optimize,\n    });\n    std.debug.print(\"trie_dep: {s} \\n\", .{trie_dep.builder.modules.keys()});\n    exe.root_module.addImport(\"trie\", trie_dep.module(\"trie\"));\n```\n\nYou can now `const trie = @import(\"trie\");` in your project.\n\n### In your `main.zig`\n\nNow insert these codes as a first look,\n\n```zig\nconst trie = @import(\"trie\");\n\nfn trie_test(writer: anytype) !void {\n    const GPA = std.heap.GeneralPurposeAllocator;\n    // var general_purpose_allocator = GPA(.{}){};\n    // const gpa = general_purpose_allocator.allocator();\n    var gpa = GPA(.{ .enable_memory_limit = true }){};\n    const allocator = gpa.allocator();\n    defer _ = gpa.deinit();\n\n    var t = try trie.Trie(trie.NodeValue).init(allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n}\n```\n\n## APIs\n\n### get\n\nGet leaf node value by its dotted path, or an `Error` on unexisted node or branch node.\n\n### set\n\nSet `(key, value)` pair into trie tree.\n\n### dump\n\nDump internal structure for debugging purpose.\n\n### walk\n\nWalk on all nodes.\n\n```zig\ntest \"walker\" {\n    print(\"\\n\", .{});\n\n    var t = try Trie(NodeValue).init(test_allocator, \"app\");\n    defer t.deinit();\n\n    try t.set(\"logging.file\", \"/var/log/app/stdout.log\");\n    try t.set(\"logging.rotate\", true);\n    try t.set(\"logging.interval\", 3 * 24 * 60 * 60 * 1000 * 1000); // 3 days\n    try t.set(\"debug\", false);\n    try t.set(\"deb.install\", false);\n    try t.set(\"deb.target\", \"app-debug.deb\");\n    try t.set(\"debfile\", \"app-release.deb\");\n\n    try t.walk(walkOnTTree);\n}\n\nfn walkOnTTree(key: []const u8, val: ?*NodeValue, props: anytype) bool {\n    _ = props.level;\n    const delim = props.trie.delimiter;\n    const alloc = props.trie.alloc.allocator();\n    const node = props.node;\n    if (node.endsWith(delim) and node.isBranch()) {\n        print(\"{}. {s}/\\n\", .{ props.level, key });\n    } else if (node.isLeaf()) {\n        var vs: []const u8 = \"(null)\";\n        if (val) |v| {\n            vs = v.toString(alloc) catch \"(nothing)\";\n        }\n        print(\"{}. {s} => {s}  ; '{s}'\\n\", .{ props.level, key, vs, node.fragment.? });\n    }\n    return false;\n}\n```\n\n## LICENSE\n\nApache 2.0\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/11627921?v=4",
-    "name": "jolt",
-    "full_name": "Thomvanoorschot/jolt",
-    "created_at": "2025-03-29T16:30:13Z",
-    "description": "This repository contains a basic, non-blocking WebSocket client written in the Zig programming language. It leverages the xev event loop for asynchronous operations and is able to run non-blocking on a single thread.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/Thomvanoorschot/jolt/tags",
-    "license": "MIT",
-    "topics": [
-      "eventloop",
-      "libuv",
-      "libxev",
-      "non-blocking",
-      "tcp-client",
-      "websocket-client",
-      "websockets",
-      "wss",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 34,
-    "fork": false,
-    "updated_at": "2025-05-10T11:47:44Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.15.0-dev.45+24db007cd",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "libxev",
-        "url": "https://github.com/mitchellh/libxev",
-        "commit": "main.tar.gz",
-        "tar_url": "https://github.com/mitchellh/libxev/archive/main.tar.gz.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# Zig WebSocket Client\n\n## Overview\n\nThis project implements a basic, non-blocking WebSocket client in the Zig programming language. It leverages the `xev` event loop library for asynchronous I/O operations, providing a foundation for building applications that require real-time communication over WebSockets. The client can run on a single thread a non blocking fashion due to the event loop. The development process emphasizes learning Zig's features and low-level networking concepts.\n\n## Goals\n\n*   Implement a functional client compliant with core aspects of RFC 6455 (WebSocket Protocol).\n*   Explore asynchronous I/O patterns in Zig using the `xev` event loop library.\n*   Gain a practical understanding of the WebSocket handshake, framing, masking, and control frame handling (Ping/Pong, Close).\n*   Develop a reasonably straightforward API for sending and receiving WebSocket messages.\n*   Serve as an educational example for network programming and `xev` usage in Zig.\n\n## Key Aspects\n\n*   **Asynchronous Operations:** Built entirely on `xev` for non-blocking network I/O.\n*   **WebSocket Handshake:** Performs the client-side HTTP upgrade request.\n*   **Frame Parsing:** Decodes incoming Text, Binary, Close, Ping, and Pong frames.\n*   **Frame Creation:** Encodes and masks outgoing Text, Close, Ping, and Pong frames.\n*   **Control Frame Handling:** Automatically responds to server Pings with Pongs and handles the Close handshake.\n*   **Write Queuing:** Includes logic to queue write operations initiated before the connection is fully established.\n\n## Learning Outcomes\n\nDeveloping this client provides hands-on experience with:\n\n*   Event loop integration and asynchronous callbacks (`xev`).\n*   Implementing a network protocol based on an RFC specification.\n*   Manual buffer management and parsing binary data.\n*   Memory management techniques (allocators, resource pooling).\n\n## Getting Started\n\n**(Instructions for building, integrating, and using the client library will be added as development progresses.)**\n\nExample Usage (Conceptual):\n\n```zig\nconst std = @import(\"std\");\nconst Client = @import(\"client.zig\").Client; // Adjust import path as necessary\nconst xev = @import(\"xev\"); // Assuming xev is available\n\n// Define your client configuration\nconst client_config = Client.ClientConfig{\n    .host = \"your_server_host_or_ip\",\n    .port = your_server_port, // e.g. 80 or 443\n    .path = \"/your_websocket_path\", // e.g. \"/\" or \"/ws\"\n};\n\n// Define your callback context (if any, can be null if not used by callback)\nvar my_context: u32 = 123; // Example context\n\nconst client = try Client.init(\n    std.heap.page_allocator, // Or your preferred allocator\n    my_event_loop,           // Your initialized xev.Loop instance\n    client_config,\n    myReadCallback,\n    &my_context\n);\ntry client.connect();\n\n// Later, once connected...\ntry client.write(\"Hello, WebSocket Server!\");\n\nfn myReadCallback(context: *anyopaque, payload: []const u8) !void {\n    const app_context = @as(*u32, @ptrCast(@alignCast(context)));\n    std.debug.print(\"Context: {d}, Received message: {s}\\n\", .{app_context.*, payload});\n}\n```\n\n## Project Status\n\n\ud83d\udea7 **Functional / Early Development** - The client can connect, perform the handshake, send/receive text messages, and handle basic Ping/Pong/Close control frames.\n\n**Current Limitations:**\n\n*   Does not support fragmented messages.\n*   Limited configuration options.\n*   Error handling and recovery strategies could be more robust.\n*   Missing comprehensive tests.\n",
     "dependents": []
   },
   {
@@ -27848,116 +27848,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/57362253?v=4",
-    "name": "oniguruma.zig",
-    "full_name": "tiawl/oniguruma.zig",
-    "created_at": "2024-11-02T17:18:47Z",
-    "description": "oniguruma packaged for @ziglang",
-    "default_branch": "trunk",
-    "open_issues": 0,
-    "stargazers_count": 2,
-    "forks_count": 0,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/tiawl/oniguruma.zig/tags",
-    "license": "Unlicense",
-    "topics": [
-      "binding",
-      "oniguruma",
-      "zig",
-      "zig-package",
-      "ziglang"
-    ],
-    "size": 620,
-    "fork": false,
-    "updated_at": "2025-05-07T10:12:51Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "toolbox",
-        "url": "https://github.com/tiawl/toolbox",
-        "commit": "master",
-        "tar_url": "https://github.com/tiawl/toolbox/archive/master.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# oniguruma.zig\n\nThis is a fork of [kkos/oniguruma][1] to package the libonig C API for [Zig][2]\n\n## Why this fork ?\n\nThe intention under this fork is to package [kkos/oniguruma][1] for [Zig][2]. So:\n* Unnecessary files have been deleted,\n* The build system has been replaced with `build.zig`,\n* A cron runs every day to check [kkos/oniguruma][1]. Then it updates this repository if a new release is available.\n\n## How to use it\n\nThe goal of this repository is not to provide a [Zig][2] binding for [kkos/oniguruma][1]. There are at least as many legit ways as possible to make a binding as there are active accounts on Github. So you are not going to find an answer for this question here. The point of this repository is to abstract the [kkos/oniguruma][1] compilation process with [Zig][2] (which is not new comers friendly and not easy to maintain) to let you focus on your application. So you can use **oniguruma.zig**:\n- as raw (no available example now),\n- as a daily updated interface for your [Zig][2] binding of [kkos/oniguruma][1] (no available exemple now).\n\n## Dependencies\n\nThe [Zig][2] part of this package is relying on the latest [Zig][2] release (0.14.0) and will only be updated for the next one (so for the 0.14.1).\n\nHere the repositories' version used by this fork:\n* [kkos/oniguruma](https://github.com/tiawl/oniguruma.zig/blob/trunk/.references/oniguruma)\n\n## CICD reminder\n\nThese repositories are automatically updated when a new release is available:\n* [tiawl/libjq.zig][3]\n\nThis repository is automatically updated when a new release is available from these repositories:\n* [kkos/oniguruma][1]\n* [tiawl/toolbox][4]\n\n## `zig build` options\n\nThese additional options have been implemented for maintainability tasks:\n```\n  -Dfetch   Update .references folder and build.zig.zon then stop execution\n  -Dupdate  Update binding\n```\n\n## License\n\nThis repository is not subject to a unique License:\n\nThe parts of this repository originated from this repository are dedicated to the public domain. See the LICENSE file for more details.\n\n**For other parts, it is subject to the License restrictions their respective owners choosed. By design, the public domain code is incompatible with the License notion. In this case, the License prevails. So if you have any doubt about a file property, open an issue.**\n\n[1]:https://github.com/kkos/oniguruma\n[2]:https://github.com/ziglang/zig\n[3]:https://github.com/tiawl/libjq.zig\n[4]:https://github.com/tiawl/toolbox\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/30970706?v=4",
-    "name": "mimalloc.zig",
-    "full_name": "theseyan/mimalloc.zig",
-    "created_at": "2024-12-17T15:03:59Z",
-    "description": "Simple Zig Allocator interface over mimalloc.",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 2,
-    "forks_count": 0,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/theseyan/mimalloc.zig/tags",
-    "license": "MIT",
-    "topics": [
-      "mimalloc",
-      "zig",
-      "zig-package"
-    ],
-    "size": 3,
-    "fork": false,
-    "updated_at": "2025-05-11T09:36:56Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.13.0",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "macos_sdk",
-        "url": "https://github.com/mitchellh/zig-build-macos-sdk",
-        "commit": "refs",
-        "tar_url": "https://github.com/mitchellh/zig-build-macos-sdk/archive/refs.tar.gz",
-        "type": "remote"
-      },
-      {
-        "name": "mimalloc_c",
-        "url": "https://github.com/microsoft/mimalloc",
-        "commit": "refs",
-        "tar_url": "https://github.com/microsoft/mimalloc/archive/refs.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# mimalloc.zig\n\nA simple implementation of Zig's `std.mem.Allocator` interface over the excellent [mimalloc](https://github.com/microsoft/mimalloc) by Microsoft.\n\n## Usage\n\n```\nconst mimalloc = @import(\"mimalloc\").Allocator{};\nconst allocator = mimalloc.allocator();\n\n// Use `allocator` here...\n```\n\n## Tests\n\nRun the tests:\n```\nzig build test\n```",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/1562827?v=4",
-    "name": "multi-bounded-array",
-    "full_name": "travisstaloch/multi-bounded-array",
-    "created_at": "2025-02-05T22:12:19Z",
-    "description": "Similar to std.MultiArrayList() but backed by fixed size arrays",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 2,
-    "forks_count": 0,
-    "watchers_count": 2,
-    "tags_url": "https://api.github.com/repos/travisstaloch/multi-bounded-array/tags",
-    "license": "MIT",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 26,
-    "fork": false,
-    "updated_at": "2025-03-07T14:01:27Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "# About\nSimilar to `std.MultiArrayList()` but backed by fixed size arrays.\n\nEach field of T becomes an array with length `buffer_capacity`.  To\naccess the arrays as slices use `items(.<field>)` or `constItems(.<field>)`.\n\nUseful when a struct of small arrays is desired with capacity that is\nknown at compile time.  Like `std.BoundedArray`, MultiBoundedArrays are only\nvalues and thus may be copied.\n\n# Usage\n```console\n$ zig fetch --save=multi_bounded_array git+https://github.com/travisstaloch/multi-bounded-array#main\"\n```\n\n```zig\n// build.zig\nconst dep = b.dependency(\"multi_bounded_array\", .{ .optimize = optimize, .target = target });\nexe.root_module.addImport(\"multi_bounded_array\", dep.module(\"multi_bounded_array\"));\n```\n\n```zig\n// main.zig\nconst MultiBoundedArray = @import(\"multi_bounded_array\").MultiBoundedArray;\nvar a = MultiBoundedArray(struct { int: u8, float: f32 }, 64){};\n// ...\n```\n\n# Example\nFrom tests in [lib.zig](lib.zig) which also contains more tests.\n\n```zig\ntest \"basic\" {\n    const T = struct { int: u8, float: f32 };\n\n    var a = MultiBoundedArray(T, 64){};\n    try testing.expectEqual(0, a.len);\n    try a.append(.{ .int = 1, .float = 1 });\n    const mut_ints = a.items(.int);\n    try testing.expectEqual([]u8, @TypeOf(mut_ints)); // items() slice constness is inherited\n    try testing.expectEqual(1, mut_ints.len);\n    try testing.expectEqual(1, mut_ints[0]);\n    mut_ints[0] = 2;\n\n    const a_const_copy = a;\n    mut_ints[0] = 3;\n    const const_ints = a_const_copy.items(.int);\n    try testing.expectEqual([]const u8, @TypeOf(const_ints)); // items() slice constness is inherited\n    try testing.expectEqual(2, const_ints[0]);\n}\n```\n\n# Todo\n- [x] support tagged unions and sorting\n- [x] add tests from std.MultiArrayList",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/32989557?v=4",
     "name": "hamt",
     "full_name": "SimonLSchlee/hamt",
@@ -28082,6 +27972,116 @@
       }
     ],
     "readme_content": "# Gifsicle\n\nThis is [gifsicle](https://github.com/kohler/gifsicle) packaged using Zig build system\n\nneeds zig version `0.14.0` or higher\n\n\n## Options\n\nYou can set these options when importing as a dependency with `b.dependency(\"gifsicle\", .{ option=value })`\nor when building directly with `zig build -Doption=value`\n\n|Option Name|default|description                                   |\n|-----------|:-----:|----------------------------------------------|\n| dynamic   | false | Build lib as shared (dynamic library)        |\n| tools     | true  | Build cli tools (gifsicle, gifview, gifdiff) |\n| terminal  | true  | Output gif to terminal                       |\n\n---\n\nThanks to andrew's fork of [ffmpeg](https://github.com/andrewrk/ffmpeg) for the knowhow\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/57362253?v=4",
+    "name": "oniguruma.zig",
+    "full_name": "tiawl/oniguruma.zig",
+    "created_at": "2024-11-02T17:18:47Z",
+    "description": "oniguruma packaged for @ziglang",
+    "default_branch": "trunk",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/tiawl/oniguruma.zig/tags",
+    "license": "Unlicense",
+    "topics": [
+      "binding",
+      "oniguruma",
+      "zig",
+      "zig-package",
+      "ziglang"
+    ],
+    "size": 620,
+    "fork": false,
+    "updated_at": "2025-05-07T10:12:51Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "toolbox",
+        "url": "https://github.com/tiawl/toolbox",
+        "commit": "master",
+        "tar_url": "https://github.com/tiawl/toolbox/archive/master.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# oniguruma.zig\n\nThis is a fork of [kkos/oniguruma][1] to package the libonig C API for [Zig][2]\n\n## Why this fork ?\n\nThe intention under this fork is to package [kkos/oniguruma][1] for [Zig][2]. So:\n* Unnecessary files have been deleted,\n* The build system has been replaced with `build.zig`,\n* A cron runs every day to check [kkos/oniguruma][1]. Then it updates this repository if a new release is available.\n\n## How to use it\n\nThe goal of this repository is not to provide a [Zig][2] binding for [kkos/oniguruma][1]. There are at least as many legit ways as possible to make a binding as there are active accounts on Github. So you are not going to find an answer for this question here. The point of this repository is to abstract the [kkos/oniguruma][1] compilation process with [Zig][2] (which is not new comers friendly and not easy to maintain) to let you focus on your application. So you can use **oniguruma.zig**:\n- as raw (no available example now),\n- as a daily updated interface for your [Zig][2] binding of [kkos/oniguruma][1] (no available exemple now).\n\n## Dependencies\n\nThe [Zig][2] part of this package is relying on the latest [Zig][2] release (0.14.0) and will only be updated for the next one (so for the 0.14.1).\n\nHere the repositories' version used by this fork:\n* [kkos/oniguruma](https://github.com/tiawl/oniguruma.zig/blob/trunk/.references/oniguruma)\n\n## CICD reminder\n\nThese repositories are automatically updated when a new release is available:\n* [tiawl/libjq.zig][3]\n\nThis repository is automatically updated when a new release is available from these repositories:\n* [kkos/oniguruma][1]\n* [tiawl/toolbox][4]\n\n## `zig build` options\n\nThese additional options have been implemented for maintainability tasks:\n```\n  -Dfetch   Update .references folder and build.zig.zon then stop execution\n  -Dupdate  Update binding\n```\n\n## License\n\nThis repository is not subject to a unique License:\n\nThe parts of this repository originated from this repository are dedicated to the public domain. See the LICENSE file for more details.\n\n**For other parts, it is subject to the License restrictions their respective owners choosed. By design, the public domain code is incompatible with the License notion. In this case, the License prevails. So if you have any doubt about a file property, open an issue.**\n\n[1]:https://github.com/kkos/oniguruma\n[2]:https://github.com/ziglang/zig\n[3]:https://github.com/tiawl/libjq.zig\n[4]:https://github.com/tiawl/toolbox\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/30970706?v=4",
+    "name": "mimalloc.zig",
+    "full_name": "theseyan/mimalloc.zig",
+    "created_at": "2024-12-17T15:03:59Z",
+    "description": "Simple Zig Allocator interface over mimalloc.",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/theseyan/mimalloc.zig/tags",
+    "license": "MIT",
+    "topics": [
+      "mimalloc",
+      "zig",
+      "zig-package"
+    ],
+    "size": 3,
+    "fork": false,
+    "updated_at": "2025-05-11T09:36:56Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.13.0",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "macos_sdk",
+        "url": "https://github.com/mitchellh/zig-build-macos-sdk",
+        "commit": "refs",
+        "tar_url": "https://github.com/mitchellh/zig-build-macos-sdk/archive/refs.tar.gz",
+        "type": "remote"
+      },
+      {
+        "name": "mimalloc_c",
+        "url": "https://github.com/microsoft/mimalloc",
+        "commit": "refs",
+        "tar_url": "https://github.com/microsoft/mimalloc/archive/refs.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# mimalloc.zig\n\nA simple implementation of Zig's `std.mem.Allocator` interface over the excellent [mimalloc](https://github.com/microsoft/mimalloc) by Microsoft.\n\n## Usage\n\n```\nconst mimalloc = @import(\"mimalloc\").Allocator{};\nconst allocator = mimalloc.allocator();\n\n// Use `allocator` here...\n```\n\n## Tests\n\nRun the tests:\n```\nzig build test\n```",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/1562827?v=4",
+    "name": "multi-bounded-array",
+    "full_name": "travisstaloch/multi-bounded-array",
+    "created_at": "2025-02-05T22:12:19Z",
+    "description": "Similar to std.MultiArrayList() but backed by fixed size arrays",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 2,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "tags_url": "https://api.github.com/repos/travisstaloch/multi-bounded-array/tags",
+    "license": "MIT",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 26,
+    "fork": false,
+    "updated_at": "2025-03-07T14:01:27Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "# About\nSimilar to `std.MultiArrayList()` but backed by fixed size arrays.\n\nEach field of T becomes an array with length `buffer_capacity`.  To\naccess the arrays as slices use `items(.<field>)` or `constItems(.<field>)`.\n\nUseful when a struct of small arrays is desired with capacity that is\nknown at compile time.  Like `std.BoundedArray`, MultiBoundedArrays are only\nvalues and thus may be copied.\n\n# Usage\n```console\n$ zig fetch --save=multi_bounded_array git+https://github.com/travisstaloch/multi-bounded-array#main\"\n```\n\n```zig\n// build.zig\nconst dep = b.dependency(\"multi_bounded_array\", .{ .optimize = optimize, .target = target });\nexe.root_module.addImport(\"multi_bounded_array\", dep.module(\"multi_bounded_array\"));\n```\n\n```zig\n// main.zig\nconst MultiBoundedArray = @import(\"multi_bounded_array\").MultiBoundedArray;\nvar a = MultiBoundedArray(struct { int: u8, float: f32 }, 64){};\n// ...\n```\n\n# Example\nFrom tests in [lib.zig](lib.zig) which also contains more tests.\n\n```zig\ntest \"basic\" {\n    const T = struct { int: u8, float: f32 };\n\n    var a = MultiBoundedArray(T, 64){};\n    try testing.expectEqual(0, a.len);\n    try a.append(.{ .int = 1, .float = 1 });\n    const mut_ints = a.items(.int);\n    try testing.expectEqual([]u8, @TypeOf(mut_ints)); // items() slice constness is inherited\n    try testing.expectEqual(1, mut_ints.len);\n    try testing.expectEqual(1, mut_ints[0]);\n    mut_ints[0] = 2;\n\n    const a_const_copy = a;\n    mut_ints[0] = 3;\n    const const_ints = a_const_copy.items(.int);\n    try testing.expectEqual([]const u8, @TypeOf(const_ints)); // items() slice constness is inherited\n    try testing.expectEqual(2, const_ints[0]);\n}\n```\n\n# Todo\n- [x] support tagged unions and sorting\n- [x] add tests from std.MultiArrayList",
     "dependents": []
   },
   {
@@ -28819,6 +28819,139 @@
     "dependents": []
   },
   {
+    "avatar_url": "https://avatars.githubusercontent.com/u/51416554?v=4",
+    "name": "glaze",
+    "full_name": "hendriknielaender/glaze",
+    "created_at": "2024-12-31T16:37:38Z",
+    "description": "\ud83c\udf69 cli kit",
+    "default_branch": "main",
+    "open_issues": 3,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/hendriknielaender/glaze/tags",
+    "license": "MIT",
+    "topics": [
+      "ansi",
+      "ansi-escape-codes",
+      "cli",
+      "color",
+      "console",
+      "terminal",
+      "zig",
+      "zig-package"
+    ],
+    "size": 282,
+    "fork": false,
+    "updated_at": "2025-01-09T21:04:57Z",
+    "has_build_zig": false,
+    "has_build_zig_zon": false,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "> [!WARNING]  \n> Still work in progress.\n\n<h1 align=\"center\">\n   <img src=\"glaze-logo.png\" width=\"20%\" height=\"20%\" alt=\"glaze logo\" title=\"glaze logo\">\n</h1>\n\n<div align=\"center\">Terminal string styling.</div>\n<div align=\"center\">\n   \n[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/hendriknielaender/glaze/blob/HEAD/LICENSE)\n![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/hendriknielaender/glaze)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hendriknielaender/glaze/blob/HEAD/CONTRIBUTING.md)\n\n</div>\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/194645670?v=4",
+    "name": "bx",
+    "full_name": "InteractiveBin/bx",
+    "created_at": "2025-01-16T05:28:54Z",
+    "description": "Base library used across multiple projects",
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/InteractiveBin/bx/tags",
+    "license": "BSD-2-Clause",
+    "topics": [
+      "zig",
+      "zig-package"
+    ],
+    "size": 34140,
+    "fork": true,
+    "updated_at": "2025-01-20T08:43:12Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "bx\n==\n\nBase X-platform library.\n\n[![GitHub Actions](https://github.com/bkaradzic/bx/actions/workflows/main.yml/badge.svg)](https://github.com/bkaradzic/bx/actions)\n[![License](https://img.shields.io/badge/license-BSD--2%20clause-blue.svg)](https://bkaradzic.github.io/bgfx/license.html)\n[![Join the chat at https://discord.gg/9eMbv7J](https://img.shields.io/discord/712512073522872352?color=%237289DA&label=bx&logo=discord&logoColor=white)](https://discord.gg/9eMbv7J)\n\nGoals:\n\n - Provide OS/runtime/compiler independent core functionality to be able to\n   write cross-platform applications.\n - Compile without C Runtime (CRT) and without C++ Standard Library (STL).\n\nContact\n-------\n\n[@bkaradzic](https://twitter.com/bkaradzic)  \n\nProject page  \nhttps://github.com/bkaradzic/bx\n\n[License (BSD 2-clause)](https://github.com/bkaradzic/bx/blob/master/LICENSE)\n-----------------------------------------------------------------------------\n\n<a href=\"http://opensource.org/licenses/BSD-2-Clause\" target=\"_blank\">\n<img align=\"right\" src=\"https://opensource.org/wp-content/uploads/2022/10/osi-badge-dark.svg\" width=\"100\" height=\"137\">\n</a>\n\n\tCopyright 2010-2025 Branimir Karadzic\n\t\n\tRedistribution and use in source and binary forms, with or without modification,\n\tare permitted provided that the following conditions are met:\n\t\n\t   1. Redistributions of source code must retain the above copyright notice, this\n\t      list of conditions and the following disclaimer.\n\t\n\t   2. Redistributions in binary form must reproduce the above copyright notice,\n\t      this list of conditions and the following disclaimer in the documentation\n\t      and/or other materials provided with the distribution.\n\t\n\tTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n\tANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n\tWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.\n\tIN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,\n\tINDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,\n\tBUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n\tDATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY\n\tOF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE\n\tOR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED\n\tOF THE POSSIBILITY OF SUCH DAMAGE.\n",
+    "dependents": [
+      "https://github.com/InteractiveBin/bgfx",
+      "https://github.com/InteractiveBin/bimg"
+    ]
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/2242?v=4",
+    "name": "uri-template",
+    "full_name": "softprops/uri-template",
+    "created_at": "2024-10-07T03:26:38Z",
+    "description": "a zig uri template (rfc6570) implementation",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/softprops/uri-template/tags",
+    "license": "MIT",
+    "topics": [
+      "uri-template",
+      "zig-library",
+      "zig-package"
+    ],
+    "size": 14,
+    "fork": false,
+    "updated_at": "2025-04-15T02:42:32Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.13.0",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "benchmark",
+        "url": "https://github.com/silversquirl/benchmark.zig",
+        "commit": "refs",
+        "tar_url": "https://github.com/silversquirl/benchmark.zig/archive/refs.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "<h1 align=\"center\">\n    zig uri template\n</h1>\n\n<div align=\"center\">\n    Zig library for <a href=\"https://datatracker.ietf.org/doc/html/rfc6570\">URI Templating</a>\n</div>\n\n---\n\n[![Main](https://github.com/softprops/uri-template/actions/workflows/ci.yml/badge.svg)](https://github.com/softprops/uri-template/actions/workflows/ci.yml) ![License Info](https://img.shields.io/github/license/softprops/uri-template) ![Release](https://img.shields.io/github/v/release/softprops/uri-template) [![Zig Support](https://img.shields.io/badge/zig-0.13.0-black?logo=zig)](https://ziglang.org/documentation/0.13.0/)\n\n\n## examples\n\nSee examples directory\n\n## \ud83d\udcfc installing\n\nCreate a new exec project with `zig init` then update `build.zig.zon` by running.\n\n```sh\nzig fetch --save https://github.com/softprops/uri-template/archive/refs/tags/v0.1.1.tar.gz\n```\n\n> you can also depend any tag with `https://github.com/softprops/uri-template/archive/refs/tags/v{version}.tar.gz` or current main with `https://github.com/softprops/uri-template/archive/refs/heads/main/main.tar.gz`. to resolve a hash omit it and let zig tell you the expected value.\n\nAdd the following in your `build.zig` file\n\n```diff\nconst std = @import(\"std\");\n\npub fn build(b: *std.Build) void {\n    const target = b.standardTargetOptions(.{});\n\n    const optimize = b.standardOptimizeOption(.{});\n    // \ud83d\udc47 de-reference dep from build.zig.zon\n+    const uritemplate = b.dependency(\"uritemplate\", .{\n+        .target = target,\n+        .optimize = optimize,\n+    }).module(\"uritemplate\");\n    var exe = b.addExecutable(.{\n        .name = \"your-exe\",\n        .root_source_file = .{ .path = \"src/main.zig\" },\n        .target = target,\n        .optimize = optimize,\n    });\n    // \ud83d\udc47 add the module to executable\n+    exe.root_mode.addImport(\"uritemplate\", uritemplate);\n\n    b.installArtifact(exe);\n}\n```\n\n## \ud83e\udd79 for budding ziglings\n\nDoes this look interesting but you're new to zig and feel left out? No problem, zig is young so most us of our new are as well. Here are some resources to help get you up to speed on zig\n\n- [the official zig website](https://ziglang.org/)\n- [zig's one-page language documentation](https://ziglang.org/documentation/0.13.0/)\n- [ziglearn](https://ziglearn.org/)\n- [ziglings exercises](https://github.com/ratfactor/ziglings)\n\n\n\\- softprops 2024\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/61841960?v=4",
+    "name": "pennant",
+    "full_name": "Arnau478/pennant",
+    "created_at": "2025-01-19T13:06:21Z",
+    "description": "Argument parser for Zig",
+    "default_branch": "master",
+    "open_issues": 1,
+    "stargazers_count": 1,
+    "forks_count": 0,
+    "watchers_count": 1,
+    "tags_url": "https://api.github.com/repos/Arnau478/pennant/tags",
+    "license": "GPL-3.0",
+    "topics": [
+      "argprase",
+      "zig",
+      "zig-package"
+    ],
+    "size": 40,
+    "fork": false,
+    "updated_at": "2025-04-26T20:47:48Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "<div align=\"center\">\n  <img src=\"logo.svg\" width=\"50%\" />\n</div>\n\n# Pennant\n\nArgument parser for Zig.\n\n## Features\n- Opposite flags (`--foo`/`--no-foo`, `--uppercase`/`--lowercase`), which act on a single variable and are mutually exclusive\n- Values with and without equals sign (`--foo bar` and `--foo=bar` are both valid and equivalent)\n- Bool flags never take a value, non-bool flags always do\n- Shorthands for bool flags\n- Everything is defined in a single struct, with the power of Zig's `comptime`\n\n## Examples\n\nExamples are available in the `examples` folder. They can also be run via `zig build example-[name]`.\n",
+    "dependents": [
+      "https://github.com/Arnau478/hevi"
+    ]
+  },
+  {
     "avatar_url": "https://avatars.githubusercontent.com/u/57322933?v=4",
     "name": "CoreX",
     "full_name": "griush/CoreX",
@@ -29172,139 +29305,6 @@
     ],
     "readme_content": "<p align=\"center\">\n\t<a href=\"https://code.zeptotech.net/zedd/zouter\">\n\t\t<picture>\n\t\t\t<img alt=\"Zouter logo\" width=\"150\" src=\"https://code.zeptotech.net/zedd/zouter/raw/branch/main/logo.svg\" />\n\t\t</picture>\n\t</a>\n</p>\n\n<h1 align=\"center\">\n\tZouter\n</h1>\n\n<h4 align=\"center\">\n\t<a href=\"https://code.zeptotech.net/zedd/zouter\">Documentation</a>\n|\n\t<a href=\"https://zedd.zeptotech.net/zouter/api\">API</a>\n</h4>\n\n<p align=\"center\">\n\tZig HTTP router library\n</p>\n\nZouter is part of [_zedd_](https://code.zeptotech.net/zedd), a collection of useful libraries for zig.\n\n## Zouter for zap\n\n_Zouter_ is an HTTP router library for Zig **zap** HTTP server. It's made to ease the use of **zap** to build REST APIs.\n\n## Versions\n\nZouter 0.2.0 is made for zig 0.14.0 and tested with zap 0.10.1.\n\n## How to use\n\n### Install\n\nIn your project directory:\n\n```shell\n$ zig fetch --save https://code.zeptotech.net/zedd/zouter/archive/v0.2.0.tar.gz\n```\n\nIn `build.zig`:\n\n```zig\n// Add zouter dependency.\nconst zouter = b.dependency(\"zouter\", .{\n\t.target = target,\n\t.optimize = optimize,\n});\nexe.root_module.addImport(\"zouter\", zouter.module(\"zouter\"));\n```\n\n### Example\n\nHere is a quick example of how to set up a router. It is an extract from the full test code at [`example.zig`](https://code.zeptotech.net/zedd/zouter/src/branch/main/tests/example.zig). You may want to have a look to [`simple_routes.zig`](https://code.zeptotech.net/zedd/zouter/src/branch/main/tests/simple_routes.zig) which shows more advanced features.\n\n```zig\n/// GET /foo/:arg/bar request handler.\nfn get(route: zouter.MatchedRoute, request: zap.Request) !void {\n\tvar bodyBuffer: [512]u8 = undefined;\n\tconst body = try std.fmt.bufPrint(&bodyBuffer, \"get: {s}\", .{route.params.get(\"arg\").?});\n\ttry request.sendBody(body);\n}\n\n/// POST /foo/:arg/bar request handler.\nfn post(route: zouter.MatchedRoute, request: zap.Request) !void {\n\tvar bodyBuffer: [512]u8 = undefined;\n\tconst body = try std.fmt.bufPrint(&bodyBuffer, \"post: {s}\", .{route.params.get(\"arg\").?});\n\ttry request.sendBody(body);\n}\n\n/// Setup an example router.\nfn setupExampleRouter(allocator: std.mem.Allocator) !zouter.Router {\n\t// Initialize an example router.\n\tvar exampleRouter = try zouter.Router.init(allocator, .{});\n\n\t// Add a route to the example router.\n\ttry exampleRouter.route(.{\n\t\t.path = \"foo\",\n\t\t.children = &[_]zouter.RouteDefinition{\n\t\t\t.{\n\t\t\t\t.path = \":arg\",\n\t\t\t\t.children = &[_]zouter.RouteDefinition{\n\t\t\t\t\t.{\n\t\t\t\t\t\t.path = \"bar\",\n\t\t\t\t\t\t.handle = .{\n\t\t\t\t\t\t\t.get = &get,\n\t\t\t\t\t\t\t.post = &post,\n\t\t\t\t\t\t},\n\t\t\t\t\t}\n\t\t\t\t},\n\t\t\t}\n\t\t},\n\t});\n\n\treturn exampleRouter;\n}\n```\n\n### Route definition\n\nA route only has one mandatory field: its path. If any part of a path starts with a `':'`, the value is taken as a dynamic variable, retrievable later with `Route.params` `HashMap`.\n\nA route can have:\n\n- **Children**: sub-routes definitions, with a `'/'` between the parent and the child. It's useful to prefix a list of routes with the same path / variable.\n- **Handle object**: you can define a handle function for each HTTP basic request method. If you don't care about the request method, there is an `any` field which will be used for all undefined request methods.\n- **Handle not found / error**: you can define a custom functions to handle errors or not found pages inside this path.\n- **Pre-handle / post-handle**: these functions are started before and after the request handling in this path. It looks like middlewares and can assume the same role as most of them (e.g. a pre-handle function to check for authentication under a specific path).\n\nFull details about route definition fields can be found in the [API reference](https://zedd.zeptotech.net/zouter/api).\n",
     "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/51416554?v=4",
-    "name": "glaze",
-    "full_name": "hendriknielaender/glaze",
-    "created_at": "2024-12-31T16:37:38Z",
-    "description": "\ud83c\udf69 cli kit",
-    "default_branch": "main",
-    "open_issues": 3,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/hendriknielaender/glaze/tags",
-    "license": "MIT",
-    "topics": [
-      "ansi",
-      "ansi-escape-codes",
-      "cli",
-      "color",
-      "console",
-      "terminal",
-      "zig",
-      "zig-package"
-    ],
-    "size": 282,
-    "fork": false,
-    "updated_at": "2025-01-09T21:04:57Z",
-    "has_build_zig": false,
-    "has_build_zig_zon": false,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "> [!WARNING]  \n> Still work in progress.\n\n<h1 align=\"center\">\n   <img src=\"glaze-logo.png\" width=\"20%\" height=\"20%\" alt=\"glaze logo\" title=\"glaze logo\">\n</h1>\n\n<div align=\"center\">Terminal string styling.</div>\n<div align=\"center\">\n   \n[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/hendriknielaender/glaze/blob/HEAD/LICENSE)\n![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/hendriknielaender/glaze)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hendriknielaender/glaze/blob/HEAD/CONTRIBUTING.md)\n\n</div>\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/194645670?v=4",
-    "name": "bx",
-    "full_name": "InteractiveBin/bx",
-    "created_at": "2025-01-16T05:28:54Z",
-    "description": "Base library used across multiple projects",
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/InteractiveBin/bx/tags",
-    "license": "BSD-2-Clause",
-    "topics": [
-      "zig",
-      "zig-package"
-    ],
-    "size": 34140,
-    "fork": true,
-    "updated_at": "2025-01-20T08:43:12Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "bx\n==\n\nBase X-platform library.\n\n[![GitHub Actions](https://github.com/bkaradzic/bx/actions/workflows/main.yml/badge.svg)](https://github.com/bkaradzic/bx/actions)\n[![License](https://img.shields.io/badge/license-BSD--2%20clause-blue.svg)](https://bkaradzic.github.io/bgfx/license.html)\n[![Join the chat at https://discord.gg/9eMbv7J](https://img.shields.io/discord/712512073522872352?color=%237289DA&label=bx&logo=discord&logoColor=white)](https://discord.gg/9eMbv7J)\n\nGoals:\n\n - Provide OS/runtime/compiler independent core functionality to be able to\n   write cross-platform applications.\n - Compile without C Runtime (CRT) and without C++ Standard Library (STL).\n\nContact\n-------\n\n[@bkaradzic](https://twitter.com/bkaradzic)  \n\nProject page  \nhttps://github.com/bkaradzic/bx\n\n[License (BSD 2-clause)](https://github.com/bkaradzic/bx/blob/master/LICENSE)\n-----------------------------------------------------------------------------\n\n<a href=\"http://opensource.org/licenses/BSD-2-Clause\" target=\"_blank\">\n<img align=\"right\" src=\"https://opensource.org/wp-content/uploads/2022/10/osi-badge-dark.svg\" width=\"100\" height=\"137\">\n</a>\n\n\tCopyright 2010-2025 Branimir Karadzic\n\t\n\tRedistribution and use in source and binary forms, with or without modification,\n\tare permitted provided that the following conditions are met:\n\t\n\t   1. Redistributions of source code must retain the above copyright notice, this\n\t      list of conditions and the following disclaimer.\n\t\n\t   2. Redistributions in binary form must reproduce the above copyright notice,\n\t      this list of conditions and the following disclaimer in the documentation\n\t      and/or other materials provided with the distribution.\n\t\n\tTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n\tANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n\tWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.\n\tIN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,\n\tINDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,\n\tBUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n\tDATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY\n\tOF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE\n\tOR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED\n\tOF THE POSSIBILITY OF SUCH DAMAGE.\n",
-    "dependents": [
-      "https://github.com/InteractiveBin/bgfx",
-      "https://github.com/InteractiveBin/bimg"
-    ]
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/2242?v=4",
-    "name": "uri-template",
-    "full_name": "softprops/uri-template",
-    "created_at": "2024-10-07T03:26:38Z",
-    "description": "a zig uri template (rfc6570) implementation",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/softprops/uri-template/tags",
-    "license": "MIT",
-    "topics": [
-      "uri-template",
-      "zig-library",
-      "zig-package"
-    ],
-    "size": 14,
-    "fork": false,
-    "updated_at": "2025-04-15T02:42:32Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.13.0",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "benchmark",
-        "url": "https://github.com/silversquirl/benchmark.zig",
-        "commit": "refs",
-        "tar_url": "https://github.com/silversquirl/benchmark.zig/archive/refs.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "<h1 align=\"center\">\n    zig uri template\n</h1>\n\n<div align=\"center\">\n    Zig library for <a href=\"https://datatracker.ietf.org/doc/html/rfc6570\">URI Templating</a>\n</div>\n\n---\n\n[![Main](https://github.com/softprops/uri-template/actions/workflows/ci.yml/badge.svg)](https://github.com/softprops/uri-template/actions/workflows/ci.yml) ![License Info](https://img.shields.io/github/license/softprops/uri-template) ![Release](https://img.shields.io/github/v/release/softprops/uri-template) [![Zig Support](https://img.shields.io/badge/zig-0.13.0-black?logo=zig)](https://ziglang.org/documentation/0.13.0/)\n\n\n## examples\n\nSee examples directory\n\n## \ud83d\udcfc installing\n\nCreate a new exec project with `zig init` then update `build.zig.zon` by running.\n\n```sh\nzig fetch --save https://github.com/softprops/uri-template/archive/refs/tags/v0.1.1.tar.gz\n```\n\n> you can also depend any tag with `https://github.com/softprops/uri-template/archive/refs/tags/v{version}.tar.gz` or current main with `https://github.com/softprops/uri-template/archive/refs/heads/main/main.tar.gz`. to resolve a hash omit it and let zig tell you the expected value.\n\nAdd the following in your `build.zig` file\n\n```diff\nconst std = @import(\"std\");\n\npub fn build(b: *std.Build) void {\n    const target = b.standardTargetOptions(.{});\n\n    const optimize = b.standardOptimizeOption(.{});\n    // \ud83d\udc47 de-reference dep from build.zig.zon\n+    const uritemplate = b.dependency(\"uritemplate\", .{\n+        .target = target,\n+        .optimize = optimize,\n+    }).module(\"uritemplate\");\n    var exe = b.addExecutable(.{\n        .name = \"your-exe\",\n        .root_source_file = .{ .path = \"src/main.zig\" },\n        .target = target,\n        .optimize = optimize,\n    });\n    // \ud83d\udc47 add the module to executable\n+    exe.root_mode.addImport(\"uritemplate\", uritemplate);\n\n    b.installArtifact(exe);\n}\n```\n\n## \ud83e\udd79 for budding ziglings\n\nDoes this look interesting but you're new to zig and feel left out? No problem, zig is young so most us of our new are as well. Here are some resources to help get you up to speed on zig\n\n- [the official zig website](https://ziglang.org/)\n- [zig's one-page language documentation](https://ziglang.org/documentation/0.13.0/)\n- [ziglearn](https://ziglearn.org/)\n- [ziglings exercises](https://github.com/ratfactor/ziglings)\n\n\n\\- softprops 2024\n",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/61841960?v=4",
-    "name": "pennant",
-    "full_name": "Arnau478/pennant",
-    "created_at": "2025-01-19T13:06:21Z",
-    "description": "Argument parser for Zig",
-    "default_branch": "master",
-    "open_issues": 1,
-    "stargazers_count": 1,
-    "forks_count": 0,
-    "watchers_count": 1,
-    "tags_url": "https://api.github.com/repos/Arnau478/pennant/tags",
-    "license": "GPL-3.0",
-    "topics": [
-      "argprase",
-      "zig",
-      "zig-package"
-    ],
-    "size": 40,
-    "fork": false,
-    "updated_at": "2025-04-26T20:47:48Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "<div align=\"center\">\n  <img src=\"logo.svg\" width=\"50%\" />\n</div>\n\n# Pennant\n\nArgument parser for Zig.\n\n## Features\n- Opposite flags (`--foo`/`--no-foo`, `--uppercase`/`--lowercase`), which act on a single variable and are mutually exclusive\n- Values with and without equals sign (`--foo bar` and `--foo=bar` are both valid and equivalent)\n- Bool flags never take a value, non-bool flags always do\n- Shorthands for bool flags\n- Everything is defined in a single struct, with the power of Zig's `comptime`\n\n## Examples\n\nExamples are available in the `examples` folder. They can also be run via `zig build example-[name]`.\n",
-    "dependents": [
-      "https://github.com/Arnau478/hevi"
-    ]
   },
   {
     "avatar_url": "https://avatars.githubusercontent.com/u/130330524?v=4",
@@ -30344,68 +30344,6 @@
     "dependents": []
   },
   {
-    "avatar_url": "https://avatars.githubusercontent.com/u/192863519?v=4",
-    "name": "riscv",
-    "full_name": "cogits/riscv",
-    "created_at": "2024-12-27T14:03:40Z",
-    "description": null,
-    "default_branch": "master",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/cogits/riscv/tags",
-    "license": "-",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 16,
-    "fork": false,
-    "updated_at": "2025-05-11T04:17:25Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "0.14.0",
-    "repo_from": "github",
-    "dependencies": [],
-    "readme_content": "404",
-    "dependents": []
-  },
-  {
-    "avatar_url": "https://avatars.githubusercontent.com/u/2773256?v=4",
-    "name": "zig-libxml2",
-    "full_name": "dasimmet/zig-libxml2",
-    "created_at": "2024-08-09T18:58:36Z",
-    "description": "libxml2 built using Zig build system",
-    "default_branch": "main",
-    "open_issues": 0,
-    "stargazers_count": 0,
-    "forks_count": 0,
-    "watchers_count": 0,
-    "tags_url": "https://api.github.com/repos/dasimmet/zig-libxml2/tags",
-    "license": "MIT",
-    "topics": [
-      "zig-package"
-    ],
-    "size": 59,
-    "fork": true,
-    "updated_at": "2025-01-07T15:06:15Z",
-    "has_build_zig": true,
-    "has_build_zig_zon": true,
-    "zig_minimum_version": "unknown",
-    "repo_from": "github",
-    "dependencies": [
-      {
-        "name": "libxml2",
-        "url": "https://github.com/GNOME/libxml2",
-        "commit": "master",
-        "tar_url": "https://github.com/GNOME/libxml2/archive/master.tar.gz",
-        "type": "remote"
-      }
-    ],
-    "readme_content": "# libxml2 Built with Zig\n\nThis repository contains Zig code for building libxml2 using Zig.\nThis allows other projects that use the Zig build system to easily\nconsume this library, cross-compile it, etc.\n\n**Why?** Using the Zig build system makes it much easier to cross-compile\na library, even if you aren't using the Zig programming language. See\n[Maintain it with Zig](https://kristoff.it/blog/maintain-it-with-zig/)\nfor some more information.\n\nThis library currently hardcodes the libxml2 version (latest as of writing\nthis but unlikely to remain that way for long). In the future, I'd like to\nallow users to pass in a custom libxml2 directory, and it'd be really cool to\nsetup some sort of Github Action to check for new versions and try to pull\nit in. Maybe one day.\n\n## Usage\n\nWhile we all eagerly await the [Zig Package Manager](https://github.com/ziglang/zig/issues/943),\nthe recommended way to use this is via git submodules or just embedding\nthis into your repository.\n\n```zig\nconst libxml2 = @import(\"path/to/libxml2.zig\");\n\npub fn build(b: *std.Build) !void {\n    // ...\n\n    const lib = try libxml2.create(b, target, mode, .{\n        // These are the minimal options to NOT depend on any other libraries.\n        // If you ave these libraries, just set these to true.\n        .iconv = false,\n        .lzma = false,\n        .zlib = false,\n    });\n\n    const exe = b.addExecutable(\"my-program\", \"src/main.zig\");\n    lib.link(exe);\n}\n```\n\nThis package does not provide any Zig-native APIs to access the underlying\nC library. This is by design, the focus of this repository is only to enable\nbuilding the underlying library using the Zig build system. Therefore, to\nuse the library, import the headers and use the C API:\n\n```zig\nconst c = @cImport({\n    @cInclude(\"libxml/xmlreader.h\");\n});\n\n// ... do stuff with `c`\n```\n\n### Other Dependencies\n\nSome features require other libraries. In the example above, we disabled\nthose features. For example, if you set `.zlib = true`, then zlib must\nbe available.\n\nIn this scenario, you can find and use a zlib build such as\n[zig-zlib](https://github.com/mattnite/zig-zlib) as normal. When that\nlibrary is also added to the project, it adds its include paths and\nlinking information to the build, so libxml2 can be built with zlib support.\n",
-    "dependents": []
-  },
-  {
     "avatar_url": "https://avatars.githubusercontent.com/u/87361621?v=4",
     "name": "json-c",
     "full_name": "Orolia2s/json-c",
@@ -30465,6 +30403,68 @@
     "repo_from": "github",
     "dependencies": [],
     "readme_content": "# Performance Optimizer Observation Platform Inside Executable\n![bench im](/assets/bm.png?raw=true)\n### Usage\n```zig\n    var poopie: Poopie = .{\n        .config = .{\n            .store_result = true,\n            .compare_mode = .slowest,\n        },\n    };\n\n    var sampler = try poopie.createSampler(allocator, .{ .warmups = 100, .samples = 1000 });\n    defer sampler.deinit();\n\n    sampler.start();\n    while (sampler.sample()) : (sampler.store()) {\n        //\n        // Some code to test\n        //\n    }\n    _ = try poopie.collect(allocator, &sampler, .{ .name = \"MyBench\" });\n```\nYou can overwrite poopie settings in each collection if you want\n```zig\n_ = try poopie.collect(allocator, &sampler, .{ .name = \"MyBench\", .compare_mode = .fastest });\n```\nor compare against a specific file\n```zig\n_ = try poopie.collect(allocator, &sampler, .{\n    .name = \"MyBench\",\n    .compare_mode = .file,\n    .compare_file = \"MyBench_10_100070223.1_1726867407409043.json\",\n});\n```\n    \nStores benchmarks in .benchmark folder if ``store_result == true`` (false by default).\n\n#### Prev work\nThis shitty library is just crappy code slapped on top of Andrew's (and contributors) awesome [poop](https://github.com/andrewrk/poop) code.\n",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/192863519?v=4",
+    "name": "riscv",
+    "full_name": "cogits/riscv",
+    "created_at": "2024-12-27T14:03:40Z",
+    "description": null,
+    "default_branch": "master",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/cogits/riscv/tags",
+    "license": "-",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 16,
+    "fork": false,
+    "updated_at": "2025-05-11T04:17:25Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "0.14.0",
+    "repo_from": "github",
+    "dependencies": [],
+    "readme_content": "404",
+    "dependents": []
+  },
+  {
+    "avatar_url": "https://avatars.githubusercontent.com/u/2773256?v=4",
+    "name": "zig-libxml2",
+    "full_name": "dasimmet/zig-libxml2",
+    "created_at": "2024-08-09T18:58:36Z",
+    "description": "libxml2 built using Zig build system",
+    "default_branch": "main",
+    "open_issues": 0,
+    "stargazers_count": 0,
+    "forks_count": 0,
+    "watchers_count": 0,
+    "tags_url": "https://api.github.com/repos/dasimmet/zig-libxml2/tags",
+    "license": "MIT",
+    "topics": [
+      "zig-package"
+    ],
+    "size": 59,
+    "fork": true,
+    "updated_at": "2025-01-07T15:06:15Z",
+    "has_build_zig": true,
+    "has_build_zig_zon": true,
+    "zig_minimum_version": "unknown",
+    "repo_from": "github",
+    "dependencies": [
+      {
+        "name": "libxml2",
+        "url": "https://github.com/GNOME/libxml2",
+        "commit": "master",
+        "tar_url": "https://github.com/GNOME/libxml2/archive/master.tar.gz",
+        "type": "remote"
+      }
+    ],
+    "readme_content": "# libxml2 Built with Zig\n\nThis repository contains Zig code for building libxml2 using Zig.\nThis allows other projects that use the Zig build system to easily\nconsume this library, cross-compile it, etc.\n\n**Why?** Using the Zig build system makes it much easier to cross-compile\na library, even if you aren't using the Zig programming language. See\n[Maintain it with Zig](https://kristoff.it/blog/maintain-it-with-zig/)\nfor some more information.\n\nThis library currently hardcodes the libxml2 version (latest as of writing\nthis but unlikely to remain that way for long). In the future, I'd like to\nallow users to pass in a custom libxml2 directory, and it'd be really cool to\nsetup some sort of Github Action to check for new versions and try to pull\nit in. Maybe one day.\n\n## Usage\n\nWhile we all eagerly await the [Zig Package Manager](https://github.com/ziglang/zig/issues/943),\nthe recommended way to use this is via git submodules or just embedding\nthis into your repository.\n\n```zig\nconst libxml2 = @import(\"path/to/libxml2.zig\");\n\npub fn build(b: *std.Build) !void {\n    // ...\n\n    const lib = try libxml2.create(b, target, mode, .{\n        // These are the minimal options to NOT depend on any other libraries.\n        // If you ave these libraries, just set these to true.\n        .iconv = false,\n        .lzma = false,\n        .zlib = false,\n    });\n\n    const exe = b.addExecutable(\"my-program\", \"src/main.zig\");\n    lib.link(exe);\n}\n```\n\nThis package does not provide any Zig-native APIs to access the underlying\nC library. This is by design, the focus of this repository is only to enable\nbuilding the underlying library using the Zig build system. Therefore, to\nuse the library, import the headers and use the C API:\n\n```zig\nconst c = @cImport({\n    @cInclude(\"libxml/xmlreader.h\");\n});\n\n// ... do stuff with `c`\n```\n\n### Other Dependencies\n\nSome features require other libraries. In the example above, we disabled\nthose features. For example, if you set `.zlib = true`, then zlib must\nbe available.\n\nIn this scenario, you can find and use a zlib build such as\n[zig-zlib](https://github.com/mattnite/zig-zlib) as normal. When that\nlibrary is also added to the project, it adds its include paths and\nlinking information to the build, so libxml2 can be built with zlib support.\n",
     "dependents": []
   },
   {
