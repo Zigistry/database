@@ -59,7 +59,7 @@ def convertGithubRepoFormToZigistryRepoForm(g: Dict[str, Any]) -> Repo:
         open_issues=g["open_issues"],
         stargazers_count=g["stargazers_count"],
         forks_count=g["forks_count"],
-        watchers_count=g["subscribers_count"],
+        watchers_count=g["watchers_count"],
         tags_url=g["tags_url"],
         license=license,
         topics=g["topics"],
