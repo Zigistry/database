@@ -32,6 +32,7 @@ jobs:
         run: |
           python ./src/fetcherPackages.py
           python ./src/fetcherPrograms.py
+          python ./src/removeDuplicates.py
           python ./src/indexSectionsFetcher.py
           python ./src/codeberg.py
           python ./src/gitlab.py
