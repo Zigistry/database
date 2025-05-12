@@ -35,6 +35,7 @@ class Repo:
     repo_from: Literal["github", "gitlab", "codeberg"]  # moved above
     dependencies: List[Dependency] = field(default_factory=list)
     readme_content: Optional[str] = None
+    dependents: Optional[str] = None
 
 
 # Rest of the code remains the same...

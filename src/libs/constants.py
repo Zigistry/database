@@ -73,21 +73,21 @@ POSSIBLE_README_FILENAMES = (
 )
 
 INDEX_PAGE_SECTION_TOPIC_URLS = {
-    "./database/games.json": (
+    "games": (
         "https://api.github.com/repos/Not-Nik/raylib-zig",
         "https://api.github.com/repos/hexops/mach",
         "https://api.github.com/repos/zig-gamedev/zig-gamedev",
         "https://api.github.com/repos/Jack-Ji/jok",
         "https://api.github.com/repos/prime31/zig-gamekit",
     ),
-    "./database/web.json": (
+    "web": (
         "https://api.github.com/repos/zigzap/zap",
         "https://api.github.com/repos/jetzig-framework/jetzig",
         "https://api.github.com/repos/karlseguin/http.zig",
         "https://api.github.com/repos/karlseguin/websocket.zig",
         "https://api.github.com/repos/ikskuh/zig-network",
     ),
-    "./database/gui.json": (
+    "gui": (
         "https://api.github.com/repos/capy-ui/capy",
         "https://api.github.com/repos/webui-dev/zig-webui",
         "https://api.github.com/repos/david-vanderson/dvui",
