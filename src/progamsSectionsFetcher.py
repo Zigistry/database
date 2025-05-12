@@ -1,9 +1,6 @@
 import json
-import requests
 from libs.types import Repo
 from typing import List
-from libs.utils import convertGithubRepoFormToZigistryRepoForm
-from libs.constants import INDEX_PAGE_SECTION_TOPIC_URLS, GITHUB_FETCH_HEADERS
 from dataclasses import asdict, is_dataclass
 
 FIELDS_TO_REMOVE = {
@@ -20,18 +17,6 @@ def load_repos(filename: str) -> List[Repo]:
     with open(filename, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return [Repo(**repo) for repo in data]
-
-def fetch_and_convert(urls):
-    result = []
-    for url in urls:
-        response = requests.get(url, headers=GITHUB_FETCH_HEADERS)
-        if response.status_code == 200:
-            repo_json = response.json()
-            converted = convertGithubRepoFormToZigistryRepoForm(repo_json)
-            result.append(converted)
-        else:
-            print(f"Failed to fetch: {url}")
-    return result
 
 def recursive_asdict(obj):
     """Recursively turn dataclasses and custom objects into dicts/lists for JSON serialization."""
@@ -56,7 +41,7 @@ def serialize_repos(repo_list):
     return strip_unnecessary_fields([recursive_asdict(r) for r in repo_list])
 
 def main():
-    repos = load_repos('./database/packages.json')
+    repos = load_repos('./database/programs.json')
 
     # Sort by created_at (latest first)
     sorted_by_created = sorted(repos, key=lambda r: r.created_at, reverse=True)
@@ -67,21 +52,13 @@ def main():
     top_10_latest_created = sorted_by_created[:10]
     top_10_most_used = sorted_by_stars[:10]
 
-    # Fetch and convert categorized repos from GitHub API
-    games = fetch_and_convert(INDEX_PAGE_SECTION_TOPIC_URLS["games"])
-    web = fetch_and_convert(INDEX_PAGE_SECTION_TOPIC_URLS["web"])
-    gui = fetch_and_convert(INDEX_PAGE_SECTION_TOPIC_URLS["gui"])
-
-    index_details = {
+    programs_details = {
         "top10latestrepos": serialize_repos(top_10_latest_created),
-        "mostused": serialize_repos(top_10_most_used),
-        "gui": serialize_repos(gui),
-        "games": serialize_repos(games),
-        "web": serialize_repos(web)
+        "mostused": serialize_repos(top_10_most_used)
     }
 
-    with open("./database/index_details.json", "w", encoding="utf-8") as f:
-        json.dump(index_details, f, ensure_ascii=False)
+    with open("./database/progams_details.json", "w", encoding="utf-8") as f:
+        json.dump(programs_details, f, ensure_ascii=False)
 
 if __name__ == "__main__":
     main()
