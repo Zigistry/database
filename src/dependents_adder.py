@@ -60,10 +60,10 @@ def add_dependents(packages_path: str, programs_path: str):
 
     # Save files with formatted JSON
     with open(packages_path, "w") as f:
-        json.dump(packages, f, indent=2)
+        json.dump(packages, f)
 
     with open(programs_path, "w") as f:
-        json.dump(programs, f, indent=2)
+        json.dump(programs, f)
 
 
 if __name__ == "__main__":

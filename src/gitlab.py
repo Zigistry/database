@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
             # Write back to programs.json
             with open("./database/programs.json", "w") as file:
-                json.dump(combined_data, file, indent=4)
+                json.dump(combined_data, file)
 
         except Exception as e:
             print(f"Error processing GitLab repositories: {e}")
