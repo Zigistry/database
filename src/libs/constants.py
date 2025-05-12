@@ -102,9 +102,6 @@ PROGRAMS_FILES = ("./database/programs.json",)
 
 PACKAGES_FILES = (
     "./database/packages.json",
-    "./database/games.json",
-    "./database/gui.json",
-    "./database/web.json",
 )
 
 ALL_DATABASE_FILES = PROGRAMS_FILES + PACKAGES_FILES
