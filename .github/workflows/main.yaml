@@ -35,7 +35,8 @@ jobs:
           python ./src/indexSectionsFetcher.py
           python ./src/codeberg.py
           python ./src/gitlab.py
-          python3 ./src/progamsSectionsFetcher.py
+          python ./src/progamsSectionsFetcher.py
+          python ./src/removeDuplicates.py
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
