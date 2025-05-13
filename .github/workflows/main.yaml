@@ -38,6 +38,7 @@ jobs:
           python ./src/gitlab.py
           python ./src/progamsSectionsFetcher.py
           python ./src/removeDuplicates.py
+          python ./src/purifyAndMakeReadmeContentBetter.py
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
