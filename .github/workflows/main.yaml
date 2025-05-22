@@ -52,9 +52,9 @@ jobs:
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
-      - name: Create dataset and push to Hugging Face
-        run: |
-          python ./src/uploadDatasetToHuggingFace.py
+      # - name: Create dataset and push to Hugging Face
+      #   run: |
+      #     python ./src/uploadDatasetToHuggingFace.py
 
       - name: Commit and push changes
         run: |
