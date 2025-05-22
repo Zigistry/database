@@ -22,6 +22,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+      - name: Install bun
+        run: curl -fsSL https://bun.sh/install | bash
 
       - name: Install dependencies
         run: |
@@ -38,7 +40,8 @@ jobs:
           python ./src/gitlab.py
           python ./src/progamsSectionsFetcher.py
           python ./src/removeDuplicates.py
-          python ./src/purifyAndMakeReadmeContentBetter.py
+          bun i
+          bun run ./src/purifyAndMakeReadmeContentBetter.ts
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
