@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run Python scripts
+      - name: Run Python scripts and Bun script
         run: |
           python ./src/fetcherPackages.py
           python ./src/fetcherPrograms.py
@@ -44,8 +44,11 @@ jobs:
           python ./src/gitlab.py
           python ./src/progamsSectionsFetcher.py
           python ./src/removeDuplicates.py
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
           bun i
           bun run ./src/purifyAndMakeReadmeContentBetter.ts
+
       - name: Add dependents
         run: |
           python ./src/dependents_adder.py
