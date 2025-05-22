@@ -12,7 +12,7 @@ async function convert2markdown(x: string): Promise<string> {
     allowedTags: sanitizeHtml.defaults.allowedTags,
     allowedAttributes: {
       ...sanitizeHtml.defaults.allowedAttributes,
-      a: ['href', 'name', 'target'],
+      a: [],
       code: ['class'],
       img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
     },
