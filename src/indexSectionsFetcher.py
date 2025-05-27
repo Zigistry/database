@@ -69,9 +69,7 @@ def main():
     # Sort by stargazers_count (most used)
     sorted_by_stars = sorted(
         repos,
-        key=lambda r: len(
-            getattr(r, "dependents", [])
-        ),  # getattr(object, name, default)
+        key=lambda r: len(getattr(r, "dependents", None) or []),
         reverse=True,
     )
 
