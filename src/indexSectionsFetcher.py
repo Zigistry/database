@@ -13,13 +13,15 @@ FIELDS_TO_REMOVE = {
     "zig_minimum_version",
     "size",
     "tags_url",
-    "default_branch"
+    "default_branch",
 }
 
+
 def load_repos(filename: str) -> List[Repo]:
-    with open(filename, 'r', encoding='utf-8') as f:
+    with open(filename, "r", encoding="utf-8") as f:
         data = json.load(f)
     return [Repo(**repo) for repo in data]
+
 
 def fetch_and_convert(urls):
     result = []
@@ -33,6 +35,7 @@ def fetch_and_convert(urls):
             print(f"Failed to fetch: {url}")
     return result
 
+
 def recursive_asdict(obj):
     """Recursively turn dataclasses and custom objects into dicts/lists for JSON serialization."""
     if is_dataclass(obj):
@@ -44,6 +47,7 @@ def recursive_asdict(obj):
     else:
         return obj
 
+
 def strip_unnecessary_fields(repo_list):
     stripped = []
     for repo in repo_list:
@@ -52,16 +56,24 @@ def strip_unnecessary_fields(repo_list):
         stripped.append(filtered)
     return stripped
 
+
 def serialize_repos(repo_list):
     return strip_unnecessary_fields([recursive_asdict(r) for r in repo_list])
 
+
 def main():
-    repos = load_repos('./database/packages.json')
+    repos = load_repos("./database/packages.json")
 
     # Sort by created_at (latest first)
     sorted_by_created = sorted(repos, key=lambda r: r.created_at, reverse=True)
     # Sort by stargazers_count (most used)
-    sorted_by_stars = sorted(repos, key=lambda r: len(r.dependents), reverse=True)
+    sorted_by_stars = sorted(
+        repos,
+        key=lambda r: len(
+            getattr(r, "dependents", [])
+        ),  # getattr(object, name, default)
+        reverse=True,
+    )
 
     # Slice top 10
     top_10_latest_created = sorted_by_created[:10]
@@ -77,11 +89,12 @@ def main():
         "mostused": serialize_repos(top_10_most_used),
         "gui": serialize_repos(gui),
         "games": serialize_repos(games),
-        "web": serialize_repos(web)
+        "web": serialize_repos(web),
     }
 
     with open("./database/index_details.json", "w", encoding="utf-8") as f:
         json.dump(index_details, f, ensure_ascii=False)
+
 
 if __name__ == "__main__":
     main()
