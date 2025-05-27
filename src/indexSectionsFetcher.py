@@ -61,7 +61,7 @@ def main():
     # Sort by created_at (latest first)
     sorted_by_created = sorted(repos, key=lambda r: r.created_at, reverse=True)
     # Sort by stargazers_count (most used)
-    sorted_by_stars = sorted(repos, key=lambda r: r.dependents, reverse=True)
+    sorted_by_stars = sorted(repos, key=lambda r: len(r.dependents), reverse=True)
 
     # Slice top 10
     top_10_latest_created = sorted_by_created[:10]
