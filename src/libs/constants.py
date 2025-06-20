@@ -53,6 +53,7 @@ PROGRAMS_URLS = (
     "https://api.github.com/search/repositories?q=topic:zig+fork:true+created:2025-02-09..2025-08-08&page=1&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig+fork:true+created:2025-02-09..2025-08-08&page=2&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig+fork:true+created:2025-02-09..2025-08-08&page=3&per_page=100",
+    "https://api.github.com/search/repositories?q=topic:zig+fork:true+created:2025-02-09..2025-08-08&page=4&per_page=100",
 )
 
 GITHUB_API_KEY = os.getenv("GH_API_KEY")
