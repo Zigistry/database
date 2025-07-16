@@ -95,6 +95,7 @@ INDEX_PAGE_SECTION_TOPIC_URLS = {
         "https://api.github.com/repos/david-vanderson/dvui",
         "https://api.github.com/repos/kassane/qml_zig",
         "https://api.github.com/repos/MoAlyousef/zfltk",
+        "https://api.github.com/repos/rcalixte/libqt6zig",
     ),
 }
 
