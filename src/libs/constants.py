@@ -81,6 +81,21 @@ INDEX_PAGE_SECTION_TOPIC_URLS = {
         "https://api.github.com/repos/zig-gamedev/zig-gamedev",
         "https://api.github.com/repos/Jack-Ji/jok",
         "https://api.github.com/repos/prime31/zig-gamekit",
+        "https://api.github.com/repos/prime31/zig-ecs",
+        "https://api.github.com/repos/JonSnowbd/slingworks",
+        "https://api.github.com/repos/michal-z/zig-gamedev",
+        "https://api.github.com/repos/Kiakra/Alka",
+        "https://api.github.com/repos/leroycep/seizer",
+        "https://api.github.com/repos/zenith391/didot",
+        "https://api.github.com/repos/danielabbott/Zig-Game-Engine",
+        "https://api.github.com/repos/fubark/cosmic",
+        "https://api.github.com/repos/bootradev/cupcake",
+        "https://api.github.com/repos/gamercade-io/zig-template",
+        "https://api.github.com/repos/Guigui220D/zig-sfml-wrapper",
+        "https://api.github.com/repos/MasterQ32/SDL.zig",
+        "https://api.github.com/repos/Snektron/vulkan-zig",
+        "https://api.github.com/repos/linuxy/godot-zig",
+        "https://api.github.com/repos/silversquirl/phyz",
     ),
     "web": (
         "https://api.github.com/repos/zigzap/zap",
@@ -88,6 +103,13 @@ INDEX_PAGE_SECTION_TOPIC_URLS = {
         "https://api.github.com/repos/karlseguin/http.zig",
         "https://api.github.com/repos/karlseguin/websocket.zig",
         "https://api.github.com/repos/ikskuh/zig-network",
+        "https://api.github.com/repos/frmdstryr/zhp",
+        "https://api.github.com/repos/Vexu/routez",
+        "https://api.github.com/repos/Luukdegram/apple_pie",
+        "https://api.github.com/repos/ducdetronquito/requestz",
+        "https://api.github.com/repos/ducdetronquito/h11",
+        "https://api.github.com/repos/truemedian/zfetch",
+        "https://api.github.com/repos/lun-4/ziget",
     ),
     "gui": (
         "https://api.github.com/repos/capy-ui/capy",
@@ -95,6 +117,14 @@ INDEX_PAGE_SECTION_TOPIC_URLS = {
         "https://api.github.com/repos/david-vanderson/dvui",
         "https://api.github.com/repos/kassane/qml_zig",
         "https://api.github.com/repos/MoAlyousef/zfltk",
+        "https://api.github.com/repos/Aransentin/ZWL",
+        "https://api.github.com/repos/prime31/zig-upaya",
+        "https://api.github.com/repos/fubark/cosmic",
+        "https://api.github.com/repos/batiati/IUPforZig",
+        "https://api.github.com/repos/rcalixte/libqt6zig",
+        "https://api.github.com/repos/olexij-christian/zgtk3",
+        "https://api.github.com/repos/andrewrk/zig-sdl",
+        "https://api.github.com/repos/Snektron/vulkan-zig",
     ),
 }
 
@@ -102,8 +132,6 @@ HUGGING_FACE_API_KEY = os.getenv("HF_AUTH_TOKEN")
 
 PROGRAMS_FILES = ("./database/programs.json",)
 
-PACKAGES_FILES = (
-    "./database/packages.json",
-)
+PACKAGES_FILES = ("./database/packages.json",)
 
 ALL_DATABASE_FILES = PROGRAMS_FILES + PACKAGES_FILES
