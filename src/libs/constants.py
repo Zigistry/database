@@ -121,7 +121,6 @@ INDEX_PAGE_SECTION_TOPIC_URLS = {
         "https://api.github.com/repos/prime31/zig-upaya",
         "https://api.github.com/repos/fubark/cosmic",
         "https://api.github.com/repos/batiati/IUPforZig",
-        "https://api.github.com/repos/rcalixte/libqt6zig",
         "https://api.github.com/repos/olexij-christian/zgtk3",
         "https://api.github.com/repos/andrewrk/zig-sdl",
         "https://api.github.com/repos/Snektron/vulkan-zig",
