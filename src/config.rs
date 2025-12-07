@@ -1,4 +1,4 @@
-pub const PACKAGES:[&str;16] = [
+pub const PACKAGES: [&str; 16] = [
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2016-02-08..2019-02-08&page=1&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2019-02-09..2020-02-08&page=1&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2020-02-09..2021-02-08&page=1&per_page=100",

@@ -254,7 +254,7 @@ pub struct User {
     pub company: Value,
     pub blog: String,
     pub location: Option<String>,
-    pub email: Value,
+    pub email: Option<String>,
     pub hireable: Value,
     pub bio: Option<String>,
     #[serde(rename = "twitter_username")]

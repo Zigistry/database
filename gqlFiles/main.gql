@@ -1,0 +1,87 @@
+query ($query: String!, $next_value: String) {
+#  rateLimit {
+#    cost
+#    remaining
+#    resetAt
+#  }
+  search(query: $query, type: REPOSITORY, first: 100, after: $next_value) {
+    repositoryCount
+    nodes {
+      ... on Repository {
+        name
+        description
+        issues {
+          totalCount
+        }
+        defaultBranchRef {
+          name
+        }
+        forkCount
+        stargazerCount
+        watchers {
+          totalCount
+        }
+        zon: object(expression: "HEAD:build.zig.zon") {
+          ... on Blob {
+            text
+          }
+        }
+        pushedAt
+        createdAt
+        isArchived
+        isDisabled
+        isFork
+        licenseInfo {
+          spdxId
+        }
+        owner {
+          avatarUrl
+          login
+          ... on User {
+            bio
+            company
+            followers {
+              totalCount
+            }
+            following {
+              totalCount
+            }
+            location
+          }
+          ... on Organization {
+            description
+            location
+            websiteUrl
+          }
+        }
+        repositoryTopics(first: 7) {
+          edges {
+            node {
+              topic {
+                name
+              }
+            }
+          }
+        }
+        releases(first: 10, orderBy: { field: CREATED_AT, direction: DESC }) {
+          nodes {
+            tagName
+            isPrerelease
+            publishedAt
+            releaseAssets(first: 10) {
+              nodes {
+                name
+                downloadUrl
+                size
+                contentType
+              }
+            }
+          }
+        }
+        primaryLanguage {
+          name
+        }
+      }
+    }
+  }
+}

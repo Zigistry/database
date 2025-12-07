@@ -9,7 +9,7 @@ pub struct User {
     pub type_field: String,
     pub followers: i64,
     pub following: i64,
-    pub email: String,
+    pub email: Option<String>,
     pub description: Option<String>,
     pub location: Option<String>,
     pub company: Value,
@@ -25,11 +25,12 @@ pub struct Dependency {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Tag {
+pub struct Release {
     pub readme_url: String,
     pub last_updated: String,
     pub minimum_zig_version: String,
     pub dependencies: HashMap<String, Dependency>,
+    pub assets: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -40,11 +41,14 @@ pub struct Repo {
     pub watchers_count: u32,
     pub pr_count: u32,
     pub forked: bool,
+    pub last_updated: String,
     pub issues: u32,
     pub description: String,
+    pub language: String,
+    pub license: String,
     pub dependents: Vec<String>,
-    pub unstable_current_repo_head_branch: Tag,
-    pub tags: HashMap<String, Tag>,
+    pub head_branch: Release,
+    pub tags: HashMap<String, Release>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
