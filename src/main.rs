@@ -7,21 +7,64 @@ mod custom_types;
 use once_cell::sync::Lazy;
 use lazy_static::lazy_static;
 
+type GenericErr = Box<dyn std::error::Error>;
+
 lazy_static! {
-    static ref KEY: String = env::var("GH_API_KEY").expect("GH_API_KEY not set");
+    static ref KEY: String = "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set").to_string();
 }
 
 static GLOBAL: Lazy<Mutex<custom_types::Root>> = Lazy::new(|| {
     Mutex::new(custom_types::Root {
         users: HashMap::new(),
-        repos: HashMap::new(),
+        packages : HashMap::new(),
+        programs : HashMap::new(),
     })
 });
 
+async fn process_github_user(
+    user: String,
+) -> Result<(), GenericErr> {
+    let fetch_user_url = format!("https://api.github.com/users/{}", user);
+    let client = reqwest::Client::new();
+            let json = client
+                .get(&fetch_user_url)
+                .header("Authorization", KEY.to_string())
+                .header("User-Agent", "zigistry")
+                .send()
+                .await?
+                .json::<types::User>()
+                .await;
+            
+            match json {
+                Ok(json) => {
+                    let user_type_as_custom_user_type = custom_types::User{
+                        avatar_url: json.avatar_url,
+                        profile_link: json.html_url,
+                        type_field: json.type_field,
+                        followers: json.followers,
+                        following: json.following,
+                        email: json.email.to_string(),
+                        description: json.bio,
+                        location: json.location,
+                        company: json.company
+                    };
+                    GLOBAL
+                        .lock()
+                        .await
+                        .users
+                        .insert(user, user_type_as_custom_user_type);
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+    Ok(())
+}
+
 async fn process_github_repository(
     repository: types::Item,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let user_name = repository.full_name.rsplit("/").next().unwrap();
+) -> Result<(), GenericErr> {
+    let user_name = repository.full_name.split("/").next().unwrap();
     let already_has_user = {
         GLOBAL
             .lock()
@@ -30,28 +73,23 @@ async fn process_github_repository(
             .contains_key(&user_name.to_string())
     };
     if !already_has_user {
-        owner
-        let client = reqwest::Client::new();
-        let package_url = package_url.to_string();
-        let indivisual_auth_key = auth_key.to_string();
-
+        println!("User was not there: {}", user_name.to_string());
+        process_github_user(user_name.to_string()).await?;
     }
     Ok(())
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), GenericErr> {
     let mut futures = Vec::new();
-    let auth_key = "Bearer ".to_string() + &KEY.to_string();
 
     for package_url in config::PACKAGES.iter() {
         let client = reqwest::Client::new();
         let package_url = package_url.to_string();
-        let indivisual_auth_key = auth_key.to_string();
         futures.push(async move {
             client
                 .get(&package_url)
-                .header("Authorization", indivisual_auth_key)
+                .header("Authorization", KEY.to_string())
                 .header("User-Agent", "zigistry")
                 .send()
                 .await?
