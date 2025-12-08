@@ -4,7 +4,7 @@ query ($query: String!, $next_value: String) {
 #    remaining
 #    resetAt
 #  }
-  search(query: $query, type: REPOSITORY, first: 100, after: $next_value) {
+  search(query: $query, type: REPOSITORY, first: 50, after: $next_value) {
     repositoryCount
     nodes {
       ... on Repository {
