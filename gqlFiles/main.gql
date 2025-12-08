@@ -24,11 +24,6 @@ query ($query: String!, $next_value: String) {
         watchers {
           totalCount
         }
-        zon: object(expression: "HEAD:build.zig.zon") {
-          ... on Blob {
-            text
-          }
-        }
         pushedAt
         createdAt
         isArchived
@@ -71,7 +66,7 @@ query ($query: String!, $next_value: String) {
             tagName
             isPrerelease
             publishedAt
-            releaseAssets(first: 10) {
+              releaseAssets(first: 10) {
               nodes {
                 name
                 downloadUrl
