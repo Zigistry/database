@@ -5,7 +5,10 @@ query ($query: String!, $next_value: String) {
 #    resetAt
 #  }
   search(query: $query, type: REPOSITORY, first: 50, after: $next_value) {
-    repositoryCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
     nodes {
       ... on Repository {
         name

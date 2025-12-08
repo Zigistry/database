@@ -1,6 +1,6 @@
-pub const PACKAGES: [&str; 16] = [
-    "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2016-02-08..2019-02-08&page=1&per_page=100",
-    "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2019-02-09..2020-02-08&page=1&per_page=100",
+pub const Created_at: [&str; 16] = [
+    "2016-02-08..2019-02-08",
+    "2019-02-09..2020-02-08",
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2020-02-09..2021-02-08&page=1&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2021-02-09..2022-02-08&page=1&per_page=100",
     "https://api.github.com/search/repositories?q=topic:zig-package+fork:true+created:2022-02-09..2023-02-08&page=1&per_page=100",
