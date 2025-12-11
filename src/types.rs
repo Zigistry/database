@@ -31,7 +31,7 @@ pub struct PageInfo {
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
     pub issues: Issues,
     pub default_branch_ref: DefaultBranchRef,
     pub fork_count: u32,

@@ -1,4 +1,4 @@
-pub const POSSIBLE_README_URLS: &[&str] = &[
+pub const POSSIBLE_README_FILE_NAMES: &[&str] = &[
     "README.md",
     "readme.md",
     "README",
