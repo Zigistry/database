@@ -1,26 +1,32 @@
 use std::collections::HashMap;
 
+#[derive(Debug, serde::Serialize)]
 pub struct Asset {
     pub download_url: String,
     pub size: i64,
     pub content_type: String,
 }
 /// This is all the data I get from build.zig.zonn
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Dependency {
+    pub name: String,
     pub hash: String,
-    pub lazy: bool,
+    pub lazy: String,
     pub url: String,
     pub path: String,
 }
+
+#[derive(Debug, serde::Serialize)]
 pub struct Release {
     pub is_prerelease: bool,
     pub published_at: String,
     pub release_assets: HashMap<String, Asset>,
-    pub dependencies: HashMap<String, Dependency>,
+    pub dependencies: Vec<Dependency>,
     pub minimum_zig_version: String,
     pub readme_url: String,
 }
 
+#[derive(Debug, serde::Serialize)]
 pub struct Repo {
     pub description: String,
     pub issues_count: u32,
@@ -38,10 +44,11 @@ pub struct Repo {
     pub releases: HashMap<String, Release>,
     // the forexample main branch or master branch.
     // the best way I can say is HEAD branch.
-    pub head_branch: Release,
+    pub default_branch_information: Release,
     pub primary_language: String,
 }
 
+#[derive(Debug)]
 pub struct User {
     pub avatar_url: String,
     pub bio: Option<String>,
@@ -52,24 +59,18 @@ pub struct User {
     pub description: Option<String>,
     pub website_url: Option<String>,
 }
-// I will have this for user.json
-pub struct UsersJsonRoot {
+
+pub struct Root {
     /// Here the String will be:
     /// gh/rohanvashisht1234
     /// cb/rohanvashisht1234
     pub users: HashMap<String, User>,
-}
-// Now, for packages.json
-pub struct PackagesJsonRoot {
     /// Here the String will be:
     /// gh/rohanvashisht1234/zorsig
     /// cb/rohanvashisht1234/repo_name
-    pub users: HashMap<String, Repo>,
-}
-// Now, for programs.json
-pub struct ProgramsJsonRoot {
+    pub packages: HashMap<String, Repo>,
     /// Here the String will be:
     /// gh/rohanvashisht1234/zorsig
     /// cb/rohanvashisht1234/repo_name
-    pub users: HashMap<String, Repo>,
+    pub programs: HashMap<String, Repo>,
 }

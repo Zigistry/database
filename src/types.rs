@@ -34,8 +34,8 @@ pub struct Node {
     pub description: String,
     pub issues: Issues,
     pub default_branch_ref: DefaultBranchRef,
-    pub fork_count: i64,
-    pub stargazer_count: i64,
+    pub fork_count: u32,
+    pub stargazer_count: u32,
     pub watchers: Watchers,
     pub zon: Option<Zon>,
     pub pushed_at: String,
@@ -53,7 +53,7 @@ pub struct Node {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Issues {
-    pub total_count: i64,
+    pub total_count: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -65,7 +65,7 @@ pub struct DefaultBranchRef {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Watchers {
-    pub total_count: i64,
+    pub total_count: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -97,13 +97,13 @@ pub struct Owner {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Followers {
-    pub total_count: i64,
+    pub total_count: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Following {
-    pub total_count: i64,
+    pub total_count: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
