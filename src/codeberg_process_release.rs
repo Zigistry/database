@@ -1,20 +1,27 @@
 use std::collections::HashMap;
+use std::error::Error;
 
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use serde_json::Value;
 
+use crate::bzz_stuff::parse;
+use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::custom_types;
-use crate::types;
+use crate::custom_types::Dependency;
+use lazy_static::lazy_static;
+lazy_static! {
+    static ref KEY2:String = String::new();
+}
 
-pub async fn process_release(owner_name: String, repo_name: String) -> Result<types::Releases, Box<dyn std::error::Error>> {
+pub async fn process_release(owner_name: String, repo_name: String) -> Result<custom_types::Release, Box<dyn std::error::Error>> {
     let release_url = format!(
         "https://codeberg.org/api/v1/repos/{}/{}/releases",
         owner_name, repo_name
     );
     let client = reqwest::Client::new()
         .get(&release_url)
-        .bearer_auth(key2)
+        .bearer_auth(KEY2.to_string())
         .send()
         .await?
         .json::<Root>()
@@ -36,12 +43,12 @@ pub async fn process_release(owner_name: String, repo_name: String) -> Result<ty
             published_at:i.published_at,
             release_assets:HashMap::new(),
             minimum_zig_version:,
-            readme_url: get_readme_url(),
+            readme_url: get_readme_url(&owner_name, &repo_name, &i.tag_name, true).await,
         };
 
     }
     
-    Ok(())
+    Ok()
 }
 
 pub type Root = Vec<Root2>;
@@ -128,8 +135,33 @@ pub struct ArchiveDownloadCount {
 }
 
 
-pub async get_readme_url() {
+pub async fn get_readme_url(
+    owner_name: &str,
+    repo_name: &str,
+    branch_or_tag: &str,
+    is_tag:bool,
+) -> String {
+    let url = if is_tag {
+        format!(
+            "https://codeberg.org/{owner_name}/{repo_name}/raw/tag/{branch_or_tag}/"
+        )
+    } else {
+        format!(
+            "https://codeberg.org/{owner_name}/{repo_name}/raw/branch/{branch_or_tag}/"
+        )
+    };
 
+    let client = reqwest::Client::new();
+
+    for readme_file_name in POSSIBLE_README_FILE_NAMES {
+        let mine = url.to_string() + readme_file_name;
+        let res = client.head(&mine).send().await.unwrap();
+        if res.status().is_success() {
+            return mine.to_string();
+        }
+    }
+
+    String::new()
 }
 
 
@@ -141,21 +173,21 @@ pub async fn get_build_zig_zon_data(
     branch_or_tag: &str,
     is_tag:bool,
 ) -> Result<(String, Vec<Dependency>), Box<dyn Error>> {
-    let url = if tag {
+    let url = if is_tag {
         format!(
             "https://codeberg.org/{owner_name}/{repo_name}/raw/tag/{branch_or_tag}/build.zig.zon"
-        );
+        )
     } else {
         // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
         format!(
             "https://codeberg.org/{owner_name}/{repo_name}/raw/branch/{branch_or_tag}/build.zig.zon"
-        );
+        )
     };
    
     let client = reqwest::Client::new();
     let text = client.get(&url).send().await?.text().await?;
 
-    let tokens = tokenize(&mut text.chars().collect::<Vec<_>>().into_iter().peekable())?;
+    let tokens = crate::bzz_stuff::tokenize(&mut text.chars().collect::<Vec<_>>().into_iter().peekable())?;
     let parsed = parse(&mut tokens.into_iter().peekable())?;
 
     Ok((parsed.minimum_zig_version, parsed.dependencies))
