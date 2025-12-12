@@ -615,7 +615,6 @@ dependencies = [
  "chrono",
  "futures",
  "lazy_static",
- "once_cell",
  "reqwest",
  "serde",
  "serde_derive",

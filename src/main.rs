@@ -12,7 +12,6 @@ use crate::codeberg::codeberg_main;
 
 use crate::{github::github_main, helper_functions::*};
 use lazy_static::lazy_static;
-use once_cell::sync::Lazy;
 
 mod bzz_stuff;
 mod github;
@@ -34,8 +33,10 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), GenericErr> {
     eprintln!("Starting");
-    github_main().await.unwrap();
-    codeberg_main().await;
+    async {
+        github_main();
+        codeberg_main();
+    }.await;
     // println!("{}", &GLOBAL.lock().await.packages.len());
     Ok(())
 }

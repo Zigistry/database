@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
-use crate::GLOBAL;
+use crate::{GLOBAL, KEY};
 use crate::{custom_types, types};
 
 async fn process_repository(repository: types::Node) {
@@ -107,7 +107,7 @@ async fn process_repository(repository: types::Node) {
             .lock()
             .await
             .users
-            .contains_key(&repository.owner.login)
+            .contains_key(&format!("gh/{}/{}", repository.owner.login.clone(), repository.name))
         {
             continue;
         } else {
@@ -136,7 +136,7 @@ async fn process_repository(repository: types::Node) {
                 .lock()
                 .await
                 .users
-                .insert(repository.owner.login.clone(), user_resultant);
+                .insert(format!("gh/{}/{}", repository.owner.login.clone(), repository.name), user_resultant);
         }
     }
     GLOBAL.lock().await.packages.insert(
@@ -174,7 +174,7 @@ pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
             });
             let mut res = client
                 .post("https://api.github.com/graphql")
-                .header("Authorization", crate::KEY.to_string())
+                .bearer_auth(KEY.clone())
                 .header("User-Agent", "zigistry.dev")
                 .json(&query_to_send)
                 .send()
