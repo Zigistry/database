@@ -44,31 +44,39 @@ pub async fn fetch_all_codeberg_repos(
                 GLOBAL.lock().await.users.insert(user_name, user);
             }
 
-            let repo_resultant = custom_types::Repo{
-                created_at:repo.created_at,
+            let repo_resultant = custom_types::Repo {
+                created_at: repo.created_at,
                 description: repo.description,
-                issues_count:repo.open_issues_count,
-                default_branch:repo.default_branch,
+                issues_count: repo.open_issues_count,
+                default_branch: repo.default_branch,
                 fork_count: repo.forks_count,
                 stargazer_count: repo.stars_count,
-                watchers_count:repo.watchers_count,
-                pushed_at:repo.updated_at,
-                is_archived:repo.archived,
-                is_disabled:repo.archived,
-                is_fork:repo.fork,
-                license:String::from("Not found"),
-                repository_topics:repo.topics,
-                primary_language:repo.language,
-                default_branch_information:custom_types::Release{
-                    is_prerelease:false,
-                    published_at:repo.created_at,
-                    release_assets:HashMap::new(),
-                    dependencies:Vec::new(),
-                    minimum_zig_version:String::new(),
-                    readme_url:String::new(),
+                watchers_count: repo.watchers_count,
+                pushed_at: repo.updated_at,
+                is_archived: repo.archived,
+                is_disabled: repo.archived,
+                is_fork: repo.fork,
+                license: String::from("Not found"),
+                repository_topics: repo.topics,
+                primary_language: repo.language,
+                default_branch_information: custom_types::Release {
+                    is_prerelease: false,
+                    published_at: repo.created_at,
+                    release_assets: HashMap::new(),
+                    dependencies: Vec::new(),
+                    minimum_zig_version: String::new(),
+                    readme_url: String::new(),
                 },
-                releases:HashMap::new(),
-            }
+                releases: HashMap::new(),
+            };
+            // https://codeberg.org/{owner}/{repo}/releases.rss
+
+            
+            GLOBAL
+                .lock()
+                .await
+                .packages
+                .insert(user_name, repo_resultant);
         })
         .collect();
     Ok(all_repos)
@@ -77,13 +85,6 @@ pub async fn fetch_all_codeberg_repos(
 pub async fn codeberg_main() {
     let raw_repos = fetch_all_codeberg_repos("zig".to_string());
 }
-
-
-
-
-pub fn 
-
-
 
 use std::collections::HashMap;
 use std::fmt::format;

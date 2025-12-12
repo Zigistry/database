@@ -12,7 +12,7 @@ use crate::codeberg::codeberg_main;
 
 use crate::{github::github_main, helper_functions::*};
 use lazy_static::lazy_static;
-
+mod codeberg_process_release;
 mod bzz_stuff;
 mod github;
 
