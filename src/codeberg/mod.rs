@@ -1,15 +1,14 @@
 const key2: String = String::new();
 
-pub async fn fetch_all_codeberg_repos(
-    query: String,
-) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let all_repos = Vec::new();
+pub async fn fetch_all_codeberg_repos(query: String) -> Result<(), Box<dyn std::error::Error>> {
+    let mut all_repos = vec![];
 
     let mut page = 1;
 
     loop {
         let url =
             format!("https://codeberg.org/api/v1/repos/search?q={query}&page={page}&topic=true");
+        println!("{}", url);
         let client = reqwest::Client::new()
             .get(&url)
             .bearer_auth(key2)
@@ -17,6 +16,7 @@ pub async fn fetch_all_codeberg_repos(
             .await?
             .json::<Root>()
             .await?;
+        println!("CLIENT LENGTH: {}", client.data.len());
         if client.data.is_empty() {
             break;
         }
@@ -26,64 +26,71 @@ pub async fn fetch_all_codeberg_repos(
         page += 1;
     }
 
-    all_repos
-        .iter()
-        .map(|repo| async {
-            let user_name = format!("cb/{}/{}", repo.owner.login, repo.name);
-            if !(GLOBAL.lock().await.users.contains_key(&user_name)) {
-                let user = custom_types::User {
-                    avatar_url: repo.owner.avatar_url,
-                    company: Some("".to_string()),
-                    followers: repo.owner.followers_count,
-                    following: repo.owner.following_count,
-                    location: Some(repo.owner.location),
-                    description: Some(repo.owner.description),
-                    bio: Some(repo.owner.description),
-                    website_url: Some(repo.owner.website),
-                };
-                GLOBAL.lock().await.users.insert(user_name, user);
-            }
+    println!("All repos len: {}", all_repos.len());
 
-            let repo_resultant = custom_types::Repo {
-                created_at: repo.created_at,
-                description: repo.description,
-                issues_count: repo.open_issues_count,
-                default_branch: repo.default_branch,
-                fork_count: repo.forks_count,
-                stargazer_count: repo.stars_count,
-                watchers_count: repo.watchers_count,
-                pushed_at: repo.updated_at,
-                is_archived: repo.archived,
-                is_disabled: repo.archived,
-                is_fork: repo.fork,
-                license: String::from("Not found"),
-                repository_topics: repo.topics,
-                primary_language: repo.language,
-                default_branch_information: custom_types::Release {
-                    is_prerelease: false,
-                    published_at: repo.created_at,
-                    release_assets: HashMap::new(),
-                    dependencies: Vec::new(),
-                    minimum_zig_version: String::new(),
-                    readme_url: String::new(),
-                },
-                releases: HashMap::new(),
+    for repo in all_repos {
+        let user_name = format!("cb/{}/{}", repo.owner.login, repo.name);
+        if !(GLOBAL.lock().await.users.contains_key(&user_name)) {
+            let user = custom_types::User {
+                avatar_url: repo.owner.avatar_url.clone(),
+                company: Some("".to_string()),
+                followers: repo.owner.followers_count,
+                following: repo.owner.following_count,
+                location: Some(repo.owner.location.clone()),
+                description: Some(repo.owner.description.clone()),
+                bio: Some(repo.owner.description.clone()),
+                website_url: Some(repo.owner.website.clone()),
             };
-            // https://codeberg.org/{owner}/{repo}/releases.rss
+            GLOBAL.lock().await.users.insert(user_name.clone(), user);
+        }
 
-            
-            GLOBAL
-                .lock()
+        let releases =
+            codeberg_process_release::process_release(repo.owner.login.clone(), repo.name.clone())
                 .await
-                .packages
-                .insert(user_name, repo_resultant);
-        })
-        .collect();
-    Ok(all_repos)
+                .unwrap_or_default();
+
+        let repo = repo.clone();
+
+        let repo_resultant = custom_types::Repo {
+            created_at: repo.created_at.clone(),
+            description: repo.description,
+            issues_count: repo.open_issues_count,
+            default_branch: repo.default_branch,
+            fork_count: repo.forks_count,
+            stargazer_count: repo.stars_count,
+            watchers_count: repo.watchers_count,
+            pushed_at: repo.updated_at,
+            is_archived: repo.archived,
+            is_disabled: repo.archived,
+            is_fork: repo.fork,
+            license: String::from("Not found"),
+            repository_topics: repo.topics,
+            primary_language: repo.language,
+            default_branch_information: custom_types::Release {
+                is_prerelease: false,
+                published_at: repo.created_at.clone(),
+                release_assets: HashMap::new(),
+                dependencies: Vec::new(),
+                minimum_zig_version: String::new(),
+                readme_url: String::new(),
+            },
+            releases: releases,
+        };
+        // https://codeberg.org/{owner}/{repo}/releases.rss
+
+        GLOBAL
+            .lock()
+            .await
+            .packages
+            .insert(user_name.clone(), repo_resultant);
+    }
+    Ok(())
 }
 
 pub async fn codeberg_main() {
-    let raw_repos = fetch_all_codeberg_repos("zig".to_string());
+    fetch_all_codeberg_repos("zig".to_string()).await.unwrap();
+
+    println!("{}", &GLOBAL.lock().await.users.len());
 }
 
 use std::collections::HashMap;
@@ -95,6 +102,7 @@ use serde_derive::Serialize;
 use serde_json::Value;
 
 use crate::GLOBAL;
+use crate::codeberg_process_release;
 use crate::custom_types;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -159,11 +167,11 @@ pub struct Daum {
     #[serde(rename = "has_issues")]
     pub has_issues: bool,
     #[serde(rename = "internal_tracker")]
-    pub internal_tracker: InternalTracker,
+    pub internal_tracker: Option<InternalTracker>,
     #[serde(rename = "has_wiki")]
     pub has_wiki: bool,
     #[serde(rename = "wiki_branch")]
-    pub wiki_branch: String,
+    pub wiki_branch: Option<String>,
     #[serde(rename = "globally_editable_wiki")]
     pub globally_editable_wiki: bool,
     #[serde(rename = "has_pull_requests")]

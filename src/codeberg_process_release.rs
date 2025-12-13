@@ -18,7 +18,7 @@ lazy_static! {
 pub async fn process_release(
     owner_name: String,
     repo_name: String,
-) -> Result<custom_types::Release, Box<dyn std::error::Error>> {
+) -> Result<HashMap<String, custom_types::Release>, Box<dyn std::error::Error>> {
     let release_url = format!(
         "https://codeberg.org/api/v1/repos/{}/{}/releases",
         owner_name, repo_name
@@ -27,23 +27,17 @@ pub async fn process_release(
         .get(&release_url)
         .bearer_auth(KEY2.to_string())
         .send()
-        .await?
-        .json::<Root>()
         .await?;
+
+    if client.status() != reqwest::StatusCode::OK {
+        return Ok(HashMap::new());
+    }
+
+    let responce_as_json = client.json::<Root>().await?;
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/build.zig.zon
-    for i in client {
-        let bzz_link = format!(
-            "https://codeberg.org/{owner_name}/{repo_name}/raw/tag/{}/build.zig.zon",
-            i.tag_name
-        );
-        let bzz_stuff = reqwest::Client::new()
-            .get(&bzz_link)
-            .send()
-            .await?
-            .text()
-            .await?;
-
+    let mut all_releases = HashMap::new();
+    for i in responce_as_json {
         let details = match get_build_zig_zon_data(&owner_name, &repo_name, &i.tag_name, true).await
         {
             Ok(r) => r,
@@ -65,9 +59,10 @@ pub async fn process_release(
             minimum_zig_version: details.0,
             readme_url: get_readme_url(&owner_name, &repo_name, &i.tag_name, true).await,
         };
+        all_releases.insert(i.tag_name, compiled_release);
     }
 
-    Ok()
+    Ok(all_releases)
 }
 
 pub type Root = Vec<Root2>;

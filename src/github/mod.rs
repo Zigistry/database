@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use chrono::{Days, Local, Months, NaiveDate};
-use futures::future::join_all;
 use crate::{GLOBAL, KEY};
 use crate::{custom_types, types};
+use chrono::{Days, Local, Months, NaiveDate};
+use futures::future::join_all;
+use std::collections::HashMap;
 
 async fn process_repository(repository: types::Node) {
     // eprintln!("Processing Repository: {}", repository.name);
@@ -103,12 +103,11 @@ async fn process_repository(repository: types::Node) {
                 },
             },
         );
-        if GLOBAL
-            .lock()
-            .await
-            .users
-            .contains_key(&format!("gh/{}/{}", repository.owner.login.clone(), repository.name))
-        {
+        if GLOBAL.lock().await.users.contains_key(&format!(
+            "gh/{}/{}",
+            repository.owner.login.clone(),
+            repository.name
+        )) {
             continue;
         } else {
             // println!("Processing User: {}", repository.owner.login);
@@ -132,11 +131,10 @@ async fn process_repository(repository: types::Node) {
                 description: repository.owner.description.clone(),
                 website_url: repository.owner.website_url.clone(),
             };
-            GLOBAL
-                .lock()
-                .await
-                .users
-                .insert(format!("gh/{}/{}", repository.owner.login.clone(), repository.name), user_resultant);
+            GLOBAL.lock().await.users.insert(
+                format!("gh/{}/{}", repository.owner.login.clone(), repository.name),
+                user_resultant,
+            );
         }
     }
     GLOBAL.lock().await.packages.insert(
@@ -172,21 +170,21 @@ pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
                     "next_value": next
                 }
             });
-            let mut res = client
+            let res = client
                 .post("https://api.github.com/graphql")
-                .bearer_auth(KEY.clone())
+                .header("Authorization", KEY.to_string())
                 .header("User-Agent", "zigistry.dev")
                 .json(&query_to_send)
                 .send()
                 .await?;
-                // .json::<types::Root>()
-                // // .text()
-                // .await?; // Errors are not allowed in this scenario, but, crashes are.
+            // .json::<types::Root>()
+            // // .text()
+            // .await?; // Errors are not allowed in this scenario, but, crashes are.
 
-                let text = res.text().await?;
-                println!("{text}");
-                // println!("{}", text);
-                let mut res2: types::Root = serde_json::from_str(&text)?;
+            let text = res.text().await?;
+            println!("{text}");
+            // println!("{}", text);
+            let mut res2: types::Root = serde_json::from_str(&text)?;
             println!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
             next = Option::from(res2.data.search.page_info.end_cursor);

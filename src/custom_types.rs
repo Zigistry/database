@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(Debug, serde::Serialize)]
 pub struct Asset {
     pub download_url: String,
-    pub size: i64,
+    pub size: u64,
     pub content_type: String,
 }
 /// This is all the data I get from build.zig.zonn
@@ -16,7 +16,7 @@ pub struct Dependency {
     pub path: String,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, Default)]
 pub struct Release {
     pub is_prerelease: bool,
     pub published_at: String,
