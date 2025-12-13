@@ -156,7 +156,7 @@ pub struct ReleaseAssets {
 pub struct Node4 {
     pub name: String,
     pub download_url: String,
-    pub size: i64,
+    pub size: u64,
     pub content_type: String,
 }
 
