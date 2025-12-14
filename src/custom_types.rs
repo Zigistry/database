@@ -48,7 +48,7 @@ pub struct Repo {
     pub primary_language: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub struct User {
     pub avatar_url: String,
     pub bio: Option<String>,
@@ -60,6 +60,7 @@ pub struct User {
     pub website_url: Option<String>,
 }
 
+#[derive(Debug, serde::Serialize)]
 pub struct Root {
     /// Here the String will be:
     /// gh/rohanvashisht1234

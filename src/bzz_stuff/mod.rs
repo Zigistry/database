@@ -186,6 +186,11 @@ pub fn parse(tokens: &mut Peekable<IntoIter<TokenType>>) -> Result<BuildZigZonDa
                         // The issue here is that, in Zig 0.12.0, we have
                         // strings as name, now, in Zig 0.15.0, we have
                         // enum literals as name.
+                        if let Some(c) = tokens.peek() {
+                            if c == &TokenType::Dot {
+                                tokens.next();
+                            }
+                        }
                         match tokens.next() {
                             Some(TokenType::Str(s)) | Some(TokenType::Identifier(s)) => {
                                 build_zig_zon_parsed.name = s;

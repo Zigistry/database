@@ -1,5 +1,6 @@
-use crate::{GLOBAL, KEY};
-use crate::{custom_types, types};
+mod types;
+
+use crate::{DATABASE, GITHUB_KEY, custom_types};
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
 use std::collections::HashMap;
@@ -40,7 +41,7 @@ async fn process_repository(repository: types::Node) {
             .await
             {
                 Some(url) => url,
-                None => "404 unable to find readme.".to_string(),
+                _ => "404 unable to find readme.".to_string(),
             },
         },
         releases: HashMap::new(),
@@ -99,11 +100,11 @@ async fn process_repository(repository: types::Node) {
                 },
                 readme_url: match readme_url {
                     Some(url) => url,
-                    None => String::new(),
+                    _ => String::new(),
                 },
             },
         );
-        if GLOBAL.lock().await.users.contains_key(&format!(
+        if DATABASE.lock().await.users.contains_key(&format!(
             "gh/{}/{}",
             repository.owner.login.clone(),
             repository.name
@@ -131,13 +132,13 @@ async fn process_repository(repository: types::Node) {
                 description: repository.owner.description.clone(),
                 website_url: repository.owner.website_url.clone(),
             };
-            GLOBAL.lock().await.users.insert(
+            DATABASE.lock().await.users.insert(
                 format!("gh/{}/{}", repository.owner.login.clone(), repository.name),
                 user_resultant,
             );
         }
     }
-    GLOBAL.lock().await.packages.insert(
+    DATABASE.lock().await.packages.insert(
         format!("gh/{}/{}", repository.owner.login, repository.name),
         repository_resultant,
     );
@@ -172,7 +173,7 @@ pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
             });
             let res = client
                 .post("https://api.github.com/graphql")
-                .header("Authorization", KEY.to_string())
+                .header("Authorization", GITHUB_KEY.to_string())
                 .header("User-Agent", "zigistry.dev")
                 .json(&query_to_send)
                 .send()
@@ -247,6 +248,9 @@ async fn get_build_zig_zon_data_wrapper(
 ) -> (String, Vec<Dependency>) {
     match get_build_zig_zon_data(owner_name, repo_name, branch_or_tag).await {
         Ok((minimum_zig_version, dependencies)) => (minimum_zig_version, dependencies),
-        Err(_) => ("unknown".to_string(), Vec::new()),
+        Err(_) => {
+            eprintln!("Parser wasn't able to parse: https://github.com/{}/{}", owner_name, repo_name);
+            ("unknown".to_string(), Vec::new())
+        }
     }
 }

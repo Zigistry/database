@@ -19,21 +19,20 @@
 
 mod bzz_stuff;
 mod codeberg;
-mod codeberg_process_release;
 mod constants;
 mod custom_types;
 mod github;
-mod helper_functions;
-mod types;
 
 use lazy_static::lazy_static;
 use std::{collections::HashMap, env};
 use tokio::sync::Mutex;
 
 lazy_static! {
-    static ref KEY: String =
+    static ref GITHUB_KEY: String =
         "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set");
-    static ref GLOBAL: Mutex<custom_types::Root> = Mutex::new(custom_types::Root {
+    static ref CODEBERG_KEY: String =
+        "token ".to_string() + &env::var("CB_API_KEY").expect("CB_API_KEY not set");
+    static ref DATABASE: Mutex<custom_types::Root> = Mutex::new(custom_types::Root {
         users: HashMap::new(),
         packages: HashMap::new(),
         programs: HashMap::new(),
@@ -43,8 +42,12 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("Starting");
-    // github_main().await.unwrap();
+    // github::github_main().await.unwrap();
     codeberg::codeberg_main().await;
-    // println!("{}", &GLOBAL.lock().await.packages.len());
+
+    let db = DATABASE.lock().await;
+
+    let json = serde_json::to_string_pretty(&*db)?;
+    println!("{}", json);
     Ok(())
 }
