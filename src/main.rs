@@ -42,12 +42,12 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("Starting");
-    // github::github_main().await.unwrap();
-    codeberg::codeberg_main().await;
+    github::github_main().await.unwrap();
+    codeberg::codeberg_main().await.unwrap();
 
     let db = DATABASE.lock().await;
 
-    let json = serde_json::to_string_pretty(&*db)?;
+    let json = serde_json::to_string(&*db)?;
     println!("{}", json);
     Ok(())
 }

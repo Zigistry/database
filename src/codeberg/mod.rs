@@ -92,12 +92,22 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 releases: releases,
             };
             // https://codeberg.org/{owner}/{repo}/releases.rss
-
-            DATABASE
-                .lock()
-                .await
-                .packages
-                .insert(user_name.clone(), repo_resultant);
+            if repo_resultant
+                .repository_topics
+                .contains(&"zig-package".to_string())
+            {
+                DATABASE
+                    .lock()
+                    .await
+                    .packages
+                    .insert(user_name.clone(), repo_resultant);
+            } else {
+                DATABASE
+                    .lock()
+                    .await
+                    .programs
+                    .insert(user_name.clone(), repo_resultant);
+            }
         });
     }
 

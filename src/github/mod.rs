@@ -5,7 +5,7 @@ use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
 use std::collections::HashMap;
 
-async fn process_repository(repository: types::Node) {
+async fn process_repository(repository: types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
         description: repository.description.unwrap_or_default(),
@@ -138,13 +138,23 @@ async fn process_repository(repository: types::Node) {
             );
         }
     }
-    DATABASE.lock().await.packages.insert(
-        format!("gh/{}/{}", repository.owner.login, repository.name),
-        repository_resultant,
-    );
+    if is_package {
+        DATABASE.lock().await.packages.insert(
+            format!("gh/{}/{}", repository.owner.login, repository.name),
+            repository_resultant,
+        );
+    } else {
+        DATABASE.lock().await.programs.insert(
+            format!("gh/{}/{}", repository.owner.login, repository.name),
+            repository_resultant,
+        );
+    }
 }
 
-pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn process_query(
+    query: &str,
+    is_package: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut start = NaiveDate::from_ymd_opt(2024, 2, 8).unwrap();
     // I am doing extra one day to accomedate for if all the universal time.
     let end = Local::now()
@@ -167,7 +177,7 @@ pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
             let query_to_send = serde_json::json!({
                 "query": include_str!("../../gqlFiles/main.gql"),
                 "variables": {
-                    "query": format!("topic:zig-package created:{}..{}", lower, upper),
+                    "query": format!("topic:{query} created:{lower}..{upper}"),
                     "next_value": next
                 }
             });
@@ -191,7 +201,9 @@ pub async fn github_main() -> Result<(), Box<dyn std::error::Error>> {
             next = Option::from(res2.data.search.page_info.end_cursor);
             nodes.append(&mut res2.data.search.nodes);
         }
-        let futures = nodes.iter().map(|node| process_repository(node.clone()));
+        let futures = nodes
+            .iter()
+            .map(|node| process_repository(node.clone(), is_package));
         join_all(futures).await;
         break;
     }
@@ -202,6 +214,12 @@ use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::custom_types::Dependency;
 use std::error::Error;
+
+pub async fn github_main() -> Result<(), Box<dyn Error>> {
+    process_query("zig-package", true).await.unwrap();
+    process_query("zig", false).await.unwrap();
+    Ok(())
+}
 
 pub async fn get_readme_url(
     owner_name: &str,
@@ -249,7 +267,10 @@ async fn get_build_zig_zon_data_wrapper(
     match get_build_zig_zon_data(owner_name, repo_name, branch_or_tag).await {
         Ok((minimum_zig_version, dependencies)) => (minimum_zig_version, dependencies),
         Err(_) => {
-            eprintln!("Parser wasn't able to parse: https://github.com/{}/{}", owner_name, repo_name);
+            eprintln!(
+                "Parser wasn't able to parse: https://github.com/{}/{}",
+                owner_name, repo_name
+            );
             ("unknown".to_string(), Vec::new())
         }
     }
