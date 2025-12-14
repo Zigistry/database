@@ -1,6 +1,6 @@
+use crate::custom_types::Dependency;
 use std::iter::Peekable;
 use std::vec::IntoIter;
-use crate::custom_types::Dependency;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
@@ -361,6 +361,6 @@ mod test {
         let res = tokenize(&mut test.chars().collect::<Vec<_>>().into_iter().peekable()).unwrap();
 
         let res2 = parse(&mut res.into_iter().peekable());
-        println!("{:#?}", res2);
+        eprintln!("{:#?}", res2);
     }
 }

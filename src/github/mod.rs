@@ -172,7 +172,7 @@ pub async fn process_query(
         let mut next: Option<String> = None;
         let mut asd = 1;
         while has_next {
-            println!("HAS NEXT! {asd}");
+            eprintln!("HAS NEXT! {asd}");
             asd += 1;
             let query_to_send = serde_json::json!({
                 "query": include_str!("../../gqlFiles/main.gql"),
@@ -193,10 +193,10 @@ pub async fn process_query(
             // .await?; // Errors are not allowed in this scenario, but, crashes are.
 
             let text = res.text().await?;
-            println!("{text}");
+            eprintln!("{text}");
             // println!("{}", text);
             let mut res2: types::Root = serde_json::from_str(&text)?;
-            println!("{:#?}", res2.data.search.page_info.has_next_page);
+            eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
             next = Option::from(res2.data.search.page_info.end_cursor);
             nodes.append(&mut res2.data.search.nodes);
@@ -205,7 +205,6 @@ pub async fn process_query(
             .iter()
             .map(|node| process_repository(node.clone(), is_package));
         join_all(futures).await;
-        break;
     }
     return Ok(());
 }

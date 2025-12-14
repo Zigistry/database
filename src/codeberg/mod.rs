@@ -1,5 +1,5 @@
 mod codeberg_process_release;
-mod types;
+pub mod types;
 
 use crate::{CODEBERG_KEY, DATABASE, custom_types};
 use futures::future;
@@ -8,7 +8,6 @@ use std::error::Error;
 
 pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>> {
     let mut all_repos = vec![];
-
     let mut page = 1;
 
     let client = reqwest::Client::new();
@@ -24,9 +23,9 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
             .await?
             .text()
             .await?;
-        println!("\n\n{}\n", res);
-        let responce = serde_json::from_str::<types::Root>(res.as_str())?;
-        println!("{:?}", responce);
+        eprintln!("\n\n{}\n", res);
+        let responce = serde_json::from_str::<types::types::Root>(res.as_str())?;
+        eprintln!("{:?}", responce);
         if responce.data.is_empty() {
             break;
         }
@@ -36,7 +35,7 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
         page += 1;
     }
 
-    println!("All repos len: {}", all_repos.len());
+    eprintln!("All repos len: {}", all_repos.len());
 
     let mut futures_all = Vec::new();
 
@@ -118,6 +117,6 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
 pub async fn codeberg_main() -> Result<(), Box<dyn Error>> {
     fetch_all_codeberg_repos("zig-package").await.unwrap();
     fetch_all_codeberg_repos("zig").await.unwrap();
-    println!("{}", &DATABASE.lock().await.users.len());
+    eprintln!("{}", &DATABASE.lock().await.users.len());
     Ok(())
 }
