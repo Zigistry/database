@@ -29,6 +29,9 @@ jobs:
         run: cargo build --release
 
       - name: Run
+        env:
+          GH_API_KEY: ${{ secrets.GH_API_KEY }}
+          CB_API_KEY: ${{ secrets.CB_API_KEY }}
         run: ./target/release/lowlevel > ./database/database.json
 
       - name: Save Changes
