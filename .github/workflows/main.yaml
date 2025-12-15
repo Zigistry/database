@@ -1,0 +1,38 @@
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs at the start of every hour
+
+permissions:
+  contents: write
+
+jobs:
+  update_database:
+    runs-on: ubuntu-latest
+
+    # Got to know this from: https://github.com/marketplace/actions/setup-git-config
+    steps:
+      - name: Github checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup user name and email automatically
+        uses: qoomon/actions--setup-git@v1
+        with:
+          user: bot
+
+      - name: Rust installation
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build repo
+        run: cargo build --release
+
+      - name: Run
+        run: ./target/release/lowlevel > ./database/database.json
+
+      - name: Save Changes
+      - run: |
+              git add ./database/database.json
+              git commit -m "Database updated"
+              git push
+

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use serde_with::skip_serializing_none;
 
+#[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct Asset {
     pub download_url: String,
@@ -7,6 +9,7 @@ pub struct Asset {
     pub content_type: String,
 }
 /// This is all the data I get from build.zig.zonn
+#[skip_serializing_none]
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Dependency {
     pub name: String,
@@ -16,6 +19,7 @@ pub struct Dependency {
     pub path: String,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, serde::Serialize, Default)]
 pub struct Release {
     pub is_prerelease: bool,
@@ -26,6 +30,7 @@ pub struct Release {
     pub readme_url: String,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct Repo {
     pub description: String,
@@ -48,6 +53,7 @@ pub struct Repo {
     pub primary_language: String,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct User {
     pub avatar_url: String,
@@ -60,6 +66,7 @@ pub struct User {
     pub website_url: Option<String>,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct Root {
     /// Here the String will be:
