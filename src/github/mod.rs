@@ -1,9 +1,11 @@
 mod types;
-
+use std::error::Error;
 use crate::{DATABASE, GITHUB_KEY, custom_types};
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
 use std::collections::HashMap;
+use crate::bzz_stuff::{parse, tokenize};
+use crate::constants::POSSIBLE_README_FILE_NAMES;
 
 async fn process_repository(repository: types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
@@ -164,7 +166,7 @@ pub async fn process_query(
     let client = reqwest::Client::new();
     let mut nodes = Vec::new();
     while start < end {
-        // eprintln!("{start}..{end}");
+        eprintln!("{start}..{end}");
         let lower = start.to_string();
         start = start.checked_add_months(Months::new(6)).unwrap();
         let upper = start.to_string();
@@ -193,26 +195,48 @@ pub async fn process_query(
             // .await?; // Errors are not allowed in this scenario, but, crashes are.
 
             let text = res.text().await?;
-            eprintln!("{text}");
+            // eprintln!("{text}");
             // println!("{}", text);
-            let mut res2: types::Root = serde_json::from_str(&text)?;
+            let mut res2: types::Root = match serde_json::from_str(&text){
+			Ok(t) =>  t,
+			Err (t) => {
+				eprintln!("Got this responce:");
+				eprintln!("{text}");
+				panic!("Got this problem: {t}");
+			}
+            };
             eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
             next = Option::from(res2.data.search.page_info.end_cursor);
             nodes.append(&mut res2.data.search.nodes);
         }
-        let futures = nodes
-            .iter()
-            .map(|node| process_repository(node.clone(), is_package));
-        join_all(futures).await;
+
+        //let mut temp_nodes = Vec::new();
+        let mut node_length = 0;
+        loop {
+        	if node_length >= nodes.len() {
+			break;
+        	}
+        	let temp = node_length;
+        	node_length = node_length + 100;
+        	if node_length > nodes.len() {
+			let futures = 
+		nodes[temp..].iter().map(|node:&types::Node| process_repository(node.clone(), is_package));
+		join_all(futures).await;	
+        	} else {
+			let futures = 
+		nodes[temp..node_length].iter().map(|node:&types::Node| process_repository(node.clone(), is_package));
+		join_all(futures).await;
+        	}
+		
+        }
+        // let futures = nodes
+        //    .iter()
+        //    .map(|node| process_repository(node.clone(), is_package));
+        //join_all(futures).await;
     }
     return Ok(());
 }
-
-use crate::bzz_stuff::{parse, tokenize};
-use crate::constants::POSSIBLE_README_FILE_NAMES;
-use crate::custom_types::Dependency;
-use std::error::Error;
 
 pub async fn github_main() -> Result<(), Box<dyn Error>> {
     process_query("zig-package", true).await.unwrap();
@@ -243,7 +267,7 @@ pub async fn get_build_zig_zon_data(
     owner_name: &str,
     repo_name: &str,
     branch_or_tag: &str,
-) -> Result<(String, Vec<Dependency>), Box<dyn Error>> {
+) -> Result<(String, Vec<custom_types::Dependency>), Box<dyn Error>> {
     let url = format!(
         "https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/build.zig.zon"
     );
@@ -262,7 +286,7 @@ async fn get_build_zig_zon_data_wrapper(
     owner_name: &str,
     repo_name: &str,
     branch_or_tag: &str,
-) -> (String, Vec<Dependency>) {
+) -> (String, Vec<custom_types::Dependency>) {
     match get_build_zig_zon_data(owner_name, repo_name, branch_or_tag).await {
         Ok((minimum_zig_version, dependencies)) => (minimum_zig_version, dependencies),
         Err(_) => {
