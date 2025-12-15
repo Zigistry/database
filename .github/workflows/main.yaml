@@ -15,7 +15,7 @@ jobs:
       - name: Github checkout
         uses: actions/checkout@v6
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Setup user name and email automatically
         uses: qoomon/actions--setup-git@v1

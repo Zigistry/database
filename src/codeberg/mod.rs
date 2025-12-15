@@ -23,9 +23,9 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
             .await?
             .text()
             .await?;
-        eprintln!("\n\n{}\n", res);
+        // eprintln!("\n\n{}\n", res);
         let responce = serde_json::from_str::<types::types::Root>(res.as_str())?;
-        eprintln!("{:?}", responce);
+        // eprintln!("{:?}", responce);
         if responce.data.is_empty() {
             break;
         }
