@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: '0 * * * *' # Runs at the start of every hour
+  workflow_dispatch:
 
 permissions:
   contents: write
