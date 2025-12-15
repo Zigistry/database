@@ -31,7 +31,7 @@ jobs:
         run: ./target/release/lowlevel > ./database/database.json
 
       - name: Save Changes
-      - run: |
+        run: |
               git add ./database/database.json
               git commit -m "Database updated"
               git push
