@@ -7,4 +7,4 @@ pub const POSSIBLE_README_FILE_NAMES: &[&str] = &[
     "readme.txt",
 ];
 
-pub const ASYNC_LIMIT: u8 = 100;
+pub const ASYNC_LIMIT: usize = 100;

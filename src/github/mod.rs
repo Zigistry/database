@@ -1,7 +1,7 @@
 mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::POSSIBLE_README_FILE_NAMES;
-use crate::{DATABASE, GITHUB_KEY, custom_types};
+use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
 use std::collections::HashMap;
@@ -106,9 +106,7 @@ async fn process_repository(repository: &types::Node, is_package: bool) {
                 },
             },
         );
-        if DATABASE
-            .lock()
-            .await
+        if db!()
             .users
             .contains_key(&format!("gh/{}", repository.owner.login,))
         {
@@ -135,19 +133,19 @@ async fn process_repository(repository: &types::Node, is_package: bool) {
                 description: repository.owner.description.clone(),
                 website_url: repository.owner.website_url.clone(),
             };
-            DATABASE.lock().await.users.insert(
+            db!().users.insert(
                 format!("gh/{}", repository.owner.login.clone()),
                 user_resultant,
             );
         }
     }
     if is_package {
-        DATABASE.lock().await.packages.insert(
+        db!().packages.insert(
             format!("gh/{}/{}", repository.owner.login, repository.name),
             repository_resultant,
         );
     } else {
-        DATABASE.lock().await.programs.insert(
+        db!().programs.insert(
             format!("gh/{}/{}", repository.owner.login, repository.name),
             repository_resultant,
         );

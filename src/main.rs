@@ -24,6 +24,7 @@ mod custom_types;
 mod github;
 
 use lazy_static::lazy_static;
+use std::error::Error;
 use std::{collections::HashMap, env};
 use tokio::sync::Mutex;
 
@@ -39,15 +40,22 @@ lazy_static! {
     });
 }
 
+#[macro_export]
+macro_rules! db {
+    () => {
+        &mut *crate::DATABASE.lock().await
+    };
+}
+
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     eprintln!("Starting");
+
     github::github_main().await.unwrap();
     codeberg::codeberg_main().await.unwrap();
 
-    let db = DATABASE.lock().await;
-
-    let json = serde_json::to_string(&*db)?;
+    let json = serde_json::to_string(db!())?;
     println!("{}", json);
+
     Ok(())
 }
