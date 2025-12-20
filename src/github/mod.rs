@@ -1,37 +1,37 @@
 mod types;
-use std::error::Error;
+use crate::bzz_stuff::{parse, tokenize};
+use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::{DATABASE, GITHUB_KEY, custom_types};
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
 use std::collections::HashMap;
-use crate::bzz_stuff::{parse, tokenize};
-use crate::constants::POSSIBLE_README_FILE_NAMES;
+use std::error::Error;
 
-async fn process_repository(repository: types::Node, is_package: bool) {
+async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
-        description: repository.description.unwrap_or_default(),
+        description: repository.description.clone(),
         issues_count: repository.issues.total_count,
         default_branch: repository.default_branch_ref.name.to_string(),
         fork_count: repository.fork_count,
         stargazer_count: repository.stargazer_count,
         watchers_count: repository.watchers.total_count,
-        pushed_at: repository.pushed_at,
+        pushed_at: repository.pushed_at.clone(),
         created_at: repository.created_at.to_string(),
         is_archived: repository.is_archived,
         is_disabled: repository.is_disabled,
         is_fork: repository.is_fork,
-        license: repository.license_info.unwrap_or_default().spdx_id,
+        license: repository.license_info.clone().unwrap_or_default().spdx_id,
         repository_topics: repository
             .repository_topics
             .edges
             .iter()
             .map(|e| e.node.topic.name.clone())
             .collect(),
-        primary_language: repository.primary_language.unwrap_or_default().name,
+        primary_language: repository.primary_language.clone().unwrap_or_default().name,
         default_branch_information: custom_types::Release {
             is_prerelease: false,
-            published_at: repository.created_at,
+            published_at: repository.created_at.clone(),
             release_assets: HashMap::new(),
             dependencies: Vec::new(),
             minimum_zig_version: String::new(),
@@ -58,36 +58,36 @@ async fn process_repository(repository: types::Node, is_package: bool) {
         .default_branch_information
         .minimum_zig_version = data.0;
     repository_resultant.default_branch_information.dependencies = data.1;
-    for release in repository.releases.nodes {
-        let tag_name = release.tag_name;
+    for release in &repository.releases.nodes {
         let readme_url =
-            get_readme_url(&repository.owner.login, repository.name.as_str(), &tag_name).await;
+            get_readme_url(&repository.owner.login, &repository.name, &release.tag_name).await;
         let bzz_results =
-            get_build_zig_zon_data(&repository.owner.login, repository.name.as_str(), &tag_name)
+            get_build_zig_zon_data(&repository.owner.login, &repository.name, &release.tag_name)
                 .await;
 
         repository_resultant.releases.insert(
-            tag_name,
+            release.tag_name.clone(),
             custom_types::Release {
                 is_prerelease: release.is_prerelease,
-                published_at: release.published_at,
+                published_at: release.published_at.clone(),
                 release_assets: release
                     .release_assets
                     .nodes
-                    .iter()
+                    .clone()
+                    .into_iter()
                     .map(|n| {
                         (
-                            n.name.clone(),
+                            n.name,
                             custom_types::Asset {
-                                download_url: n.download_url.clone(),
+                                download_url: n.download_url,
                                 size: n.size,
-                                content_type: n.content_type.clone(),
+                                content_type: n.content_type,
                             },
                         )
                     })
                     .collect(),
                 dependencies: match &bzz_results {
-                    Ok((_, dependencies)) => dependencies.clone(),
+                    Ok((_, dependencies)) => dependencies.to_vec(),
                     Err(_) => {
                         // println!("{:#?}", err);
                         Vec::new()
@@ -106,11 +106,12 @@ async fn process_repository(repository: types::Node, is_package: bool) {
                 },
             },
         );
-        if DATABASE.lock().await.users.contains_key(&format!(
-            "gh/{}/{}",
-            repository.owner.login.clone(),
-            repository.name
-        )) {
+        if DATABASE
+            .lock()
+            .await
+            .users
+            .contains_key(&format!("gh/{}", repository.owner.login,))
+        {
             continue;
         } else {
             // println!("Processing User: {}", repository.owner.login);
@@ -135,7 +136,7 @@ async fn process_repository(repository: types::Node, is_package: bool) {
                 website_url: repository.owner.website_url.clone(),
             };
             DATABASE.lock().await.users.insert(
-                format!("gh/{}/{}", repository.owner.login.clone(), repository.name),
+                format!("gh/{}", repository.owner.login.clone()),
                 user_resultant,
             );
         }
@@ -197,13 +198,13 @@ pub async fn process_query(
             let text = res.text().await?;
             // eprintln!("{text}");
             // println!("{}", text);
-            let mut res2: types::Root = match serde_json::from_str(&text){
-			Ok(t) =>  t,
-			Err (t) => {
-				eprintln!("Got this responce:");
-				eprintln!("{text}");
-				panic!("Got this problem: {t}");
-			}
+            let mut res2: types::Root = match serde_json::from_str(&text) {
+                Ok(t) => t,
+                Err(t) => {
+                    eprintln!("Got this responce:");
+                    eprintln!("{text}");
+                    panic!("Got this problem: {t}");
+                }
             };
             eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
@@ -214,21 +215,22 @@ pub async fn process_query(
         //let mut temp_nodes = Vec::new();
         let mut node_length = 0;
         loop {
-        	if node_length >= nodes.len() {
-			break;
-        	}
-        	let temp = node_length;
-        	node_length = node_length + 100;
-        	if node_length > nodes.len() {
-			let futures = 
-		nodes[temp..].iter().map(|node:&types::Node| process_repository(node.clone(), is_package));
-		join_all(futures).await;	
-        	} else {
-			let futures = 
-		nodes[temp..node_length].iter().map(|node:&types::Node| process_repository(node.clone(), is_package));
-		join_all(futures).await;
-        	}
-		
+            if node_length >= nodes.len() {
+                break;
+            }
+            let temp = node_length;
+            node_length = node_length + 100;
+            if node_length > nodes.len() {
+                let futures = nodes[temp..]
+                    .iter()
+                    .map(|node: &types::Node| process_repository(node, is_package));
+                join_all(futures).await;
+            } else {
+                let futures = nodes[temp..node_length]
+                    .iter()
+                    .map(|node: &types::Node| process_repository(node, is_package));
+                join_all(futures).await;
+            }
         }
         // let futures = nodes
         //    .iter()

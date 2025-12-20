@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde_with::skip_serializing_none;
+use std::collections::HashMap;
 
 #[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
@@ -33,7 +33,7 @@ pub struct Release {
 #[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct Repo {
-    pub description: String,
+    pub description: Option<String>,
     pub issues_count: u32,
     pub default_branch: String,
     pub fork_count: u32,
