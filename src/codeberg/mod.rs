@@ -1,8 +1,11 @@
 mod codeberg_process_release;
+mod helper_functions;
 pub mod types;
 
+use crate::codeberg::helper_functions::get_readme_url;
 use crate::constants::ASYNC_LIMIT;
-use crate::{DATABASE, custom_types};
+use crate::github::get_build_zig_zon_data;
+use crate::{custom_types, db};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use std::collections::HashMap;
@@ -43,7 +46,7 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
         .for_each_concurrent(ASYNC_LIMIT, |repo| async move {
             let user_name = format!("cb/{}", repo.owner.login);
 
-            if !DATABASE.lock().await.users.contains_key(&user_name) {
+            if !db!().users.contains_key(&user_name) {
                 let user = custom_types::User {
                     avatar_url: repo.owner.avatar_url,
                     company: Some(String::new()),
@@ -54,9 +57,14 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                     bio: Some(repo.owner.description),
                     website_url: Some(repo.owner.website),
                 };
-                DATABASE.lock().await.users.insert(user_name.clone(), user);
+                db!().users.insert(user_name.clone(), user);
             }
 
+            let impdata = match get_build_zig_zon_data(&repo.owner.login, &repo.name, "HEAD").await
+            {
+                Ok(t) => t,
+                Err(e) => (String::new(), Vec::new()),
+            };
             let repo_resultant = custom_types::Repo {
                 created_at: repo.created_at.clone(),
                 description: repo.description.into(),
@@ -76,11 +84,11 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                     is_prerelease: false,
                     published_at: repo.created_at,
                     release_assets: HashMap::new(),
-                    dependencies: vec![],
-                    minimum_zig_version: String::new(),
-                    readme_url: String::new(),
+                    dependencies: impdata.1,
+                    minimum_zig_version: impdata.0,
+                    readme_url: get_readme_url(&repo.owner.login, &repo.name, "HEAD", false).await,
                 },
-                releases: process_release(repo.owner.login, repo.name)
+                releases: process_release(&repo.owner.login, &repo.name)
                     .await
                     .unwrap_or_default(),
             };
@@ -89,17 +97,9 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 .repository_topics
                 .contains(&"zig-package".to_string())
             {
-                DATABASE
-                    .lock()
-                    .await
-                    .packages
-                    .insert(user_name.clone(), repo_resultant);
+                db!().packages.insert(user_name.clone(), repo_resultant);
             } else {
-                DATABASE
-                    .lock()
-                    .await
-                    .programs
-                    .insert(user_name.clone(), repo_resultant);
+                db!().programs.insert(user_name.clone(), repo_resultant);
             }
         })
         .await;

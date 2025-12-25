@@ -24,8 +24,7 @@ mod custom_types;
 mod github;
 
 use lazy_static::lazy_static;
-use std::error::Error;
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
 
 lazy_static! {
@@ -55,7 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     codeberg::codeberg_main().await.unwrap();
 
     let json = serde_json::to_string(db!())?;
-    println!("{}", json);
+    println!("{json}");
 
     Ok(())
 }

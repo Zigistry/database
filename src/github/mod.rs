@@ -1,6 +1,6 @@
 mod types;
 use crate::bzz_stuff::{parse, tokenize};
-use crate::constants::POSSIBLE_README_FILE_NAMES;
+use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Days, Local, Months, NaiveDate};
 use futures::future::join_all;
@@ -176,7 +176,7 @@ pub async fn process_query(
             eprintln!("HAS NEXT! {asd}");
             asd += 1;
             let query_to_send = serde_json::json!({
-                "query": include_str!("../../gqlFiles/main.gql"),
+                "query": GH_GRAPH_QL_QUERY,
                 "variables": {
                     "query": format!("topic:{query} created:{lower}..{upper}"),
                     "next_value": next
@@ -274,8 +274,8 @@ pub async fn get_build_zig_zon_data(
     let client = reqwest::Client::new();
     let text = client.get(&url).send().await?.text().await?;
 
-    let tokens = tokenize(&mut text.chars().collect::<Vec<_>>().into_iter().peekable())?;
-    let parsed = parse(&mut tokens.into_iter().peekable())?;
+    let tokens = tokenize(text.chars())?;
+    let parsed = parse(tokens.into_iter())?;
 
     Ok((parsed.minimum_zig_version, parsed.dependencies))
 }

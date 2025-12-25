@@ -1,6 +1,4 @@
 use crate::custom_types::Dependency;
-use std::iter::Peekable;
-use std::vec::IntoIter;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
@@ -27,10 +25,12 @@ pub struct BuildZigZonData {
     pub paths: Vec<String>,
 }
 
-pub fn tokenize(
-    build_zig_zon_raw_data: &mut Peekable<IntoIter<char>>,
-) -> Result<Vec<TokenType>, String> {
-    let mut tokens: Vec<TokenType> = Vec::new();
+pub fn tokenize<I>(build_zig_zon_raw_data_: I) -> Result<Vec<TokenType>, String>
+where
+    I: Iterator<Item = char>,
+{
+    let mut build_zig_zon_raw_data = build_zig_zon_raw_data_.peekable();
+    let mut tokens = vec![];
 
     while let Some(c) = build_zig_zon_raw_data.next() {
         match c {
@@ -51,6 +51,55 @@ pub fn tokenize(
                             .to_string(),
                     );
                 }
+            }
+            '\\' => {
+                let mut resultant_string = String::new();
+                if let Some(c) = build_zig_zon_raw_data.peek() {
+                    if c == &'\\' {
+                        build_zig_zon_raw_data.next();
+                    } else {
+                        return Err("Found '\\\\' in build.zig.zon.".to_string());
+                    }
+                } else {
+                    return Err("the build.zig.zon file ended after a \\".to_string());
+                }
+                // Its the start of a string
+                'outer: loop {
+                    // As far as I know I could just
+                    // read the next line, but
+                    // what if it is a comment?
+                    // Lets see this:
+                    // I have this:
+                    // \\ Hello < i am here after the loop bellow
+                    loop {
+                        if let Some(c) = build_zig_zon_raw_data.next() {
+                            if c == '\n' {
+                                break;
+                            } else {
+                                resultant_string.push(c);
+                            }
+                        }
+                    }
+                    // Now, I am at a new line
+                    // \\ there can also be a next line
+                    // ; a new line might not be there.
+                    while let Some(c) = build_zig_zon_raw_data.next() {
+                        if c == ' ' {
+                            continue;
+                        } else if c == ',' {
+                            break 'outer;
+                        } else if c == '\\'
+                            && let Some(c2) = build_zig_zon_raw_data.next()
+                        {
+                            if c2 == '\\' {
+                                break;
+                                // because lets continue within the bigger loop.
+                                // The loop above will now handle the rest of characters.
+                            }
+                        }
+                    }
+                }
+                tokens.push(TokenType::Str(resultant_string));
             }
             '.' => tokens.push(TokenType::Dot),
             '{' => tokens.push(TokenType::LBrace),
@@ -146,7 +195,11 @@ pub fn tokenize(
     Ok(tokens)
 }
 
-pub fn parse(tokens: &mut Peekable<IntoIter<TokenType>>) -> Result<BuildZigZonData, String> {
+pub fn parse<I>(tokens_: I) -> Result<BuildZigZonData, String>
+where
+    I: Iterator<Item = TokenType>,
+{
+    let mut tokens = tokens_.peekable();
     let mut build_zig_zon_parsed = BuildZigZonData {
         name: String::new(),
         fingerprint: String::new(),
@@ -338,6 +391,12 @@ mod test {
         // test comment
         // another one
         .{
+            .license = \\ something
+            ,
+            .something = \\ asd
+                        \\ asdasd
+                                \\asdasdsad
+            ,
             .name = "bzz parser",
             .version = "0.0.0",
             .minimum_zig_version = "0.15.1",
@@ -358,9 +417,9 @@ mod test {
             }
         }
         "#;
-        let res = tokenize(&mut test.chars().collect::<Vec<_>>().into_iter().peekable()).unwrap();
+        let res = tokenize(test.chars()).unwrap();
 
-        let res2 = parse(&mut res.into_iter().peekable());
-        eprintln!("{:#?}", res2);
+        let res2 = parse(res.into_iter());
+        println!("{:#?}", res2);
     }
 }

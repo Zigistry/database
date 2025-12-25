@@ -1,19 +1,17 @@
-use std::collections::HashMap;
-use std::error::Error;
-
 use super::types;
-use crate::bzz_stuff::parse;
+use crate::bzz_stuff::{parse, tokenize};
+use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
 use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::custom_types;
+use std::collections::HashMap;
 
 pub async fn process_release(
-    owner_name: String,
-    repo_name: String,
+    owner_name: &str,
+    repo_name: &str,
 ) -> Result<HashMap<String, custom_types::Release>, Box<dyn std::error::Error>> {
-    let release_url = format!(
-        "https://codeberg.org/api/v1/repos/{}/{}/releases",
-        owner_name, repo_name
-    );
+    let release_url =
+        format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/releases");
+
     let client = reqwest::Client::new().get(&release_url).send().await?;
 
     if client.status() != reqwest::StatusCode::OK {
@@ -50,56 +48,4 @@ pub async fn process_release(
     }
 
     Ok(all_releases)
-}
-
-pub async fn get_readme_url(
-    owner_name: &str,
-    repo_name: &str,
-    branch_or_tag: &str,
-    is_tag: bool,
-) -> String {
-    let url = if is_tag {
-        format!("https://codeberg.org/{owner_name}/{repo_name}/raw/tag/{branch_or_tag}/")
-    } else {
-        format!("https://codeberg.org/{owner_name}/{repo_name}/raw/branch/{branch_or_tag}/")
-    };
-
-    let client = reqwest::Client::new();
-
-    for readme_file_name in POSSIBLE_README_FILE_NAMES {
-        let mine = url.to_string() + readme_file_name;
-        let res = client.head(&mine).send().await.unwrap();
-        if res.status().is_success() {
-            return mine.to_string();
-        }
-    }
-
-    String::new()
-}
-
-pub async fn get_build_zig_zon_data(
-    owner_name: &str,
-    repo_name: &str,
-    branch_or_tag: &str,
-    is_tag: bool,
-) -> Result<(String, Vec<custom_types::Dependency>), Box<dyn Error>> {
-    let url = if is_tag {
-        format!(
-            "https://codeberg.org/{owner_name}/{repo_name}/raw/tag/{branch_or_tag}/build.zig.zon"
-        )
-    } else {
-        // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
-        format!(
-            "https://codeberg.org/{owner_name}/{repo_name}/raw/branch/{branch_or_tag}/build.zig.zon"
-        )
-    };
-
-    let client = reqwest::Client::new();
-    let text = client.get(&url).send().await?.text().await?;
-
-    let tokens =
-        crate::bzz_stuff::tokenize(&mut text.chars().collect::<Vec<_>>().into_iter().peekable())?;
-    let parsed = parse(&mut tokens.into_iter().peekable())?;
-
-    Ok((parsed.minimum_zig_version, parsed.dependencies))
 }
