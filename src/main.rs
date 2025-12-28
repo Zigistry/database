@@ -23,6 +23,7 @@ mod constants;
 mod custom_types;
 mod github;
 
+use chrono::Utc;
 use lazy_static::lazy_static;
 use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
@@ -49,10 +50,36 @@ macro_rules! db {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     eprintln!("Starting");
-
-    github::github_main().await.unwrap();
-    codeberg::codeberg_main().await.unwrap();
-
+    let timer_start = Utc::now();
+    match codeberg::codeberg_main().await {
+        Ok(_) => {
+            println!(
+                "Codeberg completed successfully in {}minutes.",
+                (Utc::now() - timer_start).num_minutes(),
+            )
+        }
+        Err(r) => {
+            let json = serde_json::to_string(db!())?;
+            eprintln!("{json}");
+            eprintln!("Codeberg gave this error:");
+            eprintln!("{:#?}", r);
+        }
+    }
+    let timer_start = Utc::now();
+    match github::github_main().await {
+        Ok(_) => {
+            println!(
+                "GitHub completed successfully in {}minutes.",
+                (Utc::now() - timer_start).num_minutes(),
+            )
+        }
+        Err(r) => {
+            let json = serde_json::to_string(db!())?;
+            eprintln!("{json}");
+            eprintln!("GitHub gave this error:");
+            eprintln!("{:#?}", r);
+        }
+    }
     let json = serde_json::to_string(db!())?;
     println!("{json}");
 

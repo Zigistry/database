@@ -114,7 +114,7 @@ async fn process_repository(repository: &types::Node, is_package: bool) {
         } else {
             // println!("Processing User: {}", repository.owner.login);
             let user_resultant = custom_types::User {
-                avatar_url: repository.owner.avatar_url.clone(),
+                avatar_id: repository.owner.login.clone(),
                 bio: repository.owner.bio.clone(),
                 company: repository.owner.company.clone(),
                 followers: repository

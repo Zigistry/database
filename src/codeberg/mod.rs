@@ -2,6 +2,7 @@ mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
 
+use crate::CODEBERG_KEY;
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::constants::ASYNC_LIMIT;
 use crate::github::get_build_zig_zon_data;
@@ -18,13 +19,15 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
     let client = reqwest::Client::new();
 
     loop {
-        let url =
-            format!("https://codeberg.org/api/v1/repos/search?q={query}&page={page}&topic=true");
+        let url = format!(
+            "https://codeberg.org/api/v1/repos/search?q={query}&limit=50&page={page}&topic=true"
+        );
 
         eprintln!("Processing: {}", url);
 
         let responce = client
             .get(&url)
+            .header("Authorization", &*CODEBERG_KEY)
             .send()
             .await?
             .json::<types::types::Root>()
@@ -48,7 +51,13 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
 
             if !db!().users.contains_key(&user_name) {
                 let user = custom_types::User {
-                    avatar_url: repo.owner.avatar_url,
+                    avatar_id: repo
+                        .owner
+                        .avatar_url
+                        .rsplit("/")
+                        .next()
+                        .unwrap()
+                        .to_string(),
                     company: Some(String::new()),
                     followers: repo.owner.followers_count,
                     following: repo.owner.following_count,
@@ -97,9 +106,13 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 .repository_topics
                 .contains(&"zig-package".to_string())
             {
-                db!().packages.insert("cb".to_string() + &repo.full_name, repo_resultant);
+                db!()
+                    .packages
+                    .insert("cb".to_string() + &repo.full_name, repo_resultant);
             } else {
-                db!().programs.insert("cb/".to_string() + &repo.full_name, repo_resultant);
+                db!()
+                    .programs
+                    .insert("cb/".to_string() + &repo.full_name, repo_resultant);
             }
         })
         .await;

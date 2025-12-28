@@ -16,7 +16,7 @@ pub async fn get_readme_url(
     let client = reqwest::Client::new();
 
     for readme_file_name in POSSIBLE_README_FILE_NAMES {
-        let readme_possible_url = readme_file_name.to_string() + &url;
+        let readme_possible_url = url.clone() + readme_file_name;
 
         let responce = client.head(&readme_possible_url).send().await.unwrap();
         if responce.status().is_success() {

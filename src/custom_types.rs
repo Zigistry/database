@@ -87,7 +87,7 @@ pub struct Repo {
 #[derive(Debug, serde::Serialize)]
 pub struct User {
     #[serde(rename = "a")]
-    pub avatar_url: String,
+    pub avatar_id: String,
     #[serde(rename = "b")]
     pub bio: Option<String>,
     #[serde(rename = "c")]
