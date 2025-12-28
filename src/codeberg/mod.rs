@@ -97,9 +97,9 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 .repository_topics
                 .contains(&"zig-package".to_string())
             {
-                db!().packages.insert(user_name.clone(), repo_resultant);
+                db!().packages.insert("cb".to_string() + &repo.full_name, repo_resultant);
             } else {
-                db!().programs.insert(user_name.clone(), repo_resultant);
+                db!().programs.insert("cb/".to_string() + &repo.full_name, repo_resultant);
             }
         })
         .await;
