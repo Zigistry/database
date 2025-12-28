@@ -21,9 +21,11 @@ mod bzz_stuff;
 mod codeberg;
 mod constants;
 mod custom_types;
+mod dependents_calculator;
 mod github;
 
 use chrono::Utc;
+use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
 use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
@@ -80,6 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("{:#?}", r);
         }
     }
+    calculate_dependents();
     let json = serde_json::to_string(db!())?;
     println!("{json}");
 
