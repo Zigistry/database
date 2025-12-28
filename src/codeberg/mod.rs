@@ -47,7 +47,7 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
 
     stream::iter(all_repos)
         .for_each_concurrent(ASYNC_LIMIT, |repo| async move {
-            let user_name = format!("cb/{}", repo.owner.login);
+            let user_name = format!("cb/{}", repo.owner.login).to_lowercase();
 
             if !db!().users.contains_key(&user_name) {
                 let user = custom_types::User {
@@ -72,7 +72,7 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
             let impdata = match get_build_zig_zon_data(&repo.owner.login, &repo.name, "HEAD").await
             {
                 Ok(t) => t,
-                Err(e) => (String::new(), Vec::new()),
+                Err(_) => (String::new(), Vec::new()),
             };
             let repo_resultant = custom_types::Repo {
                 created_at: repo.created_at.clone(),
@@ -100,19 +100,22 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 releases: process_release(&repo.owner.login, &repo.name)
                     .await
                     .unwrap_or_default(),
+                dependents: vec![],
             };
 
             if repo_resultant
                 .repository_topics
                 .contains(&"zig-package".to_string())
             {
-                db!()
-                    .packages
-                    .insert("cb".to_string() + &repo.full_name, repo_resultant);
+                db!().packages.insert(
+                    "cb/".to_string() + &repo.full_name.to_lowercase(),
+                    repo_resultant,
+                );
             } else {
-                db!()
-                    .programs
-                    .insert("cb/".to_string() + &repo.full_name, repo_resultant);
+                db!().programs.insert(
+                    "cb/".to_string() + &repo.full_name.to_lowercase(),
+                    repo_resultant,
+                );
             }
         })
         .await;

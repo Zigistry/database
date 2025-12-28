@@ -1,8 +1,14 @@
+use std::collections::HashMap;
+
 use crate::db;
 use regex::Regex;
 
 pub async fn calculate_dependents() {
-    for i in db!().packages {
+    let mut packages = HashMap::new();
+
+    packages.extend(&db!().packages);
+
+    for i in &packages {
         let mut vec_of_all_urls_of_this_package = Vec::new();
         for j in i.1.default_branch_information.dependencies {
             vec_of_all_urls_of_this_package.push(j.url);
@@ -25,18 +31,14 @@ pub async fn calculate_dependents() {
                 let repo = c.get(3).map(|p| p.as_str());
                 if let (Some(provider), Some(owner), Some(repo)) = (provider, owner, repo) {
                     if provider == "github.com" {
-                        let key = format!("gh/{owner}/{repo}");
+                        let key = format!("gh/{owner}/{repo}").to_lowercase();
                         if let Some(package) = db!().packages.get_mut(&key) {
-                            package
-                                .dependents
-                                .push(format!("https://github.com/{owner}/{repo}"));
+                            package.dependents.push(i.0.to_lowercase());
                         }
                     } else if provider == "codeberg.org" {
-                        let key = format!("cb/{owner}/{repo}");
+                        let key = format!("cb/{owner}/{repo}").to_lowercase();
                         if let Some(package) = db!().packages.get_mut(&key) {
-                            package
-                                .dependents
-                                .push(format!("https://codeberg.org/{owner}/{repo}"));
+                            package.dependents.push(i.0.to_lowercase());
                         }
                     }
                 } else {

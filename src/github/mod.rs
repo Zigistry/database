@@ -134,19 +134,19 @@ async fn process_repository(repository: &types::Node, is_package: bool) {
                 website_url: repository.owner.website_url.clone(),
             };
             db!().users.insert(
-                format!("gh/{}", repository.owner.login.clone()),
+                format!("gh/{}", repository.owner.login.clone()).to_lowercase(),
                 user_resultant,
             );
         }
     }
     if is_package {
         db!().packages.insert(
-            format!("gh/{}/{}", repository.owner.login, repository.name),
+            format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase(),
             repository_resultant,
         );
     } else {
         db!().programs.insert(
-            format!("gh/{}/{}", repository.owner.login, repository.name),
+            format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase(),
             repository_resultant,
         );
     }
