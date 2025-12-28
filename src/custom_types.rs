@@ -81,6 +81,8 @@ pub struct Repo {
     pub default_branch_information: Release,
     #[serde(rename = "pl")]
     pub primary_language: String,
+    #[serde(rename="dts")]
+    pub dependents:Vec<String>,
 }
 
 #[skip_serializing_none]
