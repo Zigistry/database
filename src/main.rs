@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let timer_start = Utc::now();
     match codeberg::codeberg_main().await {
         Ok(_) => {
-            println!(
+            eprintln!(
                 "Codeberg completed successfully in {}minutes.",
                 (Utc::now() - timer_start).num_minutes(),
             )
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let timer_start = Utc::now();
     match github::github_main().await {
         Ok(_) => {
-            println!(
+            eprintln!(
                 "GitHub completed successfully in {}minutes.",
                 (Utc::now() - timer_start).num_minutes(),
             )
