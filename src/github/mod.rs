@@ -10,6 +10,7 @@ use std::error::Error;
 async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
+        dependents: vec![],
         description: repository.description.clone(),
         issues_count: repository.issues.total_count,
         default_branch: repository.default_branch_ref.name.to_string(),

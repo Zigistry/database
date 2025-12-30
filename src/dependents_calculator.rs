@@ -4,18 +4,19 @@ use crate::db;
 use regex::Regex;
 
 pub async fn calculate_dependents() {
+    let db = db!();
     let mut packages = HashMap::new();
 
-    packages.extend(&db!().packages);
+    packages.extend(&db.packages);
 
     for i in &packages {
         let mut vec_of_all_urls_of_this_package = Vec::new();
-        for j in i.1.default_branch_information.dependencies {
-            vec_of_all_urls_of_this_package.push(j.url);
+        for j in &i.1.default_branch_information.dependencies {
+            vec_of_all_urls_of_this_package.push(&j.url);
         }
-        for k in i.1.releases {
-            for l in k.1.dependencies {
-                vec_of_all_urls_of_this_package.push(l.url);
+        for k in &i.1.releases {
+            for l in &k.1.dependencies {
+                vec_of_all_urls_of_this_package.push(&l.url);
             }
         }
         for m in vec_of_all_urls_of_this_package {

@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at the start of every hour
+    - cron: "0 * * * *" # Runs at the start of every hour
   workflow_dispatch:
 
 permissions:
@@ -36,7 +36,6 @@ jobs:
 
       - name: Save Changes
         run: |
-              git add ./database/database.json
-              git commit -m "Database updated"
-              git push
-
+          git add ./database/database.json
+          git commit -m "Database updated"
+          git push

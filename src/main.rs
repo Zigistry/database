@@ -23,6 +23,7 @@ mod constants;
 mod custom_types;
 mod dependents_calculator;
 mod github;
+mod sections;
 
 use chrono::Utc;
 use dependents_calculator::calculate_dependents;
@@ -39,6 +40,7 @@ lazy_static! {
         users: HashMap::new(),
         packages: HashMap::new(),
         programs: HashMap::new(),
+        index_sections: HashMap::new(),
     });
 }
 
@@ -82,7 +84,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("{:#?}", r);
         }
     }
-    calculate_dependents();
+    calculate_dependents().await;
     let json = serde_json::to_string(db!())?;
     println!("{json}");
 

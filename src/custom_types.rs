@@ -81,8 +81,8 @@ pub struct Repo {
     pub default_branch_information: Release,
     #[serde(rename = "pl")]
     pub primary_language: String,
-    #[serde(rename="dts")]
-    pub dependents:Vec<String>,
+    #[serde(rename = "dts")]
+    pub dependents: Vec<String>,
 }
 
 #[skip_serializing_none]
@@ -121,4 +121,7 @@ pub struct Root {
     /// gh/rohanvashisht1234/zorsig
     /// cb/rohanvashisht1234/repo_name
     pub programs: HashMap<String, Repo>,
+    /// This is only for the packages section
+    /// display on the index page.
+    pub index_sections: HashMap<String, HashMap<String, Repo>>,
 }
