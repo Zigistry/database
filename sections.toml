@@ -1,0 +1,55 @@
+# There is a limit of 50
+# repositories in each of these.
+games = [
+  "gh/Not-Nik/raylib-zig",
+  "gh/hexops/mach",
+  "gh/zig-gamedev/zig-gamedev",
+  "gh/Jack-Ji/jok",
+  "gh/prime31/zig-gamekit",
+  "gh/prime31/zig-ecs",
+  "gh/JonSnowbd/slingworks",
+  "gh/michal-z/zig-gamedev",
+  "gh/Kiakra/Alka",
+  "gh/leroycep/seizer",
+  "gh/zenith391/didot",
+  "gh/danielabbott/Zig-Game-Engine",
+  "gh/fubark/cosmic",
+  "gh/bootradev/cupcake",
+  "gh/gamercade-io/zig-template",
+  "gh/Guigui220D/zig-sfml-wrapper",
+  "gh/MasterQ32/SDL.zig",
+  "gh/Snektron/vulkan-zig",
+  "gh/linuxy/godot-zig",
+  "gh/silversquirl/phyz"
+]
+
+web = [
+  "gh/zigzap/zap",
+  "gh/jetzig-framework/jetzig",
+  "gh/karlseguin/http.zig",
+  "gh/karlseguin/websocket.zig",
+  "gh/ikskuh/zig-network",
+  "gh/frmdstryr/zhp",
+  "gh/Vexu/routez",
+  "gh/Luukdegram/apple_pie",
+  "gh/ducdetronquito/requestz",
+  "gh/ducdetronquito/h11",
+  "gh/truemedian/zfetch",
+  "gh/lun-4/ziget"
+]
+
+gui = [
+  "gh/capy-ui/capy",
+  "gh/webui-dev/zig-webui",
+  "gh/david-vanderson/dvui",
+  "gh/kassane/qml_zig",
+  "gh/MoAlyousef/zfltk",
+  "gh/Aransentin/ZWL",
+  "gh/prime31/zig-upaya",
+  "gh/fubark/cosmic",
+  "gh/batiati/IUPforZig",
+  "gh/olexij-christian/zgtk3",
+  "gh/andrewrk/zig-sdl",
+  "gh/Snektron/vulkan-zig",
+  "gh/rcalixte/libqt6zig"
+]

@@ -1,4 +1,4 @@
-mod types;
+pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types, db};
@@ -7,7 +7,7 @@ use futures::future::join_all;
 use std::collections::HashMap;
 use std::error::Error;
 
-async fn process_repository(repository: &types::Node, is_package: bool) {
+pub async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
         dependents: vec![],

@@ -123,5 +123,5 @@ pub struct Root {
     pub programs: HashMap<String, Repo>,
     /// This is only for the packages section
     /// display on the index page.
-    pub index_sections: HashMap<String, HashMap<String, Repo>>,
+    pub index_sections: HashMap<String, Vec<String>>,
 }

@@ -31,6 +31,8 @@ use lazy_static::lazy_static;
 use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
 
+use crate::sections::fetch_repos_for_sections;
+
 lazy_static! {
     static ref GITHUB_KEY: String =
         "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set");
@@ -55,6 +57,11 @@ macro_rules! db {
 async fn main() -> Result<(), Box<dyn Error>> {
     eprintln!("Starting");
     let timer_start = Utc::now();
+    match fetch_repos_for_sections().await {
+        Ok(_) => {
+            eprintln!("Sections completed successfully.");
+        }
+    }
     match codeberg::codeberg_main().await {
         Ok(_) => {
             eprintln!(
