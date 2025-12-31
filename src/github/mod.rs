@@ -3,10 +3,10 @@ use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Days, Local, Months, NaiveDate};
-use futures::future::join_all;
+use futures::stream;
+use futures::stream::StreamExt;
 use std::collections::HashMap;
 use std::error::Error;
-
 pub async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
@@ -212,29 +212,34 @@ pub async fn process_query(
         }
 
         //let mut temp_nodes = Vec::new();
-        let mut node_length = 0;
-        loop {
-            if node_length >= nodes.len() {
-                break;
-            }
-            let temp = node_length;
-            node_length = node_length + 100;
-            if node_length > nodes.len() {
-                let futures = nodes[temp..]
-                    .iter()
-                    .map(|node: &types::Node| process_repository(node, is_package));
-                join_all(futures).await;
-            } else {
-                let futures = nodes[temp..node_length]
-                    .iter()
-                    .map(|node: &types::Node| process_repository(node, is_package));
-                join_all(futures).await;
-            }
-        }
+        // let mut node_length = 0;
+        // loop {
+        //     if node_length >= nodes.len() {
+        //         break;
+        //     }
+        //     let temp = node_length;
+        //     node_length = node_length + 100;
+        //     if node_length > nodes.len() {
+        //         let futures = nodes[temp..]
+        //             .iter()
+        //             .map(|node: &types::Node| process_repository(node, is_package));
+        //         join_all(futures).await;
+        //     } else {
+        //         let futures = nodes[temp..node_length]
+        //             .iter()
+        //             .map(|node: &types::Node| process_repository(node, is_package));
+        //         join_all(futures).await;
+        //     }
+        // }
         // let futures = nodes
         //    .iter()
         //    .map(|node| process_repository(node.clone(), is_package));
-        //join_all(futures).await;
+        //join_all(futures).await; y
+        stream::iter(&nodes)
+            .for_each_concurrent(100, |node| async move {
+                process_repository(&node, is_package).await;
+            })
+            .await;
     }
     return Ok(());
 }

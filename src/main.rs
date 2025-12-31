@@ -61,6 +61,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(_) => {
             eprintln!("Sections completed successfully.");
         }
+        Err(r) => {
+            let json = serde_json::to_string(db!())?;
+            eprintln!("{json}");
+            eprintln!("While indexing sections gave this error:");
+            eprintln!("{:#?}", r);
+        }
     }
     match codeberg::codeberg_main().await {
         Ok(_) => {
