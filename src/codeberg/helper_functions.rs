@@ -18,7 +18,13 @@ pub async fn get_readme_url(
     for readme_file_name in POSSIBLE_README_FILE_NAMES {
         let readme_possible_url = url.clone() + readme_file_name;
 
-        let responce = client.head(&readme_possible_url).send().await.unwrap();
+        let responce = match client.head(&readme_possible_url).send().await {
+            Ok(r) => r,
+            Err(err) => {
+                eprintln!("Problem:{err}");
+                continue;
+            }
+        };
         if responce.status().is_success() {
             return readme_possible_url;
         }

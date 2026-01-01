@@ -12,7 +12,9 @@ use std::collections::HashMap;
 use toml;
 const TOML_CONTENT: &str = include_str!("../../sections.toml");
 const GQL_CONTENT: &str = include_str!("../../gqlFiles/sections.gql");
-
+// {"data":{"repository":
+// I will be removing this part from the front of the responces
+// this is the easiet way, because then I don't need the extra parser.
 pub async fn fetch_repos_for_sections() -> Result<(), Box<dyn std::error::Error>> {
     let parsed: HashMap<String, Vec<String>> =
         toml::from_str(TOML_CONTENT).expect("the toml is badly written.");
@@ -32,7 +34,7 @@ pub async fn fetch_repos_for_sections() -> Result<(), Box<dyn std::error::Error>
                         "owner_name":repo_name_iter.next().expect("Wrong sections.toml file."),
                     }
                 });
-                let res2 = client
+                let mut res2 = client
                     .post("https://api.github.com/graphql")
                     .header("Authorization", GITHUB_KEY.to_string())
                     .header("User-Agent", "zigistry.dev")
@@ -42,8 +44,14 @@ pub async fn fetch_repos_for_sections() -> Result<(), Box<dyn std::error::Error>
                     .unwrap()
                     .text()
                     .await
-                    .unwrap();
-
+                    .unwrap()
+                    .to_string();
+                res2 = res2
+                    .strip_prefix(r#"{"data":{"repository":"#)
+                    .unwrap()
+                    .strip_suffix("}}")
+                    .expect(&res2)
+                    .to_string();
                 let res = match serde_json::from_str(&res2) {
                     Ok(res) => res,
                     Err(_) => {

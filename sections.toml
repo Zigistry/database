@@ -12,7 +12,6 @@ games = [
   "gh/Kiakra/Alka",
   "gh/leroycep/seizer",
   "gh/zenith391/didot",
-  "gh/danielabbott/Zig-Game-Engine",
   "gh/fubark/cosmic",
   "gh/bootradev/cupcake",
   "gh/gamercade-io/zig-template",
@@ -49,7 +48,6 @@ gui = [
   "gh/fubark/cosmic",
   "gh/batiati/IUPforZig",
   "gh/olexij-christian/zgtk3",
-  "gh/andrewrk/zig-sdl",
   "gh/Snektron/vulkan-zig",
   "gh/rcalixte/libqt6zig"
 ]

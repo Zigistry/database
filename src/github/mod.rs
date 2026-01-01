@@ -2,11 +2,12 @@ pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types, db};
-use chrono::{Days, Local, Months, NaiveDate};
+use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
 use std::collections::HashMap;
 use std::error::Error;
+
 pub async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
@@ -157,19 +158,14 @@ pub async fn process_query(
     query: &str,
     is_package: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut start = NaiveDate::from_ymd_opt(2024, 2, 8).unwrap();
-    // I am doing extra one day to accomedate for if all the universal time.
-    let end = Local::now()
-        .date_naive()
-        .checked_add_days(Days::new(1))
-        .unwrap();
+    let start = NaiveDate::from_ymd_opt(2024, 2, 8).unwrap();
+    let end = Utc::now().date_naive();
+    let mut lower = start;
+    let mut upper = start.checked_add_months(Months::new(6)).unwrap();
     let client = reqwest::Client::new();
     let mut nodes = Vec::new();
-    while start < end {
-        eprintln!("{start}..{end}");
-        let lower = start.to_string();
-        start = start.checked_add_months(Months::new(6)).unwrap();
-        let upper = start.to_string();
+    loop {
+        eprintln!("Now processing:{lower}..{upper}");
         let mut has_next = true;
         let mut next: Option<String> = None;
         let mut asd = 1;
@@ -190,13 +186,8 @@ pub async fn process_query(
                 .json(&query_to_send)
                 .send()
                 .await?;
-            // .json::<types::Root>()
-            // // .text()
-            // .await?; // Errors are not allowed in this scenario, but, crashes are.
 
             let text = res.text().await?;
-            // eprintln!("{text}");
-            // println!("{}", text);
             let mut res2: types::Root = match serde_json::from_str(&text) {
                 Ok(t) => t,
                 Err(t) => {
@@ -211,35 +202,16 @@ pub async fn process_query(
             nodes.append(&mut res2.data.search.nodes);
         }
 
-        //let mut temp_nodes = Vec::new();
-        // let mut node_length = 0;
-        // loop {
-        //     if node_length >= nodes.len() {
-        //         break;
-        //     }
-        //     let temp = node_length;
-        //     node_length = node_length + 100;
-        //     if node_length > nodes.len() {
-        //         let futures = nodes[temp..]
-        //             .iter()
-        //             .map(|node: &types::Node| process_repository(node, is_package));
-        //         join_all(futures).await;
-        //     } else {
-        //         let futures = nodes[temp..node_length]
-        //             .iter()
-        //             .map(|node: &types::Node| process_repository(node, is_package));
-        //         join_all(futures).await;
-        //     }
-        // }
-        // let futures = nodes
-        //    .iter()
-        //    .map(|node| process_repository(node.clone(), is_package));
-        //join_all(futures).await; y
         stream::iter(&nodes)
             .for_each_concurrent(100, |node| async move {
                 process_repository(&node, is_package).await;
             })
             .await;
+        lower = upper;
+        upper = lower.checked_add_months(Months::new(6)).unwrap();
+        if lower > end {
+            break;
+        }
     }
     return Ok(());
 }

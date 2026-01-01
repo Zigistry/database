@@ -57,17 +57,21 @@ macro_rules! db {
 async fn main() -> Result<(), Box<dyn Error>> {
     eprintln!("Starting");
     let timer_start = Utc::now();
-    match fetch_repos_for_sections().await {
+    match github::github_main().await {
         Ok(_) => {
-            eprintln!("Sections completed successfully.");
+            eprintln!(
+                "GitHub completed successfully in {}minutes.",
+                (Utc::now() - timer_start).num_minutes(),
+            )
         }
         Err(r) => {
             let json = serde_json::to_string(db!())?;
             eprintln!("{json}");
-            eprintln!("While indexing sections gave this error:");
+            eprintln!("GitHub gave this error:");
             eprintln!("{:#?}", r);
         }
     }
+    let timer_start = Utc::now();
     match codeberg::codeberg_main().await {
         Ok(_) => {
             eprintln!(
@@ -82,18 +86,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("{:#?}", r);
         }
     }
-    let timer_start = Utc::now();
-    match github::github_main().await {
+    match fetch_repos_for_sections().await {
         Ok(_) => {
-            eprintln!(
-                "GitHub completed successfully in {}minutes.",
-                (Utc::now() - timer_start).num_minutes(),
-            )
+            eprintln!("Sections completed successfully.");
         }
         Err(r) => {
             let json = serde_json::to_string(db!())?;
             eprintln!("{json}");
-            eprintln!("GitHub gave this error:");
+            eprintln!("While indexing sections gave this error:");
             eprintln!("{:#?}", r);
         }
     }
