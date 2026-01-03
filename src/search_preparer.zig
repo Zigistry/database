@@ -1,7 +1,7 @@
 const std = @import("std");
 const allocator = std.heap.c_allocator;
 
-pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) !std.StringHashMap([]const u8) {
+pub fn fetch_readmes(parsed_json: std.json.Value) !std.StringHashMap([]const u8) {
     var iter = parsed_json.object.get("programs").?.object.iterator();
     // I had discussed this with someone on discord
     // and found out that zig does maintain keep alive
@@ -16,12 +16,13 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
     while (iter.next()) |it| {
         const repo_name_id = it.key_ptr.*;
         const value = it.value_ptr.*.object;
-        const repo_name_id_iter = std.mem.splitScalar(u8, repo_name_id, '/');
+        var repo_name_id_iter = std.mem.splitScalar(u8, repo_name_id, '/');
         const provider_id = repo_name_id_iter.next().?;
         const owner_name = repo_name_id_iter.next().?;
         const repo_name = repo_name_id_iter.next().?;
 
-        var responce_body: std.array_list.Managed(u8) = .init(allocator);
+        var response_writer = std.io.Writer.Allocating.init(allocator);
+        defer response_writer.deinit();
 
         // WOOH! This if else statement was dangerous
         // the database:
@@ -35,32 +36,32 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
             if (std.mem.eql(u8, provider_id, "gh")) {
                 const responce = try github_client.fetch(.{
                     .location = .{ .url = url },
-                    .response_storage = .{ .dynamic = &responce_body },
+                    .response_writer = &response_writer.writer,
                 });
                 if (responce.status != .ok) {
                     continue; // I am doing this because I can't crash the whole process for 1 readme.
                 }
-                var readme_content = try responce_body.items;
-                const lower = std.ascii.lowerString(&readme_content, &readme_content[0..@min(readme_content.len, 2000)]);
+                var readme_content = response_writer.writer.buffered();
+                const lower = std.ascii.lowerString(readme_content, readme_content[0..@min(readme_content.len, 2000)]);
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ lower, owner_name, repo_name });
-                output.put(repo_name_id, result);
+                try output.put(repo_name_id, result);
             } else if (std.mem.eql(u8, provider_id, "cb")) {
                 const responce = try codeberg_client.fetch(.{
                     .location = .{ .url = url },
-                    .response_storage = .{ .dynamic = &responce_body },
+                    .response_writer = &response_writer.writer,
                 });
                 if (responce.status != .ok) {
                     continue; // I am doing this because I can't crash the whole process for 1 readme.
                 }
-                const readme_content = try responce_body.toOwnedSlice();
-                const lower = std.ascii.lowerString(&readme_content, &readme_content[0..2000]);
+                var readme_content = response_writer.writer.buffered();
+                const lower = std.ascii.lowerString(readme_content, readme_content[0..2000]);
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ lower, owner_name, repo_name });
-                output.put(repo_name_id, result);
+                try output.put(repo_name_id, result);
             } else {
-                output.put(repo_name_id, repo_name_id);
+                try output.put(repo_name_id, repo_name_id);
             }
         } else {
-            output.put(repo_name_id, repo_name_id);
+            try output.put(repo_name_id, repo_name_id);
         }
     }
     return output;
@@ -70,31 +71,47 @@ pub fn main() !u8 {
     defer client.deinit();
     var response_writer = std.io.Writer.Allocating.init(allocator);
     defer response_writer.deinit();
+
     const responce = try client.fetch(.{
         .location = .{ .url = "https://" },
         .response_writer = &response_writer.writer,
     });
-    if (responce.status == .ok) {
-        const raw_json = response_writer.writer.buffered();
-        defer allocator.free(raw_json);
-        const parsed = std.json.parseFromSlice(std.json.Value, allocator, raw_json, .{});
-        defer parsed.deinit();
-        const new_data = fetch_readmes(allocator, parsed) catch @panic("Failed to fetch readmes.");
-        var myobj = std.json.ObjectMap.init(allocator);
-        errdefer myobj.deinit();
-        var iter = new_data.iterator();
-        while (iter.next()) |kv| {
-            try myobj.put(
-                kv.key_ptr.*,
-                std.json.Value{ .string = kv.value_ptr.* },
-            );
-        }
-        const the_obj = std.json.Value{ .object = myobj };
-        const jws = std.fs.File.stdout();
-        try the_obj.jsonStringify(jws);
-    } else {
-        std.debug.print("Error: {d}\n", .{responce_body.status});
+    if (responce.status != .ok) {
+        std.debug.print("Error: {d}\n", .{responce.status});
         return 1;
     }
+
+    const raw_json = response_writer.writer.buffered();
+    defer allocator.free(raw_json);
+
+    const parsed = std.json.parseFromSlice(std.json.Value, allocator, raw_json, .{}) catch @panic("Failed to fetch readmes.");
+    defer parsed.deinit();
+
+    const new_data = fetch_readmes(parsed.value) catch @panic("Failed to fetch readmes.");
+    const MapWrapper = struct {
+        map: std.StringHashMap([]const u8), // ideally, switch to a StringArrayHashMapUnmanaged for faster iteration!
+        pub fn jsonStringify(wrapper: @This(), s: *std.json.Stringify) !void {
+            try s.beginObject();
+            var it = wrapper.map.iterator();
+            while (it.next()) |entry| {
+                try s.objectField(entry.key_ptr.*);
+                try s.write(entry.value_ptr.*);
+            }
+            try s.endObject();
+        }
+    };
+    var writer2 = std.io.Writer.Allocating.init(allocator);
+    defer writer2.deinit();
+    var thing = MapWrapper{ .map = new_data };
+    var stringify_obj = std.json.Stringify{
+        .writer = &writer2.writer,
+    };
+    try thing.jsonStringify(&stringify_obj);
+    const mybuf = writer2.writer.buffer;
+    try std.fs.cwd().writeFile(.{
+        .data = mybuf,
+        .sub_path = "search_data.json",
+        .flags = .{ .truncate = true },
+    });
     return 0;
 }
