@@ -15,7 +15,7 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
     while (iter.next()) |it| {
         const repo_name_id = it.key_ptr.*;
         const value = it.value_ptr.*.object;
-        const repo_name_id_iter = std.mem.splitScalar('/', repo_name_id, '/');
+        const repo_name_id_iter = std.mem.splitScalar(u8, repo_name_id, '/');
         const provider_id = repo_name_id_iter.next().?;
         const owner_name = repo_name_id_iter.next().?;
         const repo_name = repo_name_id_iter.next().?;
@@ -39,10 +39,9 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
                 if (responce.status != .ok) {
                     continue; // I am doing this because I can't crash the whole process for 1 readme.
                 }
-                var readme_content = try responce_body.toOwnedSlice();
-                const lower = std.ascii.lowerString(&readme_content, &readme_content[0..2000]);
+                var readme_content = try responce_body.items;
+                const lower = std.ascii.lowerString(&readme_content, &readme_content[0..@min(readme_content.len, 2000)]);
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ lower, owner_name, repo_name });
-                defer allocator.free(result);
                 output.put(repo_name_id, result);
             } else if (std.mem.eql(u8, provider_id, "cb")) {
                 const responce = try codeberg_client.fetch(.{
@@ -55,7 +54,6 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
                 const readme_content = try responce_body.toOwnedSlice();
                 const lower = std.ascii.lowerString(&readme_content, &readme_content[0..2000]);
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ lower, owner_name, repo_name });
-                defer allocator.free(result);
                 output.put(repo_name_id, result);
             } else {
                 output.put(repo_name_id, repo_name_id);
@@ -66,7 +64,7 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
     }
     return output;
 }
-pub fn main() u8 {
+pub fn main() !u8 {
     var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -83,14 +81,19 @@ pub fn main() u8 {
         defer allocator.free(raw_json);
         const parsed = std.json.parseFromSlice(std.json.Value, allocator, raw_json, .{});
         defer parsed.deinit();
-        const new_data = fetch_readmes(parsed) catch @panic("Failed to fetch readmes.");
-        const iter = new_data.iterator();
-        const stdout = std.fs.File.stdout().deprecatedWriter();
-
-        stdout.print("{{", .{});
-        while (iter.next()) |thing| {
-            th
+        const new_data = fetch_readmes(allocator, parsed) catch @panic("Failed to fetch readmes.");
+        var myobj = std.json.ObjectMap.init(allocator);
+        errdefer myobj.deinit();
+        var iter = new_data.iterator();
+        while (iter.next()) |kv| {
+            try myobj.put(
+                kv.key_ptr.*,
+                std.json.Value{ .string = kv.value_ptr.* },
+            );
         }
+        const the_obj = std.json.Value{ .object = myobj };
+        const jws = std.fs.File.stdout();
+        try the_obj.jsonStringify(jws);
     } else {
         std.debug.print("Error: {d}\n", .{responce_body.status});
         return 1;
