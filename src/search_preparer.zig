@@ -1,4 +1,5 @@
 const std = @import("std");
+const allocator = std.heap.c_allocator;
 
 pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) !std.StringHashMap([]const u8) {
     var iter = parsed_json.object.get("programs").?.object.iterator();
@@ -65,19 +66,16 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value) 
     return output;
 }
 pub fn main() !u8 {
-    var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
-    var responce_body: std.array_list.Managed(u8) = .init(allocator);
-    defer responce_body.deinit();
+    var response_writer = std.io.Writer.Allocating.init(allocator);
+    defer response_writer.deinit();
     const responce = try client.fetch(.{
         .location = .{ .url = "https://" },
-        .response_storage = .{ .dynamic = &responce_body },
+        .response_writer = &response_writer.writer,
     });
     if (responce.status == .ok) {
-        const raw_json = responce_body.toOwnedSlice() catch return 1;
+        const raw_json = response_writer.writer.buffered();
         defer allocator.free(raw_json);
         const parsed = std.json.parseFromSlice(std.json.Value, allocator, raw_json, .{});
         defer parsed.deinit();
