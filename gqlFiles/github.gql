@@ -1,9 +1,9 @@
 query ($query: String!, $next_value: String) {
-#  rateLimit {
-#    cost
-#    remaining
-#    resetAt
-#  }
+  #  rateLimit {
+  #    cost
+  #    remaining
+  #    resetAt
+  #  }
   search(query: $query, type: REPOSITORY, first: 50, after: $next_value) {
     pageInfo {
       hasNextPage
@@ -66,7 +66,7 @@ query ($query: String!, $next_value: String) {
             tagName
             isPrerelease
             publishedAt
-              releaseAssets(first: 10) {
+            releaseAssets(first: 10) {
               nodes {
                 name
                 downloadUrl

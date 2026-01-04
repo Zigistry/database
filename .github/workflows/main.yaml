@@ -46,7 +46,7 @@ jobs:
 
       - name: Update readme_database
         run: |
-          zig build-exe ./src/search_preparer.zig -O ReleaseSafe
+          zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
           ./search_preparer
 
       - name: search_data.json upload

@@ -35,8 +35,12 @@ fragment RepoFields on Repository {
     ... on User {
       bio
       company
-      followers { totalCount }
-      following { totalCount }
+      followers {
+        totalCount
+      }
+      following {
+        totalCount
+      }
       location
     }
     ... on Organization {
@@ -48,7 +52,9 @@ fragment RepoFields on Repository {
   repositoryTopics(first: 7) {
     edges {
       node {
-        topic { name }
+        topic {
+          name
+        }
       }
     }
   }
@@ -67,5 +73,7 @@ fragment RepoFields on Repository {
       }
     }
   }
-  primaryLanguage { name }
+  primaryLanguage {
+    name
+  }
 }
