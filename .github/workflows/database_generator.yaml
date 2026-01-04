@@ -17,12 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download binary
-        
+        run: wget -O ZigistryBackend https://github.com/Zigistry/ZigistryNewAndImprovedBackendDevelopment/releases/download/database/ZigistryBackend
+
+      - name: Give binary execution permissions
+        run: chmod +x ZigistryBackend
+
       - name: Build database.json
         env:
           GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
           CB_API_KEY: ${{ secrets.CB_API_KEY }}
-        run: cargo run --release
+        run: ./ZigistryBackend
 
       - name: database.json upload
         env:
@@ -32,19 +36,16 @@ jobs:
   update_readme_database:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Download binary
+        run: wget -O search_preparer https://github.com/Zigistry/ZigistryNewAndImprovedBackendDevelopment/releases/download/database/search_preparer
 
-      - name: installing zig
-        uses: mlugg/setup-zig@v2
+      - name: Give binary execution permissions
+        run: chmod +x search_preparer
 
       - name: Update readme_database
-        run: |
-          zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
-          ./search_preparer
+        run: ./search_preparer
 
       - name: search_data.json upload
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload database search_data.json --clobber
+        run: gh release upload database search_data.json --clobber

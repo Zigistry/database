@@ -22,13 +22,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        
+
       - name: installing zig
         uses: mlugg/setup-zig@v2
 
       - name: Update readme_database
         run: zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
-        
+
       - name: Upload binary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
