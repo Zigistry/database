@@ -15,29 +15,34 @@ const MapWrapper = struct {
     }
 };
 
-pub fn fetch_readmes(parsed_json: std.json.Value) !std.StringArrayHashMapUnmanaged([]const u8) {
-    var iter = parsed_json.object.get("programs").?.object.iterator();
+var output: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
+
+pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !void {
+    var iter = parsed_json.object.get(thing_to_parse).?.object.iterator();
     // I had discussed this with someone on discord
     // and found out that zig does maintain keep alive
     // for a client only for a single domain
     // hence I am creating 2 clients, one for github
     // other for codeberg.
-    var output: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
 
     var github_client = std.http.Client{ .allocator = allocator };
     defer github_client.deinit();
     var codeberg_client = std.http.Client{ .allocator = allocator };
     defer codeberg_client.deinit();
+    var response_writer: std.io.Writer.Allocating = .init(allocator);
+    defer response_writer.deinit();
     while (iter.next()) |it| {
         const repo_name_id = it.key_ptr.*;
+        if (output.contains(repo_name_id)) {
+            continue;
+        }
         const value = it.value_ptr.*.object;
         var repo_name_id_iter = std.mem.splitScalar(u8, repo_name_id, '/');
         const provider_id = repo_name_id_iter.next().?;
         const owner_name = repo_name_id_iter.next().?;
         const repo_name = repo_name_id_iter.next().?;
 
-        var response_writer: std.io.Writer.Allocating = .init(allocator);
-        defer response_writer.deinit();
+        response_writer.clearRetainingCapacity();
 
         // WOOH! This if else statement was dangerous
         // the database:
@@ -90,7 +95,6 @@ pub fn fetch_readmes(parsed_json: std.json.Value) !std.StringArrayHashMapUnmanag
             try output.put(allocator, repo_name_id, repo_name_id);
         }
     }
-    return output;
 }
 
 pub fn main() !u8 {
@@ -109,26 +113,28 @@ pub fn main() !u8 {
     }
 
     const main_database_raw = response_writer.writer.buffered();
-    defer allocator.free(main_database_raw);
+    // defer allocator.free(main_database_raw);
 
     const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator, main_database_raw, .{}) catch @panic("Failed to parse json.");
     defer main_database_parsed.deinit();
 
-    const processed_readmes = fetch_readmes(main_database_parsed.value) catch @panic("Failed to fetch readmes.");
+    fetch_readmes(main_database_parsed.value, "packages") catch @panic("Failed to fetch readmes.");
+    fetch_readmes(main_database_parsed.value, "programs") catch @panic("Failed to fetch readmes.");
     var stringifier: std.io.Writer.Allocating = .init(allocator);
     defer stringifier.deinit();
     var stringify_obj: std.json.Stringify = .{
         .writer = &stringifier.writer,
     };
 
-    var processed_readmes_wrapped: MapWrapper = .{ .map = processed_readmes };
+    var processed_readmes_wrapped: MapWrapper = .{ .map = output };
     try processed_readmes_wrapped.jsonStringify(&stringify_obj);
 
     const final_stringified_json = stringifier.writer.buffer;
-    try std.fs.cwd().writeFile(.{
-        .data = final_stringified_json,
-        .sub_path = "search_data.json",
-        .flags = .{ .truncate = true },
-    });
+
+    const cwd = std.fs.cwd();
+    var file = try cwd.createFile("search_data.json", .{});
+    defer file.close();
+
+    _ = try file.writeAll(final_stringified_json);
     return 0;
 }

@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: "0 * * * *" # Runs at the start of every hour
+    - cron: 0 * * * * # Runs at the start of every hour
   workflow_dispatch:
 
 permissions:
@@ -12,16 +12,6 @@ jobs:
 
     # Got to know this from: https://github.com/marketplace/actions/setup-git-config
     steps:
-      - name: Github checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: true
-
-      - name: Setup user name and email automatically
-        uses: qoomon/actions--setup-git@v1
-        with:
-          user: bot
-
       - name: Rust installation
         uses: dtolnay/rust-toolchain@stable
 
@@ -30,12 +20,28 @@ jobs:
 
       - name: Run
         env:
-          GH_API_KEY: ${{ secrets.GH_API_KEY }}
+          GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
           CB_API_KEY: ${{ secrets.CB_API_KEY }}
-        run: ./target/release/lowlevel > ./database/database.json
+        run: ./target/release/ZigistryBackend > ./database.json
 
-      - name: Save Changes
+      - name: database.json upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload database database.json --clobber
+
+  update_readme_database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: installing zig
+        uses: mlugg/setup-zig@v2
+
+      - name: Update readme_database
         run: |
-          git add ./database/database.json
-          git commit -m "Database updated"
-          git push
+          zig build-exe ./src/search_preparer.zig -O ReleaseSafe
+          ./search_preparer
+
+      - name: search_data.json upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload database search_data.json --clobber
