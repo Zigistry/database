@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download binary
-        run: wget -O ZigistryBackend https://github.com/Zigistry/ZigistryNewAndImprovedBackendDevelopment/releases/download/database/ZigistryBackend
+        run: wget -O ZigistryBackend https://github.com/Zigistry/database/releases/download/database/ZigistryBackend
 
       - name: Give binary execution permissions
         run: chmod +x ZigistryBackend
@@ -31,13 +31,13 @@ jobs:
       - name: database.json upload
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database database.json --clobber
+        run: gh release upload database database.json --clobber --repo Zigistry/database
 
   update_readme_database:
     runs-on: ubuntu-latest
     steps:
       - name: Download binary
-        run: wget -O search_preparer https://github.com/Zigistry/ZigistryNewAndImprovedBackendDevelopment/releases/download/database/search_preparer
+        run: wget -O search_preparer https://github.com/Zigistry/database/releases/download/database/search_preparer
 
       - name: Give binary execution permissions
         run: chmod +x search_preparer
@@ -48,4 +48,4 @@ jobs:
       - name: search_data.json upload
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database search_data.json --clobber
+        run: gh release upload database search_data.json --clobber --repo Zigistry/database
