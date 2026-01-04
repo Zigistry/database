@@ -15,6 +15,9 @@ jobs:
 
     # Got to know this from: https://github.com/marketplace/actions/setup-git-config
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Rust installation
         uses: dtolnay/rust-toolchain@stable
 
@@ -35,6 +38,9 @@ jobs:
   update_readme_database:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: installing zig
         uses: mlugg/setup-zig@v2
 
