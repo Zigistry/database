@@ -28,6 +28,7 @@ mod sections;
 use chrono::Utc;
 use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
+use std::fs;
 use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
 
@@ -98,8 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     calculate_dependents().await;
-    let json = serde_json::to_string(db!())?;
-    println!("{json}");
-
+    let database_as_json = serde_json::to_string(db!())?;
+    fs::write("database.json", database_as_json)?;
     Ok(())
 }

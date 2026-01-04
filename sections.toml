@@ -19,7 +19,7 @@ games = [
   "gh/MasterQ32/SDL.zig",
   "gh/Snektron/vulkan-zig",
   "gh/linuxy/godot-zig",
-  "gh/silversquirl/phyz"
+  "gh/silversquirl/phyz",
 ]
 
 web = [
@@ -34,7 +34,7 @@ web = [
   "gh/ducdetronquito/requestz",
   "gh/ducdetronquito/h11",
   "gh/truemedian/zfetch",
-  "gh/lun-4/ziget"
+  "gh/lun-4/ziget",
 ]
 
 gui = [
@@ -49,5 +49,5 @@ gui = [
   "gh/batiati/IUPforZig",
   "gh/olexij-christian/zgtk3",
   "gh/Snektron/vulkan-zig",
-  "gh/rcalixte/libqt6zig"
+  "gh/rcalixte/libqt6zig",
 ]

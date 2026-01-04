@@ -1,3 +1,4 @@
 cargo fmt
-npx prettier --write "**/*.{md,yaml,yml}"
+taplo fmt
+npx prettier --write "**/*.{md,yaml,yml,gql}"
 zig fmt ./src/search_preparer.zig

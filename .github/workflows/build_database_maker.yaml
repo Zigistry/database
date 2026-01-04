@@ -1,0 +1,54 @@
+# It takes a lot of time
+# to build the binary on every run,
+# hence, I am making this workflow
+# to create a binary only when
+# a complete new change has been made.
+# NOTE: I am not adding "on push" because
+# a push on main can contain breaking changes.
+
+name: Project Builder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create_zig_binary:
+    runs-on: ubuntu-latest
+
+    # Got to know this from: https://github.com/marketplace/actions/setup-git-config
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        
+      - name: installing zig
+        uses: mlugg/setup-zig@v2
+
+      - name: Update readme_database
+        run: zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
+        
+      - name: Upload binary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload database search_preparer --clobber
+
+  create_rust_binary:
+    runs-on: ubuntu-latest
+
+    # Got to know this from: https://github.com/marketplace/actions/setup-git-config
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Rust installation
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Building binary
+        run: cargo build --release
+
+      - name: Upload binary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload database target/release/ZigistryBackend --clobber

@@ -1,7 +1,10 @@
+name: Database Creator
+
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Project Builder"]
+    types:
+      - completed
   schedule:
     - cron: 0 * * * * # Runs at the start of every hour
   workflow_dispatch:
@@ -12,23 +15,14 @@ permissions:
 jobs:
   update_database:
     runs-on: ubuntu-latest
-
-    # Got to know this from: https://github.com/marketplace/actions/setup-git-config
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Rust installation
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build repo
-        run: cargo build --release
-
-      - name: Run
+      - name: Download binary
+        
+      - name: Build database.json
         env:
           GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
           CB_API_KEY: ${{ secrets.CB_API_KEY }}
-        run: ./target/release/ZigistryBackend > ./database.json
+        run: cargo run --release
 
       - name: database.json upload
         env:
