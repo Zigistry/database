@@ -134,8 +134,9 @@ pub fn main() !u8 {
     defer response_writer.deinit();
 
     const main_database_fetch = try main_database_fetcher_client.fetch(.{
-        .location = .{ .url = "https://huggingface.co/spaces/RohanVashisht/api_zigistry/raw/main/database.json" },
+        .location = .{ .url = "https://github.com/Zigistry/database/releases/download/database/database.json" },
         .response_writer = &response_writer.writer,
+        .redirect_behavior = .init(2),
     });
     if (main_database_fetch.status != .ok) {
         std.debug.print("Error: {d}\n", .{main_database_fetch.status});
