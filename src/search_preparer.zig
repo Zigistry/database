@@ -15,6 +15,32 @@ const MapWrapper = struct {
     }
 };
 
+pub fn safe_lower_slice(
+    res: *[2000]u8,
+    input: []const u8,
+) ![]const u8 {
+    if (!std.unicode.utf8ValidateSlice(input)) {
+        return error.problem;
+    }
+
+    var count: usize = 0;
+    var iter: std.unicode.Utf8Iterator = .{ .bytes = input, .i = 0 };
+
+    while (iter.nextCodepointSlice()) |slice| {
+        // ASCII?
+        for (slice) |c| {
+            if (count == 1999) {
+                break;
+            }
+            if (std.ascii.isAscii(c)) {
+                res[count] = std.ascii.toLower(c);
+                count += 1;
+            }
+        }
+    }
+    return res[0..count];
+}
+
 var output: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
 
 pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !void {
@@ -64,14 +90,16 @@ pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !v
                 if (responce.status != .ok) {
                     continue; // I am doing this because I can't crash the whole process for 1 readme.
                 }
-                var readme_content = response_writer.writer.buffered();
-                const lower = std.ascii.lowerString(readme_content, readme_content[0..@min(readme_content.len, 2000)]);
+                const readme_content = response_writer.written();
+                var lower_buf: [2000]u8 = undefined;
+                const lower = safe_lower_slice(&lower_buf, readme_content) catch "";
                 const description = if (value.get("description") != null and value.get("description").? == .string)
                     value.get("description").?.string
                 else
                     "";
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
                 try output.put(allocator, repo_name_id, result);
+                std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
             } else if (std.mem.eql(u8, provider_id, "cb")) {
                 const responce = try codeberg_client.fetch(.{
                     .location = .{ .url = url },
@@ -80,14 +108,16 @@ pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !v
                 if (responce.status != .ok) {
                     continue; // I am doing this because I can't crash the whole process for 1 readme.
                 }
-                var readme_content = response_writer.writer.buffered();
-                const lower = std.ascii.lowerString(readme_content, readme_content[0..@min(readme_content.len, 2000)]);
+                const readme_content = response_writer.written();
+                var lower_buf: [2000]u8 = undefined;
+                const lower = safe_lower_slice(&lower_buf, readme_content) catch "";
                 const description = if (value.get("description") != null and value.get("description").? == .string)
                     value.get("description").?.string
                 else
                     "";
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
                 try output.put(allocator, repo_name_id, result);
+                std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
             } else {
                 try output.put(allocator, repo_name_id, repo_name_id);
             }
@@ -112,7 +142,7 @@ pub fn main() !u8 {
         return 1;
     }
 
-    const main_database_raw = response_writer.writer.buffered();
+    const main_database_raw = response_writer.written();
     // defer allocator.free(main_database_raw);
 
     const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator, main_database_raw, .{}) catch @panic("Failed to parse json.");
@@ -124,12 +154,13 @@ pub fn main() !u8 {
     defer stringifier.deinit();
     var stringify_obj: std.json.Stringify = .{
         .writer = &stringifier.writer,
+        .options = .{ .escape_unicode = true, .emit_nonportable_numbers_as_strings = true },
     };
 
     var processed_readmes_wrapped: MapWrapper = .{ .map = output };
     try processed_readmes_wrapped.jsonStringify(&stringify_obj);
 
-    const final_stringified_json = stringifier.writer.buffer;
+    const final_stringified_json = stringifier.written();
 
     const cwd = std.fs.cwd();
     var file = try cwd.createFile("search_data.json", .{});
