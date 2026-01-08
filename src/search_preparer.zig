@@ -15,32 +15,6 @@ const MapWrapper = struct {
     }
 };
 
-pub fn safe_lower_slice(
-    res: *[2000]u8,
-    input: []const u8,
-) ![]const u8 {
-    if (std.unicode.utf8ValidateSlice(input)) {
-        return std.ascii.lowerString(res, input[0..2000]);
-    } else {
-        var count: usize = 0;
-        var iter: std.unicode.Utf8Iterator = .{ .bytes = input, .i = 0 };
-
-        outer: while (iter.nextCodepointSlice()) |slice| {
-            // ASCII?
-            for (slice) |c| {
-                if (count == 1999) {
-                    break :outer;
-                }
-                if (std.ascii.isAscii(c)) {
-                    res[count] = std.ascii.toLower(c);
-                    count += 1;
-                }
-            }
-        }
-        return res[0..count];
-    }
-}
-
 var output: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
 
 pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value, thing_to_parse: []const u8) !void {
@@ -82,66 +56,58 @@ pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value, 
         if (value.contains("dbi") and value.get("dbi").?.object.contains("r") and value.get("dbi").?.object.get("r").? == .string and !std.mem.eql(u8, value.get("dbi").?.object.get("r").?.string, "") and value.get("dbi").?.object.get("r").?.string[0] != '4') {
             const url = value.get("dbi").?.object.get("r").?.string;
             std.debug.print("FETCHING: {s}", .{url});
-            if (std.mem.eql(u8, provider_id, "gh")) {
-                const responce = try github_client.fetch(.{
-                    .location = .{ .url = url },
-                    .response_writer = &response_writer.writer,
-                });
-                if (responce.status != .ok) {
-                    continue; // I am doing this because I can't crash the whole process for 1 readme.
-                }
-                const readme_content = response_writer.written();
-                var lower_buf: [2000]u8 = undefined;
-                const lower = safe_lower_slice(&lower_buf, readme_content) catch "";
-                const description = if (value.get("description") != null and value.get("description").? == .string)
-                    value.get("description").?.string
-                else
-                    "";
-                const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
-                defer allocator.free(result);
-                try output.put(allocator, repo_name_id, result);
-                std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
-            } else if (std.mem.eql(u8, provider_id, "cb")) {
-                const responce = try codeberg_client.fetch(.{
-                    .location = .{ .url = url },
-                    .response_writer = &response_writer.writer,
-                });
-                if (responce.status != .ok) {
-                    continue; // I am doing this because I can't crash the whole process for 1 readme.
-                }
-                const readme_content = response_writer.written();
-                var lower_buf: [2000]u8 = undefined;
-                const lower = safe_lower_slice(&lower_buf, readme_content) catch "";
-                const description = if (value.get("description") != null and value.get("description").? == .string)
-                    value.get("description").?.string
-                else
-                    "";
-                const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
-                defer allocator.free(result);
-                try output.put(allocator, repo_name_id, result);
-                std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
-            } else {
-                try output.put(allocator, repo_name_id, repo_name_id);
+            var client = if (std.mem.eql(u8, provider_id, "gh")) &github_client else &codeberg_client;
+
+            const responce = try client.fetch(.{
+                .location = .{ .url = url },
+                .response_writer = &response_writer.writer,
+            });
+            if (responce.status != .ok) {
+                continue; // I am doing this because I can't crash the whole process for 1 readme.
             }
+            const readme_content = response_writer.written();
+            var buf: [2000]u8 = undefined;
+            var slice: []u8 = &buf;
+            var count: usize = 0;
+            var iterr: std.unicode.Utf8Iterator = .{ .bytes = readme_content, .i = 0 };
+            while (iterr.nextCodepoint()) |c| {
+                if (count == slice.len) {
+                    break;
+                }
+                if (c <= 0x7f) {
+                    slice[count] = @as(u8, @intCast(c));
+                    count += 1;
+                }
+            }
+            const lower = slice[0..count];
+            const description = if (value.get("description") != null and value.get("description").? == .string)
+                value.get("description").?.string
+            else
+                "";
+            const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
+            try output.put(allocator, repo_name_id, result);
+            std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
         } else {
-            comptime if (debug) {
+            if (debug) {
                 break;
-            };
+            }
             try output.put(allocator, repo_name_id, repo_name_id);
         }
     }
 }
 
 pub fn main() !u8 {
-    var allocator = std.heap.DebugAllocator(.{}).init;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
     defer {
-        const deinit_status = allocator.deinit();
+        const deinit_status = gpa.deinit();
         //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
-    var main_database_fetcher_client: std.http.Client = .{ .allocator = allocator.allocator() };
+    const allocator = gpa.allocator();
+
+    var main_database_fetcher_client: std.http.Client = .{ .allocator = allocator };
     defer main_database_fetcher_client.deinit();
-    var response_writer: std.io.Writer.Allocating = .init(allocator.allocator());
+    var response_writer: std.io.Writer.Allocating = .init(allocator);
     defer response_writer.deinit();
 
     const main_database_fetch = try main_database_fetcher_client.fetch(.{
@@ -155,14 +121,12 @@ pub fn main() !u8 {
     }
 
     const main_database_raw = response_writer.written();
-    // defer allocator.free(main_database_raw);
-
-    const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator.allocator(), main_database_raw, .{}) catch @panic("Failed to parse json.");
+    const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator, main_database_raw, .{}) catch @panic("Failed to parse json.");
     defer main_database_parsed.deinit();
 
-    fetch_readmes(allocator.allocator(), main_database_parsed.value, "packages") catch @panic("Failed to fetch readmes.");
-    fetch_readmes(allocator.allocator(), main_database_parsed.value, "programs") catch @panic("Failed to fetch readmes.");
-    var stringifier: std.io.Writer.Allocating = .init(allocator.allocator());
+    fetch_readmes(allocator, main_database_parsed.value, "packages") catch @panic("Failed to fetch readmes.");
+    fetch_readmes(allocator, main_database_parsed.value, "programs") catch @panic("Failed to fetch readmes.");
+    var stringifier: std.io.Writer.Allocating = .init(allocator);
     defer stringifier.deinit();
     var stringify_obj: std.json.Stringify = .{
         .writer = &stringifier.writer,
@@ -173,11 +137,17 @@ pub fn main() !u8 {
     try processed_readmes_wrapped.jsonStringify(&stringify_obj);
 
     const final_stringified_json = stringifier.written();
-
     const cwd = std.fs.cwd();
     var file = try cwd.createFile("search_data.json", .{});
     defer file.close();
-    output.deinit(allocator.allocator());
+
+    defer {
+        var it = output.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.value_ptr.*);
+        }
+        output.deinit(allocator);
+    }
 
     _ = try file.writeAll(final_stringified_json);
     return 0;
