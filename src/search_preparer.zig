@@ -1,5 +1,5 @@
 const std = @import("std");
-const allocator = std.heap.c_allocator;
+const debug = true;
 
 const MapWrapper = struct {
     // https://discord.com/channels/605571803288698900/1457072282718437618
@@ -19,31 +19,31 @@ pub fn safe_lower_slice(
     res: *[2000]u8,
     input: []const u8,
 ) ![]const u8 {
-    if (!std.unicode.utf8ValidateSlice(input)) {
-        return error.problem;
-    }
+    if (std.unicode.utf8ValidateSlice(input)) {
+        return std.ascii.lowerString(res, input[0..2000]);
+    } else {
+        var count: usize = 0;
+        var iter: std.unicode.Utf8Iterator = .{ .bytes = input, .i = 0 };
 
-    var count: usize = 0;
-    var iter: std.unicode.Utf8Iterator = .{ .bytes = input, .i = 0 };
-
-    while (iter.nextCodepointSlice()) |slice| {
-        // ASCII?
-        for (slice) |c| {
-            if (count == 1999) {
-                break;
-            }
-            if (std.ascii.isAscii(c)) {
-                res[count] = std.ascii.toLower(c);
-                count += 1;
+        outer: while (iter.nextCodepointSlice()) |slice| {
+            // ASCII?
+            for (slice) |c| {
+                if (count == 1999) {
+                    break :outer;
+                }
+                if (std.ascii.isAscii(c)) {
+                    res[count] = std.ascii.toLower(c);
+                    count += 1;
+                }
             }
         }
+        return res[0..count];
     }
-    return res[0..count];
 }
 
 var output: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
 
-pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !void {
+pub fn fetch_readmes(allocator: std.mem.Allocator, parsed_json: std.json.Value, thing_to_parse: []const u8) !void {
     var iter = parsed_json.object.get(thing_to_parse).?.object.iterator();
     // I had discussed this with someone on discord
     // and found out that zig does maintain keep alive
@@ -98,6 +98,7 @@ pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !v
                 else
                     "";
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
+                defer allocator.free(result);
                 try output.put(allocator, repo_name_id, result);
                 std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
             } else if (std.mem.eql(u8, provider_id, "cb")) {
@@ -116,21 +117,31 @@ pub fn fetch_readmes(parsed_json: std.json.Value, thing_to_parse: []const u8) !v
                 else
                     "";
                 const result = try std.fmt.allocPrint(allocator, "{s} {s} {s} {s}", .{ lower, owner_name, repo_name, description });
+                defer allocator.free(result);
                 try output.put(allocator, repo_name_id, result);
                 std.debug.print("\n\nOUTPUT :: {s}\n\n", .{result});
             } else {
                 try output.put(allocator, repo_name_id, repo_name_id);
             }
         } else {
+            comptime if (debug) {
+                break;
+            };
             try output.put(allocator, repo_name_id, repo_name_id);
         }
     }
 }
 
 pub fn main() !u8 {
-    var main_database_fetcher_client: std.http.Client = .{ .allocator = allocator };
+    var allocator = std.heap.DebugAllocator(.{}).init;
+    defer {
+        const deinit_status = allocator.deinit();
+        //fail test; can't try in defer as defer is executed after we return
+        if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
+    }
+    var main_database_fetcher_client: std.http.Client = .{ .allocator = allocator.allocator() };
     defer main_database_fetcher_client.deinit();
-    var response_writer: std.io.Writer.Allocating = .init(allocator);
+    var response_writer: std.io.Writer.Allocating = .init(allocator.allocator());
     defer response_writer.deinit();
 
     const main_database_fetch = try main_database_fetcher_client.fetch(.{
@@ -146,12 +157,12 @@ pub fn main() !u8 {
     const main_database_raw = response_writer.written();
     // defer allocator.free(main_database_raw);
 
-    const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator, main_database_raw, .{}) catch @panic("Failed to parse json.");
+    const main_database_parsed = std.json.parseFromSlice(std.json.Value, allocator.allocator(), main_database_raw, .{}) catch @panic("Failed to parse json.");
     defer main_database_parsed.deinit();
 
-    fetch_readmes(main_database_parsed.value, "packages") catch @panic("Failed to fetch readmes.");
-    fetch_readmes(main_database_parsed.value, "programs") catch @panic("Failed to fetch readmes.");
-    var stringifier: std.io.Writer.Allocating = .init(allocator);
+    fetch_readmes(allocator.allocator(), main_database_parsed.value, "packages") catch @panic("Failed to fetch readmes.");
+    fetch_readmes(allocator.allocator(), main_database_parsed.value, "programs") catch @panic("Failed to fetch readmes.");
+    var stringifier: std.io.Writer.Allocating = .init(allocator.allocator());
     defer stringifier.deinit();
     var stringify_obj: std.json.Stringify = .{
         .writer = &stringifier.writer,
@@ -166,6 +177,7 @@ pub fn main() !u8 {
     const cwd = std.fs.cwd();
     var file = try cwd.createFile("search_data.json", .{});
     defer file.close();
+    output.deinit(allocator.allocator());
 
     _ = try file.writeAll(final_stringified_json);
     return 0;
