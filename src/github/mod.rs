@@ -9,6 +9,31 @@ use std::collections::HashMap;
 use std::error::Error;
 
 pub async fn process_repository(repository: &types::Node, is_package: bool) {
+    let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
+    if !db!().users.contains_key(&user_name) {
+        // println!("Processing User: {}", repository.owner.login);
+        let user_resultant = custom_types::User {
+            avatar_id: repository.owner.login.clone(),
+            bio: repository.owner.bio.clone(),
+            company: repository.owner.company.clone(),
+            followers: repository
+                .owner
+                .followers
+                .clone()
+                .unwrap_or_default()
+                .total_count,
+            following: repository
+                .owner
+                .following
+                .clone()
+                .unwrap_or_default()
+                .total_count,
+            location: repository.owner.location.clone(),
+            description: repository.owner.description.clone(),
+            website_url: repository.owner.website_url.clone(),
+        };
+        db!().users.insert(user_name, user_resultant);
+    }
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
         avatar_id: repository.owner.login.clone(),
@@ -109,37 +134,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
                 },
             },
         );
-        let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
-        if !db!()
-            .users
-            .contains_key(&user_name)
-        {
-            // println!("Processing User: {}", repository.owner.login);
-            let user_resultant = custom_types::User {
-                avatar_id: repository.owner.login.clone(),
-                bio: repository.owner.bio.clone(),
-                company: repository.owner.company.clone(),
-                followers: repository
-                    .owner
-                    .followers
-                    .clone()
-                    .unwrap_or_default()
-                    .total_count,
-                following: repository
-                    .owner
-                    .following
-                    .clone()
-                    .unwrap_or_default()
-                    .total_count,
-                location: repository.owner.location.clone(),
-                description: repository.owner.description.clone(),
-                website_url: repository.owner.website_url.clone(),
-            };
-            db!().users.insert(
-                user_name,
-                user_resultant,
-            );
-        }
     }
     if is_package {
         db!().packages.insert(
