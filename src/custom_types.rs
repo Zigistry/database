@@ -47,6 +47,8 @@ pub struct Release {
 #[skip_serializing_none]
 #[derive(Debug, serde::Serialize)]
 pub struct Repo {
+    #[serde(rename = "a")]
+    pub avatar_id: String,
     #[serde(rename = "d")]
     pub description: Option<String>,
     #[serde(rename = "i")]

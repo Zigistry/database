@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::db;
 use regex::Regex;
 
@@ -11,13 +13,13 @@ pub async fn calculate_dependents() {
     let packages_keys = db.packages.keys().cloned().collect::<Vec<String>>();
     for i in packages_keys {
         let value = &db.packages[&i];
-        let mut v = Vec::new();
+        let mut v:HashSet<String> = HashSet::new();
         for j in &value.default_branch_information.dependencies {
-            v.push(j.url.clone());
+            v.insert(j.url.clone());
         }
         for k in &value.releases {
             for l in &k.1.dependencies {
-                v.push(l.url.clone());
+                v.insert(l.url.clone());
             }
         }
         eprintln!("Reached Here!");

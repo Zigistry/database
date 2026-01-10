@@ -11,6 +11,7 @@ use std::error::Error;
 pub async fn process_repository(repository: &types::Node, is_package: bool) {
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
+        avatar_id: repository.owner.login.clone(),
         dependents: vec![],
         description: repository.description.clone(),
         issues_count: repository.issues.total_count,
@@ -108,12 +109,11 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
                 },
             },
         );
-        if db!()
+        let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
+        if !db!()
             .users
-            .contains_key(&format!("gh/{}", repository.owner.login,))
+            .contains_key(&user_name)
         {
-            continue;
-        } else {
             // println!("Processing User: {}", repository.owner.login);
             let user_resultant = custom_types::User {
                 avatar_id: repository.owner.login.clone(),
@@ -136,7 +136,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
                 website_url: repository.owner.website_url.clone(),
             };
             db!().users.insert(
-                format!("gh/{}", repository.owner.login.clone()).to_lowercase(),
+                user_name,
                 user_resultant,
             );
         }

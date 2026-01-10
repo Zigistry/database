@@ -75,6 +75,13 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 Err(_) => (String::new(), Vec::new()),
             };
             let repo_resultant = custom_types::Repo {
+                avatar_id: repo
+                    .owner
+                    .avatar_url
+                    .rsplit("/")
+                    .next()
+                    .unwrap()
+                    .to_string(),
                 created_at: repo.created_at.clone(),
                 description: repo.description.into(),
                 issues_count: repo.open_issues_count,
