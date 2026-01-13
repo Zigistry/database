@@ -7,6 +7,8 @@ use futures::stream;
 use futures::stream::StreamExt;
 use std::collections::HashMap;
 use std::error::Error;
+const EMPTY_REPLY: &str =
+    r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
 pub async fn process_repository(repository: &types::Node, is_package: bool) {
     let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
@@ -183,6 +185,10 @@ pub async fn process_query(
                 .await?;
 
             let text = res.text().await?;
+            if text == EMPTY_REPLY {
+                has_next = false;
+                continue;
+            }
             let mut res2: types::Root = match serde_json::from_str(&text) {
                 Ok(t) => t,
                 Err(t) => {
