@@ -152,7 +152,8 @@ pub async fn process_query(
     query: &str,
     is_package: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let start = NaiveDate::from_ymd_opt(2024, 2, 8).unwrap();
+    // Yes, 8th Feb 2016, Zig release date.
+    let start = NaiveDate::from_ymd_opt(2016, 2, 8).unwrap();
     let end = Utc::now().date_naive();
     let mut lower = start;
     let mut upper = start.checked_add_months(Months::new(6)).unwrap();
