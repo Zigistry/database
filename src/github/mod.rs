@@ -62,7 +62,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
         default_branch_information: custom_types::Release {
             is_prerelease: false,
             published_at: repository.created_at.clone(),
-            release_assets: HashMap::new(),
             dependencies: Vec::new(),
             minimum_zig_version: String::new(),
             readme_url: match get_readme_url(
@@ -100,22 +99,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
             custom_types::Release {
                 is_prerelease: release.is_prerelease,
                 published_at: release.published_at.clone(),
-                release_assets: release
-                    .release_assets
-                    .nodes
-                    .clone()
-                    .into_iter()
-                    .map(|n| {
-                        (
-                            n.name,
-                            custom_types::Asset {
-                                download_url: n.download_url,
-                                size: n.size,
-                                content_type: n.content_type,
-                            },
-                        )
-                    })
-                    .collect(),
                 dependencies: match &bzz_results {
                     Ok((_, dependencies)) => dependencies.to_vec(),
                     Err(_) => {

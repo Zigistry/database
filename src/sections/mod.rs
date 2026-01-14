@@ -1,10 +1,6 @@
-mod api_responce_types;
 use crate::GITHUB_KEY;
-use crate::custom_types;
 use crate::db;
-use crate::github::process_query;
 use crate::github::process_repository;
-use crate::github::types;
 use futures::stream;
 use futures::stream::StreamExt;
 use serde_json;

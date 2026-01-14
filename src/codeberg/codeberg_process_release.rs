@@ -1,7 +1,5 @@
 use super::types;
-use crate::bzz_stuff::{parse, tokenize};
 use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
-use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::custom_types;
 use std::collections::HashMap;
 
@@ -33,14 +31,6 @@ pub async fn process_release(
             dependencies: details.1,
             is_prerelease: i.prerelease,
             published_at: i.published_at,
-            release_assets: HashMap::new(),
-            // the issue is that, Idk the type of aset
-            // wasn't able to find a single repo with
-            // some actual asset, hence, I am leaving this
-            // as "Value" only, putting a normal hash new
-            // I will figure this out after first release.
-            // the code is already spoilt, need to very
-            // complicated at this point.
             minimum_zig_version: details.0,
             readme_url: get_readme_url(&owner_name, &repo_name, &i.tag_name, true).await,
         };

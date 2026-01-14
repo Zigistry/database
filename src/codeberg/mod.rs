@@ -9,8 +9,6 @@ use crate::github::get_build_zig_zon_data;
 use crate::{custom_types, db};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
-use std::collections::HashMap;
-use std::error::Error;
 
 pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>> {
     let mut all_repos = vec![];
@@ -99,7 +97,6 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
                 default_branch_information: custom_types::Release {
                     is_prerelease: false,
                     published_at: repo.created_at,
-                    release_assets: HashMap::new(),
                     dependencies: impdata.1,
                     minimum_zig_version: impdata.0,
                     readme_url: get_readme_url(&repo.owner.login, &repo.name, "HEAD", false).await,
@@ -127,10 +124,6 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
         })
         .await;
 
-    Ok(())
-}
-
-pub async fn compute_default_branch_information() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 

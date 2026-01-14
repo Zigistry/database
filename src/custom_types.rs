@@ -1,16 +1,6 @@
 use serde_with::skip_serializing_none;
 use std::collections::HashMap;
 
-#[skip_serializing_none]
-#[derive(Debug, serde::Serialize)]
-pub struct Asset {
-    #[serde(rename = "d")]
-    pub download_url: String,
-    #[serde(rename = "s")]
-    pub size: u64,
-    #[serde(rename = "c")]
-    pub content_type: String,
-}
 /// This is all the data I get from build.zig.zonn
 #[skip_serializing_none]
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -34,8 +24,6 @@ pub struct Release {
     pub is_prerelease: bool,
     #[serde(rename = "p")]
     pub published_at: String,
-    #[serde(rename = "ra")]
-    pub release_assets: HashMap<String, Asset>,
     #[serde(rename = "d")]
     pub dependencies: Vec<Dependency>,
     #[serde(rename = "m")]
@@ -127,3 +115,24 @@ pub struct Root {
     /// display on the index page.
     pub index_sections: HashMap<String, Vec<String>>,
 }
+
+// OK, From here the discussion begins of what will
+// be the future of Zigistry's database.
+// Since the past ~2 years, I have been using json as the primary
+// way, even though it works very cool, the issue is that json
+// is not something I can conveniently use for Database management.
+// I mean, its not the best for dbms. The best solution I can think
+// of is using sqlite. SQL lite.
+// The thing is that the search
+// implementation and everything from json generation is just too much.
+// also, the concept of having asset url and asset download didn't really
+// make much of a sence.
+// So, the main issue comes to when:
+// This database is currently 6 MB, and me using clone in rust makes the memory
+// usage much worse. Using SQL lite would make things in a way that a huge
+// amount of memory would not be used.
+// Currently its just 5000 repos, still its taking an hour and
+// a half to index all this. Now, maybe switching to SQL lite would make stuff
+// atleast easier to maintain, increasing a huge amount of possibility to improve.
+// Hence, I am defining the sql schema I can think of:
+// Ok, so a single table would be there for all repos.
