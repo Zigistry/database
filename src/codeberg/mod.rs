@@ -10,7 +10,7 @@ use crate::{custom_types, db};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 
-pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>> {
+pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut all_repos = vec![];
     let mut page = 1;
 
@@ -127,7 +127,7 @@ pub async fn fetch_all_codeberg_repos(query: &str) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-pub async fn codeberg_main() -> Result<(), Box<dyn Error>> {
+pub async fn codeberg_main() -> Result<(), Box<dyn std::error::Error>> {
     fetch_all_codeberg_repos("zig-package").await.unwrap();
     fetch_all_codeberg_repos("zig").await.unwrap();
     Ok(())

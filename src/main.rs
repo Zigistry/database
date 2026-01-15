@@ -21,6 +21,7 @@ mod bzz_stuff;
 mod codeberg;
 mod constants;
 mod custom_types;
+mod database;
 mod dependents_calculator;
 mod github;
 mod sections;
@@ -28,6 +29,8 @@ mod sections;
 use chrono::Utc;
 use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
+use sqlx::Executor;
+use sqlx::sqlite::SqlitePool;
 use std::fs;
 use std::{collections::HashMap, env, error::Error};
 use tokio::sync::Mutex;
@@ -56,6 +59,8 @@ macro_rules! db {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let pool = SqlitePool::connect("sqlite:./my.db").await?;
+    database::init_database();
     eprintln!("Starting");
     let timer_start = Utc::now();
     match github::github_main().await {
