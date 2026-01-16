@@ -4,6 +4,7 @@ use crate::github::process_repository;
 use futures::stream;
 use futures::stream::StreamExt;
 use serde_json;
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use toml;
 const TOML_CONTENT: &str = include_str!("../../sections.toml");
@@ -11,7 +12,7 @@ const GQL_CONTENT: &str = include_str!("../../gqlFiles/sections.gql");
 // {"data":{"repository":
 // I will be removing this part from the front of the responces
 // this is the easiet way, because then I don't need the extra parser.
-pub async fn fetch_repos_for_sections() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let parsed: HashMap<String, Vec<String>> =
         toml::from_str(TOML_CONTENT).expect("the toml is badly written.");
     stream::iter(parsed)
@@ -56,7 +57,7 @@ pub async fn fetch_repos_for_sections() -> Result<(), Box<dyn std::error::Error>
                         panic!("Huge Problem.");
                     }
                 };
-                process_repository(&res, true).await;
+                process_repository(&res, true, pool).await;
             }
         })
         .await;

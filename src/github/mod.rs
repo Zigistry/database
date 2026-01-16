@@ -13,36 +13,43 @@ const EMPTY_REPLY: &str =
 
 pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
     let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
-    let exists = sqlx::query("SELECT COUNT(1) FROM users WHERE id = ?")
-        .bind(&user_name)
-        .fetch_one(pool)
-        .await
-        .unwrap();
-
-    if exists.is_empty() {
-        // println!("Processing User: {}", repository.owner.login);
-        let user_resultant = custom_types::User {
-            avatar_id: repository.owner.login.clone(),
-            bio: repository.owner.bio.clone(),
-            company: repository.owner.company.clone(),
-            followers: repository
-                .owner
-                .followers
-                .clone()
-                .unwrap_or_default()
-                .total_count,
-            following: repository
-                .owner
-                .following
-                .clone()
-                .unwrap_or_default()
-                .total_count,
-            location: repository.owner.location.clone(),
-            description: repository.owner.description.clone(),
-            website_url: repository.owner.website_url.clone(),
-        };
-        db!().users.insert(user_name, user_resultant);
-    }
+    // println!("Processing User: {}", repository.owner.login);
+    sqlx::query(
+        r#"INSERT OR IGNORE INTO users
+            (id, avatar_id, bio, followers, following, location, description, website_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&user_name)
+    // I am using owner login name
+    // for the avatar id because
+    // it works and uses very low storage
+    // as compaired to storing the entire
+    // avatar url.
+    .bind(repository.owner.login.clone())
+    .bind(repository.owner.bio.clone())
+    .bind(
+        repository
+            .owner
+            .followers
+            .clone()
+            .unwrap_or_default()
+            .total_count,
+    )
+    .bind(
+        repository
+            .owner
+            .following
+            .clone()
+            .unwrap_or_default()
+            .total_count,
+    )
+    .bind(repository.owner.description.clone())
+    .bind(repository.owner.website_url.clone())
+    .execute(pool)
+    .await
+    .unwrap();
+    println!("REACHED HERE!!!!!");
     // eprintln!("Processing Repository: {}", repository.name);
     let mut repository_resultant = custom_types::Repo {
         avatar_id: repository.owner.login.clone(),
@@ -196,7 +203,7 @@ pub async fn process_query(
 
         stream::iter(&nodes)
             .for_each_concurrent(100, |node| async move {
-                process_repository(&node, is_package).await;
+                process_repository(&node, is_package, pool).await;
             })
             .await;
         lower = upper;
@@ -208,7 +215,7 @@ pub async fn process_query(
     return Ok(());
 }
 
-pub async fn github_main(pool: SqlitePool) -> Result<(), Box<dyn Error>> {
+pub async fn github_main(pool: &SqlitePool) -> Result<(), Box<dyn Error>> {
     process_query("zig-package", true, &pool).await.unwrap();
     process_query("zig", false, &pool).await.unwrap();
     Ok(())
