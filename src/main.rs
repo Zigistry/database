@@ -16,12 +16,12 @@
  *
  * See LICENSE and LICENSE-ADDITIONAL in the project root directory for full details.
  */
-
 mod bzz_stuff;
 mod codeberg;
 mod constants;
 mod custom_types;
 mod database;
+mod databaseSchema;
 mod dependents_calculator;
 mod github;
 mod sections;
