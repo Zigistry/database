@@ -1,7 +1,8 @@
 CREATE TABLE repos (
   id TEXT PRIMARY KEY,
-  owner TEXT NOT NULL,
   avatar_id TEXT NOT NULL,
+  owner TEXT NOT NULL,
+  platform TEXT NOT NULL,
   description TEXT,
   issues_count INTEGER NOT NULL,
   default_branch_name TEXT NOT NULL,
@@ -29,6 +30,7 @@ CREATE TABLE repo_topics (
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   avatar_id TEXT NOT NULL,
+  platform TEXT NOT NULL,
   bio TEXT,
   company TEXT,
   followers INTEGER NOT NULL,
