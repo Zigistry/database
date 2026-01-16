@@ -59,12 +59,10 @@ macro_rules! db {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    File::create("./zigistry.db")?;
-    let pool = SqlitePool::connect("sqlite:./zigistry.db").await?;
-    database::init_database(pool).await.unwrap();
+    let pool = database::init_database().await.unwrap();
     eprintln!("Starting");
     let timer_start = Utc::now();
-    match github::github_main().await {
+    match github::github_main(pool).await {
         Ok(_) => {
             eprintln!(
                 "GitHub completed successfully in {}minutes.",

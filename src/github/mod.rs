@@ -5,14 +5,21 @@ use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
+use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
 use std::error::Error;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
-pub async fn process_repository(repository: &types::Node, is_package: bool) {
+pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
     let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
-    if !db!().users.contains_key(&user_name) {
+    let exists = sqlx::query("SELECT COUNT(1) FROM users WHERE id = ?")
+        .bind(&user_name)
+        .fetch_one(pool)
+        .await
+        .unwrap();
+
+    if exists.is_empty() {
         // println!("Processing User: {}", repository.owner.login);
         let user_resultant = custom_types::User {
             avatar_id: repository.owner.login.clone(),
@@ -136,6 +143,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool) {
 pub async fn process_query(
     query: &str,
     is_package: bool,
+    pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Yes, 8th Feb 2016, Zig release date.
     let start = NaiveDate::from_ymd_opt(2016, 2, 8).unwrap();
@@ -200,9 +208,9 @@ pub async fn process_query(
     return Ok(());
 }
 
-pub async fn github_main() -> Result<(), Box<dyn Error>> {
-    process_query("zig-package", true).await.unwrap();
-    process_query("zig", false).await.unwrap();
+pub async fn github_main(pool: SqlitePool) -> Result<(), Box<dyn Error>> {
+    process_query("zig-package", true, &pool).await.unwrap();
+    process_query("zig", false, &pool).await.unwrap();
     Ok(())
 }
 
