@@ -1,4 +1,3 @@
-
 CREATE TABLE repos (
   id TEXT PRIMARY KEY,
   owner TEXT NOT NULL,
@@ -19,13 +18,13 @@ CREATE TABLE repos (
   readme_url TEXT,
   primary_language TEXT NOT NULL,
   FOREIGN KEY (owner) REFERENCES users(id)
-)
+);
 
 CREATE TABLE repo_topics (
   repo_id TEXT NOT NULL,
   topic TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos(id)
-)
+);
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
@@ -37,14 +36,13 @@ CREATE TABLE users (
   location TEXT,
   description TEXT,
   website_url TEXT
-)
+);
 
 CREATE TABLE repo_dependents (
   repo_id TEXT NOT NULL,
   dependent TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos(id)
-)
-
+);
 
 CREATE TABLE releases (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +53,8 @@ CREATE TABLE releases (
   minimum_zig_version TEXT NOT NULL,
   readme_url TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos(id)
-)
+);
+
 CREATE TABLE release_dependencies (
   release_id INTEGER NOT NULL,
   name TEXT NOT NULL,
@@ -64,10 +63,10 @@ CREATE TABLE release_dependencies (
   url TEXT NOT NULL,
   path TEXT NOT NULL,
   FOREIGN KEY (release_id) REFERENCES releases(id)
-)
+);
 
 CREATE TABLE index_sections (
   section_name TEXT NOT NULL,
   repo_id TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos(id)
-)
+);
