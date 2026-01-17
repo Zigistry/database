@@ -13,13 +13,13 @@ const EMPTY_REPLY: &str =
 
 pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
     let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
-    let repo_name = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
+    let repo_id = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
     // println!("Processing User: {}", repository.owner.login);
     sqlx::query(
         r#"
             INSERT OR IGNORE INTO users
-                (id, provider, avatar_id, bio, followers, following, location, description, website_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (id, platform, avatar_id, bio, followers, following, location, description, website_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&user_name)
@@ -63,28 +63,28 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         r#"
             INSERT OR IGNORE INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
-                , stargazers_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
                 is_fork, license, primary_language)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
-    .bind(repo_name)
+    .bind(&repo_id)
     .bind(repository.owner.login.clone())
-    .bind(repository.owner.login.clone())
+    .bind(&user_name)
     .bind("github")
     .bind(repository.description.clone())
     .bind(repository.issues.total_count)
-    .bind(repository.default_branch_ref.name)
+    .bind(&repository.default_branch_ref.name)
     .bind(repository.fork_count)
     .bind(repository.stargazer_count)
     .bind(repository.watchers.total_count)
-    .bind(repository.pushed_at)
-    .bind(repository.created_at)
+    .bind(&repository.pushed_at)
+    .bind(&repository.created_at)
     .bind(repository.is_archived)
     .bind(repository.is_disabled)
     .bind(repository.is_fork)
     .bind(repository.license_info.clone().unwrap_or_default().spdx_id)
-    .bind(repository.primary_language.unwrap_or_default().name)
+    .bind(repository.primary_language.clone().unwrap_or_default().name)
     .execute(pool)
     .await.unwrap();
     // eprintln!("Processing Repository: {}", repository.name);
@@ -93,13 +93,14 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             INSERT OR IGNORE INTO releases
                 (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
             VALUES(?, ?, ?, ?, ?, ?)
+            RETURNING id
         "#,
     )
-    .bind(repo_name)
+    .bind(&repo_id)
     .bind("__ZIGISTRY__DEFAULT__BRANCH__")
     .bind(false)
     .bind(repository.created_at.clone())
-    .bind(build_zig_zon_data.0)
+    .bind(build_zig_zon_data.0.clone())
     .bind(
         match get_readme_url(
             &repository.owner.login,
@@ -117,7 +118,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .unwrap();
     match default_branch_release_id {
         Some(default_branch_release_id) => {
-            for dependency in build_zig_zon_data.1 {
+            for dependency in build_zig_zon_data.1.clone() {
                 sqlx::query(
                     r#"
                         INSERT INTO release_dependencies
@@ -137,7 +138,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             }
         }
         None => {
-            println!("Got None for: {}", repo_name);
+            println!("Got None for: {}", &repo_id);
         }
     }
     let mut repository_resultant = custom_types::Repo {
@@ -182,8 +183,8 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     };
     repository_resultant
         .default_branch_information
-        .minimum_zig_version = data.0;
-    repository_resultant.default_branch_information.dependencies = data.1;
+        .minimum_zig_version = build_zig_zon_data.0.clone();
+    repository_resultant.default_branch_information.dependencies = build_zig_zon_data.clone().1;
     for release in &repository.releases.nodes {
         let readme_url =
             get_readme_url(&repository.owner.login, &repository.name, &release.tag_name).await;
