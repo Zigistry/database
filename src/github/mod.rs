@@ -5,14 +5,14 @@ use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
-use sqlx::{Row, SqlitePool};
+use sqlx::{SqlitePool};
 use std::collections::HashMap;
 use std::error::Error;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
 pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
-    let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
+    let user_id = format!("gh/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
     // println!("Processing User: {}", repository.owner.login);
     sqlx::query(
@@ -22,7 +22,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
-    .bind(&user_name)
+    .bind(&user_id)
     // I am using owner login name
     // for the avatar id because
     // it works and uses very low storage
@@ -70,7 +70,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     )
     .bind(&repo_id)
     .bind(repository.owner.login.clone())
-    .bind(&user_name)
+    .bind(&user_id)
     .bind("github")
     .bind(repository.description.clone())
     .bind(repository.issues.total_count)
@@ -221,7 +221,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
                     )
-                    .bind(default_branch_release_id)
+                    .bind(this_specific_release_id)
                     .bind(dependency.name)
                     .bind(dependency.hash)
                     .bind(dependency.lazy)
@@ -238,15 +238,29 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         }
     }
     if is_package {
-        db!().packages.insert(
-            format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase(),
-            repository_resultant,
-        );
+        sqlx::query(
+            r#"
+                 INSERT INTO packages
+                    (repo_id)
+                VALUES(?)
+            "#,
+        )
+        .bind(repo_id)
+        .execute(pool)
+        .await
+        .unwrap();
     } else {
-        db!().programs.insert(
-            format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase(),
-            repository_resultant,
-        );
+        sqlx::query(
+            r#"
+                 INSERT INTO programs
+                    (repo_id)
+                VALUES(?)
+            "#,
+        )
+        .bind(repo_id)
+        .execute(pool)
+        .await
+        .unwrap();
     }
 }
 
