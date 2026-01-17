@@ -70,3 +70,13 @@ CREATE TABLE index_sections (
   repo_id TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos(id)
 );
+
+CREATE TABLE packages (
+  repo_id TEXT NOT NULL,
+  FOREIGN KEY (repo_id) REFERENCES repos(id)
+);
+
+CREATE TABLE programs (
+  repo_id TEXT NOT NULL,
+  FOREIGN KEY (repo_id) REFERENCES repos(id)
+);

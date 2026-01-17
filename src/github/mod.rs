@@ -181,42 +181,61 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         },
         releases: HashMap::new(),
     };
-    repository_resultant
-        .default_branch_information
-        .minimum_zig_version = build_zig_zon_data.0.clone();
-    repository_resultant.default_branch_information.dependencies = build_zig_zon_data.clone().1;
     for release in &repository.releases.nodes {
         let readme_url =
             get_readme_url(&repository.owner.login, &repository.name, &release.tag_name).await;
-        let bzz_results =
-            get_build_zig_zon_data(&repository.owner.login, &repository.name, &release.tag_name)
-                .await;
+        let bzz_results = get_build_zig_zon_data_wrapper(
+            &repository.owner.login,
+            &repository.name,
+            &release.tag_name,
+        )
+        .await;
 
-        repository_resultant.releases.insert(
-            release.tag_name.clone(),
-            custom_types::Release {
-                is_prerelease: release.is_prerelease,
-                published_at: release.published_at.clone(),
-                dependencies: match &bzz_results {
-                    Ok((_, dependencies)) => dependencies.to_vec(),
-                    Err(_) => {
-                        // println!("{:#?}", err);
-                        Vec::new()
-                    }
-                },
-                minimum_zig_version: match bzz_results {
-                    Ok((minimum_zig_version, _)) => minimum_zig_version,
-                    Err(_) => {
-                        // println!("{:#?}", err);
-                        "unknown".to_string()
-                    }
-                },
-                readme_url: match readme_url {
-                    Some(url) => url,
-                    _ => String::new(),
-                },
-            },
-        );
+        let this_specific_release_id: Option<i64> = sqlx::query_scalar(
+            r#"
+            INSERT OR IGNORE INTO releases
+                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+            VALUES(?, ?, ?, ?, ?, ?)
+            RETURNING id
+        "#,
+        )
+        .bind(&repo_id)
+        .bind(release.tag_name.clone())
+        .bind(release.is_prerelease)
+        .bind(release.published_at.clone())
+        .bind(bzz_results.0.clone())
+        .bind(match readme_url {
+            Some(url) => url,
+            _ => String::new(),
+        })
+        .fetch_optional(pool)
+        .await
+        .unwrap();
+        match this_specific_release_id {
+            Some(this_specific_release_id) => {
+                for dependency in bzz_results.1.clone() {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO release_dependencies
+                            (release_id, name, hash, lazy, url, path)
+                        VALUES(?, ?, ?, ?, ?, ?)
+                    "#,
+                    )
+                    .bind(default_branch_release_id)
+                    .bind(dependency.name)
+                    .bind(dependency.hash)
+                    .bind(dependency.lazy)
+                    .bind(dependency.url)
+                    .bind(dependency.path)
+                    .execute(pool)
+                    .await
+                    .unwrap();
+                }
+            }
+            None => {
+                println!("Somehow {repo_id} didn't return.");
+            }
+        }
     }
     if is_package {
         db!().packages.insert(

@@ -1,4 +1,4 @@
-use sqlx::{self, Executor, Pool, SqlitePool};
+use sqlx::{self, Executor, SqlitePool};
 use std::fs::File;
 mod database_schema;
 
