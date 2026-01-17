@@ -15,8 +15,6 @@ CREATE TABLE repos (
   is_disabled INTEGER NOT NULL,
   is_fork INTEGER NOT NULL,
   license TEXT NOT NULL,
-  minimum_zig_version TEXT,
-  readme_url TEXT,
   primary_language TEXT NOT NULL,
   FOREIGN KEY (owner) REFERENCES users(id)
 );

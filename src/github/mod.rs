@@ -13,6 +13,7 @@ const EMPTY_REPLY: &str =
 
 pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
     let user_name = format!("gh/{}", repository.owner.login).to_lowercase();
+    let repo_name = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
     // println!("Processing User: {}", repository.owner.login);
     sqlx::query(
         r#"
@@ -51,17 +52,23 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .execute(pool)
     .await
     .unwrap();
-    println!("REACHED HERE!!!!!");
-    let repo_name = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
+
+    let build_zig_zon_data = get_build_zig_zon_data_wrapper(
+        &repository.owner.login,
+        repository.name.as_str(),
+        &repository.default_branch_ref.name,
+    )
+    .await;
     sqlx::query(
         r#"
             INSERT OR IGNORE INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazers_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, license, minimum_zig_version, readme_url, primary_language)
-            VALUES(?, )
+                is_fork, license, primary_language)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
-    ).bind(format!("gh/{}/{}", repository.owner.login, repository.name))
+    )
+    .bind(repo_name)
     .bind(repository.owner.login.clone())
     .bind(repository.owner.login.clone())
     .bind("github")
@@ -72,8 +79,67 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .bind(repository.stargazer_count)
     .bind(repository.watchers.total_count)
     .bind(repository.pushed_at)
-    );
+    .bind(repository.created_at)
+    .bind(repository.is_archived)
+    .bind(repository.is_disabled)
+    .bind(repository.is_fork)
+    .bind(repository.license_info.clone().unwrap_or_default().spdx_id)
+    .bind(repository.primary_language.unwrap_or_default().name)
+    .execute(pool)
+    .await.unwrap();
     // eprintln!("Processing Repository: {}", repository.name);
+    let default_branch_release_id: Option<i64> = sqlx::query_scalar(
+        r#"
+            INSERT OR IGNORE INTO releases
+                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+            VALUES(?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(repo_name)
+    .bind("__ZIGISTRY__DEFAULT__BRANCH__")
+    .bind(false)
+    .bind(repository.created_at.clone())
+    .bind(build_zig_zon_data.0)
+    .bind(
+        match get_readme_url(
+            &repository.owner.login,
+            repository.name.as_str(),
+            &repository.default_branch_ref.name,
+        )
+        .await
+        {
+            Some(url) => url,
+            _ => "404 unable to find readme.".to_string(),
+        },
+    )
+    .fetch_optional(pool)
+    .await
+    .unwrap();
+    match default_branch_release_id {
+        Some(default_branch_release_id) => {
+            for dependency in build_zig_zon_data.1 {
+                sqlx::query(
+                    r#"
+                        INSERT INTO release_dependencies
+                            (release_id, name, hash, lazy, url, path)
+                        VALUES(?, ?, ?, ?, ?, ?)
+                    "#,
+                )
+                .bind(default_branch_release_id)
+                .bind(dependency.name)
+                .bind(dependency.hash)
+                .bind(dependency.lazy)
+                .bind(dependency.url)
+                .bind(dependency.path)
+                .execute(pool)
+                .await
+                .unwrap();
+            }
+        }
+        None => {
+            println!("Got None for: {}", repo_name);
+        }
+    }
     let mut repository_resultant = custom_types::Repo {
         avatar_id: repository.owner.login.clone(),
         dependents: vec![],
@@ -114,12 +180,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         },
         releases: HashMap::new(),
     };
-    let data = get_build_zig_zon_data_wrapper(
-        &repository.owner.login,
-        repository.name.as_str(),
-        &repository.default_branch_ref.name,
-    )
-    .await;
     repository_resultant
         .default_branch_information
         .minimum_zig_version = data.0;
