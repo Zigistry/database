@@ -2,3 +2,4 @@
 schema.docs.graphql
 search_preparer
 *.json
+*.db
