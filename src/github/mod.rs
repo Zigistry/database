@@ -250,8 +250,8 @@ pub async fn process_query(
     let mut lower = start;
     let mut upper = start.checked_add_months(Months::new(6)).unwrap();
     let client = reqwest::Client::new();
-    let mut nodes = Vec::new();
     loop {
+        let mut nodes = Vec::new();
         eprintln!("Now processing:{lower}..{upper}");
         let mut has_next = true;
         let mut next: Option<String> = None;
