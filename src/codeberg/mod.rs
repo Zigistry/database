@@ -6,7 +6,6 @@ use crate::CODEBERG_KEY;
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::constants::ASYNC_LIMIT;
 use crate::github::get_build_zig_zon_data;
-use crate::{custom_types, db};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use sqlx::SqlitePool;
@@ -173,23 +172,36 @@ pub async fn fetch_all_codeberg_repos(
             println!("Got None for: {}", &repo_id);
         }
     }
-    process_release(&repository.owner.login, &repository.name, &pool)
+    process_release(&repository.owner.login, &repository.name,&repo_id, &pool)
                     .await
                     .unwrap_or_default();    
-             if repo_resultant
-                .repository_topics
-                .contains(&"zig-package".to_string())
+             if repository
+                .topics             .contains(&"zig-package".to_string())
             {
-                db!().packages.insert(
-                    "cb/".to_string() + &repository.full_name.to_lowercase(),
-                    repo_resultant,
-                );
-            } else {
-                db!().programs.insert(
-                    "cb/".to_string() + &repository.full_name.to_lowercase(),
-                    repo_resultant,
-                );
-            }
+sqlx::query(
+            r#"
+                 INSERT INTO packages
+                    (repo_id)
+                VALUES(?)
+            "#,
+        )
+        .bind(repo_id)
+        .execute(pool)
+        .await
+        .unwrap();
+                            } else {
+sqlx::query(
+            r#"
+                 INSERT INTO programs
+                    (repo_id)
+                VALUES(?)
+            "#,
+        )
+        .bind(repo_id)
+        .execute(pool)
+        .await
+        .unwrap();
+                           }
         })
         .await;
 

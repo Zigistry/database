@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     let timer_start = Utc::now();
-    match codeberg::codeberg_main().await {
+    match codeberg::codeberg_main(&pool).await {
         Ok(_) => {
             eprintln!(
                 "Codeberg completed successfully in {}minutes.",

@@ -5,7 +5,7 @@ use crate::{GITHUB_KEY, custom_types, db};
 use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
-use sqlx::{SqlitePool};
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::error::Error;
 const EMPTY_REPLY: &str =
@@ -141,46 +141,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             println!("Got None for: {}", &repo_id);
         }
     }
-    let mut repository_resultant = custom_types::Repo {
-        avatar_id: repository.owner.login.clone(),
-        dependents: vec![],
-        description: repository.description.clone(),
-        issues_count: repository.issues.total_count,
-        default_branch: repository.default_branch_ref.name.to_string(),
-        fork_count: repository.fork_count,
-        stargazer_count: repository.stargazer_count,
-        watchers_count: repository.watchers.total_count,
-        pushed_at: repository.pushed_at.clone(),
-        created_at: repository.created_at.to_string(),
-        is_archived: repository.is_archived,
-        is_disabled: repository.is_disabled,
-        is_fork: repository.is_fork,
-        license: repository.license_info.clone().unwrap_or_default().spdx_id,
-        repository_topics: repository
-            .repository_topics
-            .edges
-            .iter()
-            .map(|e| e.node.topic.name.clone())
-            .collect(),
-        primary_language: repository.primary_language.clone().unwrap_or_default().name,
-        default_branch_information: custom_types::Release {
-            is_prerelease: false,
-            published_at: repository.created_at.clone(),
-            dependencies: Vec::new(),
-            minimum_zig_version: String::new(),
-            readme_url: match get_readme_url(
-                &repository.owner.login,
-                repository.name.as_str(),
-                &repository.default_branch_ref.name,
-            )
-            .await
-            {
-                Some(url) => url,
-                _ => "404 unable to find readme.".to_string(),
-            },
-        },
-        releases: HashMap::new(),
-    };
     for release in &repository.releases.nodes {
         let readme_url =
             get_readme_url(&repository.owner.login, &repository.name, &release.tag_name).await;
