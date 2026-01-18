@@ -1,6 +1,5 @@
 use sqlx::{self, Executor, SqlitePool};
 use std::fs::File;
-mod database_schema;
 
 const DATABASE_SCHEMA: &str = include_str!("../../databaseSchema.sql");
 

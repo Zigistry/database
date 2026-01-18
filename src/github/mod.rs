@@ -6,7 +6,6 @@ use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
 use sqlx::SqlitePool;
-use std::collections::HashMap;
 use std::error::Error;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
