@@ -53,10 +53,21 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .await
     .unwrap();
 
+    let default_branch_name = repository
+        .default_branch_ref
+        .clone()
+        .unwrap_or_default()
+        .name
+        .clone();
+
     let build_zig_zon_data = get_build_zig_zon_data_wrapper(
         &repository.owner.login,
         repository.name.as_str(),
-        &repository.default_branch_ref.name,
+        if default_branch_name.is_empty() {
+            "HEAD"
+        } else {
+            default_branch_name.as_ref()
+        },
     )
     .await;
     sqlx::query(
@@ -74,7 +85,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .bind("github")
     .bind(repository.description.clone())
     .bind(repository.issues.total_count)
-    .bind(&repository.default_branch_ref.name)
+    .bind(&repository.default_branch_ref.clone().unwrap_or_default().name)
     .bind(repository.fork_count)
     .bind(repository.stargazer_count)
     .bind(repository.watchers.total_count)
@@ -105,7 +116,11 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         match get_readme_url(
             &repository.owner.login,
             repository.name.as_str(),
-            &repository.default_branch_ref.name,
+            if default_branch_name.is_empty() {
+                "HEAD"
+            } else {
+                default_branch_name.as_ref()
+            },
         )
         .await
         {
