@@ -28,12 +28,8 @@ mod sections;
 use chrono::Utc;
 use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
-use sqlx::Executor;
-use sqlx::sqlite::SqlitePool;
 use std::fs;
-use std::fs::File;
-use std::{collections::HashMap, env, error::Error};
-use tokio::sync::Mutex;
+use std::{env, error::Error};
 
 use crate::sections::fetch_repos_for_sections;
 
@@ -42,19 +38,6 @@ lazy_static! {
         "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set");
     static ref CODEBERG_KEY: String =
         "token ".to_string() + &env::var("CB_API_KEY").expect("CB_API_KEY not set");
-    static ref DATABASE: Mutex<custom_types::Root> = Mutex::new(custom_types::Root {
-        users: HashMap::new(),
-        packages: HashMap::new(),
-        programs: HashMap::new(),
-        index_sections: HashMap::new(),
-    });
-}
-
-#[macro_export]
-macro_rules! db {
-    () => {
-        &mut *crate::DATABASE.lock().await
-    };
 }
 
 #[tokio::main]
@@ -62,34 +45,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = database::init_database().await.unwrap();
     eprintln!("Starting");
     let timer_start = Utc::now();
-    match codeberg::codeberg_main(&pool).await {
-        Ok(_) => {
-            eprintln!(
-                "Codeberg completed successfully in {}minutes.",
-                (Utc::now() - timer_start).num_minutes(),
-            )
-        }
-        Err(r) => {
-            let json = serde_json::to_string(db!())?;
-            eprintln!("{json}");
-            eprintln!("Codeberg gave this error:");
-            eprintln!("{:#?}", r);
-        }
-    }
-    match github::github_main(&pool).await {
-        Ok(_) => {
-            eprintln!(
-                "GitHub completed successfully in {}minutes.",
-                (Utc::now() - timer_start).num_minutes(),
-            )
-        }
-        Err(r) => {
-            let json = serde_json::to_string(db!())?;
-            eprintln!("{json}");
-            eprintln!("GitHub gave this error:");
-            eprintln!("{:#?}", r);
-        }
-    }
+    codeberg::codeberg_main(&pool).await.unwrap();
+    eprintln!(
+        "Codeberg completed successfully in {}minutes.",
+        (Utc::now() - timer_start).num_minutes(),
+    );
+    github::github_main(&pool).await.unwrap();
+    eprintln!(
+        "GitHub completed successfully in {}minutes.",
+        (Utc::now() - timer_start).num_minutes(),
+    );
     let timer_start = Utc::now();
     match fetch_repos_for_sections(&pool).await {
         Ok(_) => {

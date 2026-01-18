@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use crate::db;
 use regex::Regex;
 
 pub async fn calculate_dependents() {
@@ -9,7 +8,6 @@ pub async fn calculate_dependents() {
     let gh_cb_pattern = Regex::new(
         r"(?i)\b(?:https?://)?(?:www\.)?(github\.com|codeberg\.org)/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/?\b"
     ).unwrap();
-    let db = db!();
     let packages_keys = db.packages.keys().cloned().collect::<Vec<String>>();
     for i in packages_keys {
         let value = &db.packages[&i];

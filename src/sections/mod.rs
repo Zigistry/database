@@ -1,5 +1,4 @@
 use crate::GITHUB_KEY;
-use crate::db;
 use crate::github::process_repository;
 use futures::stream;
 use futures::stream::StreamExt;
@@ -16,14 +15,35 @@ pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn s
     let parsed: HashMap<String, Vec<String>> =
         toml::from_str(TOML_CONTENT).expect("the toml is badly written.");
     stream::iter(parsed)
-        .for_each_concurrent(2, |(k, v)| async move {
-            db!().index_sections.insert(k, v.clone());
+        .for_each_concurrent(2, |(key, value)| async move {
             let client = reqwest::Client::new();
-            for library in v {
-                if db!().packages.contains_key(&library) {
+            for library in value {
+                let repo_id = library.to_lowercase();
+                sqlx::query(
+                    r#"
+                    INSERT OR IGNORE INTO index_sections
+                        (section_name, repo_id)
+                    VALUES(?, ?)
+                "#,
+                )
+                .bind(&key)
+                .bind(&repo_id)
+                .execute(pool)
+                .await
+                .unwrap();
+
+                let exists = sqlx::query("SELECT 1 FROM repos WHERE repo_id = ?")
+                    .bind(&repo_id)
+                    .fetch_optional(pool)
+                    .await
+                    .unwrap()
+                    .is_some();
+
+                if exists {
                     continue;
                 }
-                let mut repo_name_iter = library.rsplit('/');
+
+                let mut repo_name_iter = repo_id.rsplit('/');
                 let query_to_send = serde_json::json!({
                     "query": GQL_CONTENT,
                     "variables": {

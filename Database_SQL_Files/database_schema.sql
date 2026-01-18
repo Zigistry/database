@@ -4,11 +4,10 @@
 -- I don't want, sql to process 2 queries on every request,
 -- too much latency. To cut down on latency, avatar_id will
 -- be duplicated for both repos and users.
-
 CREATE TABLE repos (
   -- The username is 40 characters at max, repo name is 100 and the key and slashes is 5
   -- Hence, I can keep this at 150.
-  id UNIQUE VARCHAR(150) PRIMARY KEY, 
+  id UNIQUE VARCHAR(150) PRIMARY KEY,
   -- for github its the username itself, for codeberg its 64 bits, hence, I'll keep it at 65
   avatar_id VARCHAR(65) NOT NULL,
   -- 40 + the key and the slash i.e 3, so I think best is 45 for htis.
@@ -18,7 +17,7 @@ CREATE TABLE repos (
   -- This has afaik, 255, hence, 260
   description VARCHAR(260),
   issues_count INTEGER NOT NULL,
-   -- This should also be 255, hence, 260
+  -- This should also be 255, hence, 260
   default_branch_name VARCHAR(260) NOT NULL,
   fork_count INTEGER NOT NULL,
   stargazer_count INTEGER NOT NULL,
@@ -32,14 +31,14 @@ CREATE TABLE repos (
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
   primary_language VARCHAR(50) NOT NULL,
-  FOREIGN KEY (owner) REFERENCES users(id)
+  FOREIGN KEY (owner) REFERENCES users (id)
 );
 
 CREATE TABLE repo_topics (
   repo_id UNIQUE VARCHAR(150) NOT NULL,
   -- Limit is 50, hence
   topic VARCHAR(60) NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE users (
@@ -52,13 +51,13 @@ CREATE TABLE users (
   following INTEGER NOT NULL,
   location VARCHAR(260),
   description VARCHAR(260),
-  website_url  VARCHAR(260),
+  website_url VARCHAR(260),
 );
 
 CREATE TABLE repo_dependents (
   repo_id UNIQUE VARCHAR(150) NOT NULL,
   dependent TEXT NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE releases (
@@ -69,7 +68,7 @@ CREATE TABLE releases (
   published_at TIMESTAMP NOT NULL,
   minimum_zig_version TEXT NOT NULL,
   readme_url TEXT NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE release_dependencies (
@@ -79,21 +78,21 @@ CREATE TABLE release_dependencies (
   lazy TEXT NOT NULL,
   url TEXT NOT NULL,
   path TEXT NOT NULL,
-  FOREIGN KEY (release_id) REFERENCES releases(id)
+  FOREIGN KEY (release_id) REFERENCES releases (id)
 );
 
 CREATE TABLE index_sections (
   section_name VARCHAR(10) NOT NULL,
   repo_id VARCHAR(150) NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE packages (
   repo_id VARCHAR(150) NOT NULL PRIMARY KEY,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE programs (
   repo_id VARCHAR(150) NOT NULL PRIMARY KEY,
-  FOREIGN KEY (repo_id) REFERENCES repos(id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id)
 );

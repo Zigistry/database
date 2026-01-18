@@ -1,7 +1,7 @@
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
-use crate::{GITHUB_KEY, custom_types, db};
+use crate::{GITHUB_KEY, custom_types};
 use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
