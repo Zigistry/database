@@ -2,10 +2,9 @@ mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
 
-use crate::CODEBERG_KEY;
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::constants::ASYNC_LIMIT;
-use crate::github::get_build_zig_zon_data;
+use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use sqlx::SqlitePool;
@@ -45,9 +44,11 @@ pub async fn fetch_all_codeberg_repos(
     }
 
     eprintln!("All repos len: {}", all_repos.len());
-
+    let mut count = 0;
     stream::iter(all_repos)
         .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
+            count +=1;
+            println!("{count}");
             let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
             let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
             sqlx::query(
@@ -63,8 +64,8 @@ pub async fn fetch_all_codeberg_repos(
             // it works and uses very low storage
             // as compaired to storing the entire
             // avatar url.
-            .bind("github")
-            .bind(repository.owner.login.clone())
+            .bind("codeberg")
+            .bind(repository.owner.avatar_url.rsplit('/').next().unwrap().to_string())
             .bind(repository.owner.description.clone())
             .bind(
                 repository
@@ -76,26 +77,27 @@ pub async fn fetch_all_codeberg_repos(
                     .owner
                     .following_count
             )
+            .bind(repository.owner.location.clone())
             .bind(repository.owner.description.clone())
             .bind(repository.owner.website.clone())
             .execute(pool)
             .await
             .unwrap();
 
-            let build_zig_zon_data = match get_build_zig_zon_data(&repository.owner.login, &repository.name, "HEAD").await
+            let build_zig_zon_data = match get_build_zig_zon_data(&repository.owner.login, &repository.name, "HEAD", false).await
             {
                 Ok(t) => t,
                 Err(_) => (String::new(), Vec::new()),
             };
 
             sqlx::query(
-        r#"
-            INSERT OR IGNORE INTO repos
-                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
-                , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, license, primary_language)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
+                r#"
+                    INSERT OR IGNORE INTO repos
+                        (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
+                        , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                        is_fork, license, primary_language)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                "#,
     ).bind(&repo_id)
     .bind(
           repository
@@ -116,6 +118,7 @@ pub async fn fetch_all_codeberg_repos(
     .bind(repository.watchers_count)
     .bind(repository.updated_at.clone())
     .bind(repository.created_at.clone())
+    .bind(repository.archived)
     .bind(repository.archived)
     .bind(repository.fork)
     .bind("Not Found") // Only for now
@@ -145,7 +148,7 @@ pub async fn fetch_all_codeberg_repos(
     )
     .fetch_optional(pool)
     .await
-    .unwrap();
+    .expect(&("Failed on ".to_string() + &repo_id));
 
  match default_branch_release_id {
         Some(default_branch_release_id) => {
@@ -173,37 +176,36 @@ pub async fn fetch_all_codeberg_repos(
         }
     }
     process_release(&repository.owner.login, &repository.name,&repo_id, &pool)
-                    .await
-                    .unwrap_or_default();    
-             if repository
-                .topics             .contains(&"zig-package".to_string())
+    .await
+    .unwrap_or_default();
+            if repository.topics.contains(&"zig-package".to_string())
             {
-sqlx::query(
-            r#"
-                 INSERT INTO packages
-                    (repo_id)
-                VALUES(?)
-            "#,
-        )
-        .bind(repo_id)
-        .execute(pool)
-        .await
-        .unwrap();
-                            } else {
-sqlx::query(
-            r#"
-                 INSERT INTO programs
-                    (repo_id)
-                VALUES(?)
-            "#,
-        )
-        .bind(repo_id)
-        .execute(pool)
-        .await
-        .unwrap();
-                           }
-        })
-        .await;
+                sqlx::query(
+                            r#"
+                                 INSERT INTO packages
+                                    (repo_id)
+                                VALUES(?)
+                            "#,
+                        )
+                        .bind(repo_id)
+                        .execute(pool)
+                        .await
+                        .unwrap();
+            } else {
+                sqlx::query(
+                            r#"
+                                 INSERT INTO programs
+                                    (repo_id)
+                                VALUES(?)
+                            "#,
+                        )
+                        .bind(repo_id)
+                        .execute(pool)
+                        .await
+                        .unwrap();
+            }
+    })
+    .await;
 
     Ok(())
 }

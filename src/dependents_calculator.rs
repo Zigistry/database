@@ -13,7 +13,7 @@ pub async fn calculate_dependents() {
     let packages_keys = db.packages.keys().cloned().collect::<Vec<String>>();
     for i in packages_keys {
         let value = &db.packages[&i];
-        let mut v:HashSet<String> = HashSet::new();
+        let mut v: HashSet<String> = HashSet::new();
         for j in &value.default_branch_information.dependencies {
             v.insert(j.url.clone());
         }

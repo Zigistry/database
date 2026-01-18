@@ -62,6 +62,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = database::init_database().await.unwrap();
     eprintln!("Starting");
     let timer_start = Utc::now();
+    match codeberg::codeberg_main(&pool).await {
+        Ok(_) => {
+            eprintln!(
+                "Codeberg completed successfully in {}minutes.",
+                (Utc::now() - timer_start).num_minutes(),
+            )
+        }
+        Err(r) => {
+            let json = serde_json::to_string(db!())?;
+            eprintln!("{json}");
+            eprintln!("Codeberg gave this error:");
+            eprintln!("{:#?}", r);
+        }
+    }
     match github::github_main(&pool).await {
         Ok(_) => {
             eprintln!(
@@ -77,20 +91,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     let timer_start = Utc::now();
-    match codeberg::codeberg_main(&pool).await {
-        Ok(_) => {
-            eprintln!(
-                "Codeberg completed successfully in {}minutes.",
-                (Utc::now() - timer_start).num_minutes(),
-            )
-        }
-        Err(r) => {
-            let json = serde_json::to_string(db!())?;
-            eprintln!("{json}");
-            eprintln!("Codeberg gave this error:");
-            eprintln!("{:#?}", r);
-        }
-    }
     match fetch_repos_for_sections(&pool).await {
         Ok(_) => {
             eprintln!("Sections completed successfully.");
