@@ -28,8 +28,8 @@ mod sections;
 use chrono::Utc;
 use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
-use std::fs;
 use std::{env, error::Error};
+use stop_words::{LANGUAGE, get};
 
 use crate::sections::fetch_repos_for_sections;
 
@@ -38,6 +38,10 @@ lazy_static! {
         "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set");
     static ref CODEBERG_KEY: String =
         "token ".to_string() + &env::var("CB_API_KEY").expect("CB_API_KEY not set");
+    static ref stop_words_in_eng: Vec<String> = get(LANGUAGE::English)
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
 }
 
 #[tokio::main]
@@ -50,25 +54,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "Codeberg completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
     );
+
     github::github_main(&pool).await.unwrap();
     eprintln!(
         "GitHub completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
     );
     let timer_start = Utc::now();
-    match fetch_repos_for_sections(&pool).await {
-        Ok(_) => {
-            eprintln!("Sections completed successfully.");
-        }
-        Err(r) => {
-            let json = serde_json::to_string(db!())?;
-            eprintln!("{json}");
-            eprintln!("While indexing sections gave this error:");
-            eprintln!("{:#?}", r);
-        }
-    }
-    calculate_dependents().await;
-    let database_as_json = serde_json::to_string(db!())?;
-    fs::write("database.json", database_as_json)?;
+    fetch_repos_for_sections(&pool).await.unwrap();
+    eprintln!(
+        "Sections completed successfully in {} minutes",
+        (Utc::now() - timer_start).num_minutes()
+    );
+    calculate_dependents(&pool).await;
+    database::wrap_up(&pool).await.unwrap();
     Ok(())
 }

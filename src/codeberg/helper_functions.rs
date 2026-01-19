@@ -1,3 +1,5 @@
+use keyword_extraction::rake::{Rake, RakeParams};
+
 use crate::bzz_stuff;
 use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::custom_types;
@@ -7,7 +9,8 @@ pub async fn get_readme_url(
     repo_name: &str,
     branch_or_tag: &str,
     is_tag: bool,
-) -> String {
+    process_keywords: bool,
+) -> (String, String) {
     let branch_or_tag_value = if is_tag { "tag" } else { "branch" };
     let url = format!(
         "https://codeberg.org/{owner_name}/{repo_name}/raw/{branch_or_tag_value}/{branch_or_tag}/"
@@ -26,11 +29,30 @@ pub async fn get_readme_url(
             }
         };
         if responce.status().is_success() {
-            return readme_possible_url;
+            if process_keywords {
+                let res = match client.get(&readme_possible_url).send().await {
+                    Ok(t) => t,
+                    Err(_) => {
+                        print!("skipping readme {owner_name}/{repo_name}");
+                        continue;
+                    }
+                };
+                if res.status().is_success() {
+                    let rake = Rake::new(RakeParams::WithDefaults(
+                        &res.text().await.unwrap(),
+                        &crate::stop_words_in_eng,
+                    ));
+                    // Afaik, 200 keywords is overkill.
+                    let keywords = rake.get_ranked_keyword(200);
+                    let keyword_string = keywords.join(" ");
+                    return (readme_possible_url, keyword_string);
+                }
+            }
+            return (readme_possible_url, String::new());
         }
     }
 
-    String::new()
+    (String::new(), String::new())
 }
 
 pub async fn get_build_zig_zon_data(

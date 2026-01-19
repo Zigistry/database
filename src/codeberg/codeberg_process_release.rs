@@ -23,7 +23,7 @@ pub async fn process_release(
     let responce_as_json = client.json::<types::releases_types::Root>().await?;
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/build.zig.zon
-    let mut all_releases = HashMap::new();
+    let all_releases = HashMap::new();
     for i in responce_as_json {
         let details = match get_build_zig_zon_data(&owner_name, &repo_name, &i.tag_name, true).await
         {
@@ -44,7 +44,7 @@ pub async fn process_release(
         .bind(i.prerelease)
         .bind(i.published_at)
         .bind(details.0)
-        .bind(get_readme_url(&owner_name, &repo_name, &i.tag_name, true).await)
+        .bind(get_readme_url(&owner_name, &repo_name, &i.tag_name, true, false).await.0)
         .fetch_optional(pool)
         .await
         .unwrap();

@@ -7,7 +7,7 @@
 CREATE TABLE repos (
   -- The username is 40 characters at max, repo name is 100 and the key and slashes is 5
   -- Hence, I can keep this at 150.
-  id UNIQUE VARCHAR(150) PRIMARY KEY,
+  id VARCHAR(150) PRIMARY KEY,
   -- for github its the username itself, for codeberg its 64 bits, hence, I'll keep it at 65
   avatar_id VARCHAR(65) NOT NULL,
   -- 40 + the key and the slash i.e 3, so I think best is 45 for htis.
@@ -31,18 +31,19 @@ CREATE TABLE repos (
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
   primary_language VARCHAR(50) NOT NULL,
+  search_keywords TEXT NOT NULL,
   FOREIGN KEY (owner) REFERENCES users (id)
 );
 
 CREATE TABLE repo_topics (
-  repo_id UNIQUE VARCHAR(150) NOT NULL,
+  repo_id VARCHAR(150) NOT NULL,
   -- Limit is 50, hence
   topic VARCHAR(60) NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE users (
-  id UNIQUE VARCHAR(45) PRIMARY KEY,
+  id VARCHAR(45) PRIMARY KEY,
   avatar_id VARCHAR(65) NOT NULL,
   platform VARCHAR(10) NOT NULL,
   bio VARCHAR(260),
@@ -51,18 +52,18 @@ CREATE TABLE users (
   following INTEGER NOT NULL,
   location VARCHAR(260),
   description VARCHAR(260),
-  website_url VARCHAR(260),
+  website_url VARCHAR(260)
 );
 
 CREATE TABLE repo_dependents (
-  repo_id UNIQUE VARCHAR(150) NOT NULL,
+  repo_id VARCHAR(150) NOT NULL,
   dependent TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
 CREATE TABLE releases (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  repo_id UNIQUE VARCHAR(150) NOT NULL,
+  repo_id VARCHAR(150) NOT NULL,
   version VARCHAR(255),
   is_prerelease BOOLEAN NOT NULL,
   published_at TIMESTAMP NOT NULL,

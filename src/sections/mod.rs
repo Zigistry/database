@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use toml;
 const TOML_CONTENT: &str = include_str!("../../sections.toml");
-const GQL_CONTENT: &str = include_str!("../../gqlFiles/sections.gql");
+const GQL_CONTENT: &str = include_str!("../../GitHub_GQL_API_Files/sections.gql");
 // {"data":{"repository":
 // I will be removing this part from the front of the responces
 // this is the easiet way, because then I don't need the extra parser.
@@ -15,24 +15,12 @@ pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn s
     let parsed: HashMap<String, Vec<String>> =
         toml::from_str(TOML_CONTENT).expect("the toml is badly written.");
     stream::iter(parsed)
-        .for_each_concurrent(2, |(key, value)| async move {
+        .for_each_concurrent(2, |(section_name, repos)| async move {
             let client = reqwest::Client::new();
-            for library in value {
-                let repo_id = library.to_lowercase();
-                sqlx::query(
-                    r#"
-                    INSERT OR IGNORE INTO index_sections
-                        (section_name, repo_id)
-                    VALUES(?, ?)
-                "#,
-                )
-                .bind(&key)
-                .bind(&repo_id)
-                .execute(pool)
-                .await
-                .unwrap();
+            for repo in repos {
+                let repo_id = repo.to_lowercase();
 
-                let exists = sqlx::query("SELECT 1 FROM repos WHERE repo_id = ?")
+                let exists = sqlx::query("SELECT 1 FROM repos WHERE id = ?")
                     .bind(&repo_id)
                     .fetch_optional(pool)
                     .await
@@ -40,6 +28,18 @@ pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn s
                     .is_some();
 
                 if exists {
+                    sqlx::query(
+                        r#"
+                    INSERT OR IGNORE INTO index_sections
+                        (section_name, repo_id)
+                    VALUES(?, ?)
+                "#,
+                    )
+                    .bind(&section_name)
+                    .bind(&repo_id)
+                    .execute(pool)
+                    .await
+                    .unwrap();
                     continue;
                 }
 
@@ -78,6 +78,19 @@ pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn s
                     }
                 };
                 process_repository(&res, true, pool).await;
+                sqlx::query(
+                    r#"
+                    INSERT INTO index_sections(section_name, repo_id)
+                        SELECT ?, ?
+                    WHERE EXISTS (SELECT 1 FROM repos WHERE id = ?);
+                "#,
+                )
+                .bind(&section_name)
+                .bind(&repo_id)
+                .bind(&repo_id)
+                .execute(pool)
+                .await
+                .unwrap();
             }
         })
         .await;

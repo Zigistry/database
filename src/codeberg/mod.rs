@@ -51,6 +51,13 @@ pub async fn fetch_all_codeberg_repos(
             println!("{count}");
             let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
             let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
+            let (readme_url, keywords) = get_readme_url(
+            &repository.owner.login,
+            repository.name.as_str(),
+            &repository.default_branch,
+            false,
+            true
+        ).await;
             sqlx::query(
                 r#"
                     INSERT OR IGNORE INTO users
@@ -95,8 +102,8 @@ pub async fn fetch_all_codeberg_repos(
                     INSERT OR IGNORE INTO repos
                         (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                         , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                        is_fork, license, primary_language)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        is_fork, license, primary_language, search_keywords)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 "#,
     ).bind(&repo_id)
     .bind(
@@ -123,6 +130,7 @@ pub async fn fetch_all_codeberg_repos(
     .bind(repository.fork)
     .bind("Not Found") // Only for now
     .bind(repository.language.clone())
+    .bind(keywords)
     .execute(pool).await.unwrap();
 
     let default_branch_release_id: Option<i64> = sqlx::query_scalar(
@@ -139,12 +147,7 @@ pub async fn fetch_all_codeberg_repos(
     .bind(repository.created_at.clone())
     .bind(build_zig_zon_data.0.clone())
     .bind(
-        get_readme_url(
-            &repository.owner.login,
-            repository.name.as_str(),
-            &repository.default_branch,
-            false
-        ).await
+        readme_url
     )
     .fetch_optional(pool)
     .await
@@ -182,7 +185,7 @@ pub async fn fetch_all_codeberg_repos(
             {
                 sqlx::query(
                             r#"
-                                 INSERT INTO packages
+                                 INSERT OR IGNORE INTO packages
                                     (repo_id)
                                 VALUES(?)
                             "#,
@@ -194,7 +197,7 @@ pub async fn fetch_all_codeberg_repos(
             } else {
                 sqlx::query(
                             r#"
-                                 INSERT INTO programs
+                                 INSERT OR IGNORE INTO programs
                                     (repo_id)
                                 VALUES(?)
                             "#,

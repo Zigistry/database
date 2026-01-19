@@ -5,8 +5,10 @@ use crate::{GITHUB_KEY, custom_types};
 use chrono::{Months, NaiveDate, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
+use keyword_extraction::rake::{Rake, RakeParams};
 use sqlx::SqlitePool;
 use std::error::Error;
+
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
@@ -69,13 +71,30 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         },
     )
     .await;
+
+    let (readme_url, readme_keywords) = match get_readme_url_and_keywords(
+        &repository.owner.login,
+        repository.name.as_str(),
+        if default_branch_name.is_empty() {
+            "HEAD"
+        } else {
+            default_branch_name.as_ref()
+        },
+        true,
+    )
+    .await
+    {
+        Some(url) => url,
+        _ => ("404 unable to find readme.".to_string(), String::new()),
+    };
+
     sqlx::query(
         r#"
             INSERT OR IGNORE INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, license, primary_language)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                is_fork, license, primary_language, search_keywords)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&repo_id)
@@ -95,9 +114,11 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .bind(repository.is_fork)
     .bind(repository.license_info.clone().unwrap_or_default().spdx_id)
     .bind(repository.primary_language.clone().unwrap_or_default().name)
+    .bind(readme_keywords)
     .execute(pool)
     .await.unwrap();
     // eprintln!("Processing Repository: {}", repository.name);
+
     let default_branch_release_id: Option<i64> = sqlx::query_scalar(
         r#"
             INSERT OR IGNORE INTO releases
@@ -111,22 +132,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .bind(false)
     .bind(repository.created_at.clone())
     .bind(build_zig_zon_data.0.clone())
-    .bind(
-        match get_readme_url(
-            &repository.owner.login,
-            repository.name.as_str(),
-            if default_branch_name.is_empty() {
-                "HEAD"
-            } else {
-                default_branch_name.as_ref()
-            },
-        )
-        .await
-        {
-            Some(url) => url,
-            _ => "404 unable to find readme.".to_string(),
-        },
-    )
+    .bind(readme_url)
     .fetch_optional(pool)
     .await
     .unwrap();
@@ -156,8 +162,17 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         }
     }
     for release in &repository.releases.nodes {
-        let readme_url =
-            get_readme_url(&repository.owner.login, &repository.name, &release.tag_name).await;
+        let (readme_url, _) = match get_readme_url_and_keywords(
+            &repository.owner.login,
+            &repository.name,
+            &release.tag_name,
+            false,
+        )
+        .await
+        {
+            Some(url) => url,
+            _ => ("404 unable to find readme.".to_string(), String::new()),
+        };
         let bzz_results = get_build_zig_zon_data_wrapper(
             &repository.owner.login,
             &repository.name,
@@ -178,10 +193,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         .bind(release.is_prerelease)
         .bind(release.published_at.clone())
         .bind(bzz_results.0.clone())
-        .bind(match readme_url {
-            Some(url) => url,
-            _ => String::new(),
-        })
+        .bind(readme_url)
         .fetch_optional(pool)
         .await
         .unwrap();
@@ -214,7 +226,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     if is_package {
         sqlx::query(
             r#"
-                 INSERT INTO packages
+                 INSERT OR IGNORE INTO packages
                     (repo_id)
                 VALUES(?)
             "#,
@@ -226,7 +238,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     } else {
         sqlx::query(
             r#"
-                 INSERT INTO programs
+                 INSERT OR IGNORE INTO programs
                     (repo_id)
                 VALUES(?)
             "#,
@@ -312,20 +324,46 @@ pub async fn github_main(pool: &SqlitePool) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub async fn get_readme_url(
+pub async fn get_readme_url_and_keywords(
     owner_name: &str,
     repo_name: &str,
     branch_or_tag: &str,
-) -> Option<String> {
+    process_keywords: bool,
+) -> Option<(String, String)> {
     let name =
         format!("https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/");
 
     let client = reqwest::Client::new();
     for readme_file_name in POSSIBLE_README_FILE_NAMES {
         let mine = name.to_string() + readme_file_name;
-        let res = client.head(&mine).send().await.unwrap();
+        let res = match client.head(&mine).send().await {
+            Ok(t) => t,
+            Err(_) => {
+                print!("skipping readme {owner_name}/{repo_name}");
+                continue;
+            }
+        };
         if res.status().is_success() {
-            return Option::from(mine);
+            if process_keywords {
+                let res = match client.get(&mine).send().await {
+                    Ok(t) => t,
+                    Err(_) => {
+                        print!("skipping readme {owner_name}/{repo_name}");
+                        continue;
+                    }
+                };
+                if res.status().is_success() {
+                    let rake = Rake::new(RakeParams::WithDefaults(
+                        &res.text().await.unwrap(),
+                        &crate::stop_words_in_eng,
+                    ));
+                    // Afaik, 200 keywords is overkill.
+                    let keywords = rake.get_ranked_keyword(200);
+                    let keyword_string = keywords.join(" ");
+                    return Option::from((mine, keyword_string));
+                }
+            }
+            return Option::from((mine, String::new()));
         }
     }
     None
