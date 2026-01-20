@@ -259,8 +259,14 @@ pub async fn process_query(
                     "next_value": next
                 }
             });
-            let mut retry_count = 0;
-            let res = loop {
+
+            // We'll retry the request + body read a few times in case of transient network issues.
+            let mut retry_count = 0usize;
+            let text = loop {
+                if retry_count > 8 {
+                    panic!("Tried {} times, still problem.", retry_count);
+                }
+
                 match client
                     .post("https://api.github.com/graphql")
                     .header("Authorization", GITHUB_KEY.to_string())
@@ -269,25 +275,32 @@ pub async fn process_query(
                     .send()
                     .await
                 {
-                    Ok(t) => {
-                        if t.status().is_success() {
-                            break t;
+                    Ok(resp) => {
+                        if !resp.status().is_success() {
+                            eprintln!("problem: {}", resp.status());
+                            retry_count += 1;
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            continue;
+                        }
+                        match resp.text().await {
+                            Ok(body) => break body,
+                            Err(e) => {
+                                eprintln!("problem: {e}");
+                                retry_count += 1;
+                                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                                continue;
+                            }
                         }
                     }
-                    Err(t) => {
-                        eprintln!("GitHub Error: {t}");
-                        // I will retry this in 10 second.
-                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                        if retry_count > 5 {
-                            panic!("Tried 5 times, still problem.");
-                        }
+                    Err(e) => {
+                        eprintln!("GitHub Error: {e}");
                         retry_count += 1;
+                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                         continue;
                     }
                 }
             };
 
-            let text = res.text().await?;
             if text == EMPTY_REPLY {
                 has_next = false;
                 continue;
@@ -295,7 +308,7 @@ pub async fn process_query(
             let mut res2: types::Root = match serde_json::from_str(&text) {
                 Ok(t) => t,
                 Err(t) => {
-                    eprintln!("Got this responce:");
+                    eprintln!("Got this response:");
                     eprintln!("{text}");
                     panic!("Got this problem: {t}");
                 }
@@ -355,8 +368,17 @@ pub async fn get_readme_url_and_keywords(
                     }
                 };
                 if res.status().is_success() {
+                    let content = match res.text().await {
+                        Ok(t) => t,
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to read README body for {owner_name}/{repo_name}: {e}"
+                            );
+                            continue;
+                        }
+                    };
                     let rake = Rake::new(RakeParams::WithDefaults(
-                        &res.text().await.unwrap(),
+                        &content,
                         &crate::stop_words_in_eng,
                     ));
                     // Afaik, 200 keywords is overkill.
