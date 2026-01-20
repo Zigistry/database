@@ -46,13 +46,7 @@ CREATE TABLE users (
   id VARCHAR(45) PRIMARY KEY,
   avatar_id VARCHAR(65) NOT NULL,
   platform VARCHAR(10) NOT NULL,
-  bio VARCHAR(260),
-  company VARCHAR(260),
-  followers INTEGER NOT NULL,
-  following INTEGER NOT NULL,
-  location VARCHAR(260),
-  description VARCHAR(260),
-  website_url VARCHAR(260)
+  bio VARCHAR(260)
 );
 
 CREATE TABLE repo_dependents (

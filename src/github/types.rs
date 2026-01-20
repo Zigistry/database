@@ -86,12 +86,6 @@ pub struct Owner {
     pub avatar_url: String,
     pub login: String,
     pub bio: Option<String>,
-    pub company: Option<String>,
-    pub followers: Option<Followers>,
-    pub following: Option<Following>,
-    pub location: Option<String>,
-    pub description: Option<String>,
-    pub website_url: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -142,22 +136,6 @@ pub struct Node3 {
     pub tag_name: String,
     pub is_prerelease: bool,
     pub published_at: String,
-    pub release_assets: ReleaseAssets,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ReleaseAssets {
-    pub nodes: Vec<Node4>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Node4 {
-    pub name: String,
-    pub download_url: String,
-    pub size: u64,
-    pub content_type: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

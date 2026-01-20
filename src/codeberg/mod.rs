@@ -61,8 +61,8 @@ pub async fn fetch_all_codeberg_repos(
             sqlx::query(
                 r#"
                     INSERT OR IGNORE INTO users
-                        (id, platform, avatar_id, bio, followers, following, location, description, website_url)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, platform, avatar_id, bio)
+                    VALUES (?, ?, ?, ?)
                 "#,
             )
             .bind(&user_id)

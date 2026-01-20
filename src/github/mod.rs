@@ -19,8 +19,8 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     sqlx::query(
         r#"
             INSERT OR IGNORE INTO users
-                (id, platform, avatar_id, bio, followers, following, location, description, website_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, platform, avatar_id, bio)
+            VALUES (?, ?, ?, ?)
         "#,
     )
     .bind(&user_id)
@@ -32,24 +32,6 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .bind("github")
     .bind(repository.owner.login.clone())
     .bind(repository.owner.bio.clone())
-    .bind(
-        repository
-            .owner
-            .followers
-            .clone()
-            .unwrap_or_default()
-            .total_count,
-    )
-    .bind(
-        repository
-            .owner
-            .following
-            .clone()
-            .unwrap_or_default()
-            .total_count,
-    )
-    .bind(repository.owner.description.clone())
-    .bind(repository.owner.website_url.clone())
     .execute(pool)
     .await
     .unwrap();
@@ -277,13 +259,33 @@ pub async fn process_query(
                     "next_value": next
                 }
             });
-            let res = client
-                .post("https://api.github.com/graphql")
-                .header("Authorization", GITHUB_KEY.to_string())
-                .header("User-Agent", "zigistry.dev")
-                .json(&query_to_send)
-                .send()
-                .await?;
+            let mut retry_count = 0;
+            let res = loop {
+                match client
+                    .post("https://api.github.com/graphql")
+                    .header("Authorization", GITHUB_KEY.to_string())
+                    .header("User-Agent", "zigistry.dev")
+                    .json(&query_to_send)
+                    .send()
+                    .await
+                {
+                    Ok(t) => {
+                        if t.status().is_success() {
+                            break t;
+                        }
+                    }
+                    Err(t) => {
+                        eprintln!("GitHub Error: {t}");
+                        // I will retry this in 10 second.
+                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                        if retry_count > 5 {
+                            panic!("Tried 5 times, still problem.");
+                        }
+                        retry_count += 1;
+                        continue;
+                    }
+                }
+            };
 
             let text = res.text().await?;
             if text == EMPTY_REPLY {

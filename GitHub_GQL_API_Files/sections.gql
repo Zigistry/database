@@ -33,20 +33,10 @@ fragment RepoFields on Repository {
     avatarUrl
     login
     ... on User {
-      bio
-      company
-      followers {
-        totalCount
-      }
-      following {
-        totalCount
-      }
-      location
+        bio
     }
     ... on Organization {
-      description
-      location
-      websiteUrl
+        description
     }
   }
   repositoryTopics(first: 7) {
@@ -63,14 +53,6 @@ fragment RepoFields on Repository {
       tagName
       isPrerelease
       publishedAt
-      releaseAssets(first: 10) {
-        nodes {
-          name
-          downloadUrl
-          size
-          contentType
-        }
-      }
     }
   }
   primaryLanguage {
