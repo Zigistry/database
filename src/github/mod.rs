@@ -24,15 +24,15 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             VALUES (?, ?, ?, ?)
         "#,
         params![
-            &user_id,
+            user_id.clone(),
             "github",
             // I am using owner login name
             // for the avatar id because
             // it works and uses very low storage
             // as compaired to storing the entire
             // avatar url.
-            &repository.owner.login.clone(),
-            &repository.owner.bio.clone()
+            repository.owner.login.clone(),
+            repository.owner.bio.clone()
         ],
     )
     .await
@@ -81,17 +81,17 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
         params![
-            &repo_id,
-            &user_id,
+            repo_id.clone(),
+            user_id.clone(),
             "github",
             repository.description.clone(),
             repository.issues.total_count,
-            &repository.default_branch_ref.clone().unwrap_or_default().name,
+            repository.default_branch_ref.clone().unwrap_or_default().name,
             repository.fork_count,
             repository.stargazer_count,
             repository.watchers.total_count,
-            &repository.pushed_at,
-            &repository.created_at,
+            repository.pushed_at.clone(),
+            repository.created_at.clone(),
             repository.is_archived,
             repository.is_disabled,
             repository.is_fork,
@@ -112,41 +112,40 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             RETURNING id
         "#,
             params![
-                &repo_id,
+                repo_id.clone(),
                 "__ZIGISTRY__DEFAULT__BRANCH__",
                 false,
-                &repository.created_at,
-                &build_zig_zon_data.0,
-                &readme_url,
+                repository.created_at.clone(),
+                build_zig_zon_data.0.clone(),
+                readme_url.clone(),
             ],
         )
         .await
         .unwrap();
     if default_branch_release_id != 0 {
-            for dependency in build_zig_zon_data.1.clone() {
-                pool.execute(
-                    r#"
+        for dependency in build_zig_zon_data.1.clone() {
+            pool.execute(
+                r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    params![
-                        default_branch_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
-                    ],
-                )
-                .await
-                .unwrap();
-            }
+                params![
+                    default_branch_release_id,
+                    dependency.name,
+                    dependency.hash,
+                    dependency.lazy,
+                    dependency.url,
+                    dependency.path,
+                ],
+            )
+            .await
+            .unwrap();
         }
-        else {
-            println!("Got None for: {}", &repo_id);
-        }
+    } else {
+        println!("Got None for: {}", &repo_id);
     }
+
     for release in &repository.releases.nodes {
         let (readme_url, _) = match get_readme_url_and_keywords(
             &repository.owner.login,
@@ -166,71 +165,68 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         )
         .await;
 
-        let this_specific_release_id: Option<i64> = sqlx::query_scalar(
-            r#"
+        let this_specific_release_id: u64 = pool
+            .execute(
+                r#"
             INSERT OR IGNORE INTO releases
                 (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
             VALUES(?, ?, ?, ?, ?, ?)
-            RETURNING id
         "#,
-        )
-        .bind(&repo_id)
-        .bind(release.tag_name.clone())
-        .bind(release.is_prerelease)
-        .bind(release.published_at.clone())
-        .bind(bzz_results.0.clone())
-        .bind(readme_url)
-        .fetch_optional(pool)
-        .await
-        .unwrap();
-        match this_specific_release_id {
-            Some(this_specific_release_id) => {
-                for dependency in bzz_results.1.clone() {
-                    sqlx::query(
-                        r#"
+                params![
+                    repo_id.clone(),
+                    release.tag_name.clone(),
+                    release.is_prerelease,
+                    release.published_at.clone(),
+                    bzz_results.0.clone(),
+                    readme_url,
+                ],
+            )
+            .await
+            .unwrap();
+        if this_specific_release_id != 0 {
+            for dependency in bzz_results.1.clone() {
+                pool.execute(
+                    r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    )
-                    .bind(this_specific_release_id)
-                    .bind(dependency.name)
-                    .bind(dependency.hash)
-                    .bind(dependency.lazy)
-                    .bind(dependency.url)
-                    .bind(dependency.path)
-                    .execute(pool)
-                    .await
-                    .unwrap();
-                }
+                    params![
+                        this_specific_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
+                )
+                .await
+                .unwrap();
             }
-            None => {
-                println!("Somehow {repo_id} didn't return.");
-            }
+        } else {
+            println!("Somehow {repo_id} didn't return.");
         }
     }
     if is_package {
-        sqlx::query(
+        pool.execute(
             r#"
                  INSERT OR IGNORE INTO packages
                     (repo_id)
                 VALUES(?)
             "#,
+            params![repo_id],
         )
-        .bind(repo_id)
-        .execute(pool)
         .await
         .unwrap();
     } else {
-        sqlx::query(
+        pool.execute(
             r#"
                  INSERT OR IGNORE INTO programs
                     (repo_id)
                 VALUES(?)
             "#,
+            params![repo_id],
         )
-        .bind(repo_id)
-        .execute(pool)
         .await
         .unwrap();
     }
@@ -239,7 +235,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
 pub async fn process_query(
     query: &str,
     is_package: bool,
-    pool: &SqlitePool,
+    pool: &Connection,
     start_date: NaiveDate,
     end_date: NaiveDate,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -337,11 +333,11 @@ pub async fn process_query(
 }
 
 pub async fn github_main(
-    pool: &SqlitePool,
+    pool: &Connection,
     start_date: NaiveDate,
     end_date: NaiveDate,
 ) -> Result<(), Box<dyn Error>> {
-    process_query("zig-package", true, &pool, start_date, end_date)
+    process_query("zig-package", true, pool, start_date, end_date)
         .await
         .unwrap();
     process_query("zig", false, &pool, start_date, end_date)
