@@ -4,3 +4,4 @@ search_preparer
 *.json
 *.db
 .DS_Store
+.env

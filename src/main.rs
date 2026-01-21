@@ -47,18 +47,20 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let pool = database::init_database().await.unwrap();
-    let timer_start = Utc::now();
-    fetch_repos_for_sections(&pool).await.unwrap();
-    eprintln!(
-        "Sections completed successfully in {} minutes",
-        (Utc::now() - timer_start).num_minutes()
-    );
+
     eprintln!("Starting");
     let timer_start = Utc::now();
     codeberg::codeberg_main(&pool).await.unwrap();
     eprintln!(
         "Codeberg completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
+    );
+
+    let timer_start = Utc::now();
+    fetch_repos_for_sections(&pool).await.unwrap();
+    eprintln!(
+        "Sections completed successfully in {} minutes",
+        (Utc::now() - timer_start).num_minutes()
     );
 
     github::github_main(&pool).await.unwrap();

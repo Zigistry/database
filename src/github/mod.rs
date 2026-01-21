@@ -248,10 +248,7 @@ pub async fn process_query(
         eprintln!("Now processing:{lower}..{upper}");
         let mut has_next = true;
         let mut next: Option<String> = None;
-        let mut asd = 1;
         while has_next {
-            eprintln!("HAS NEXT! {asd}");
-            asd += 1;
             let query_to_send = serde_json::json!({
                 "query": GH_GRAPH_QL_QUERY,
                 "variables": {

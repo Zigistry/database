@@ -20,3 +20,4 @@ toml = "0.9.10"
 sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio", "macros"] }
 stop-words = "0.9.0"
 keyword_extraction = "1.5.0"
+libsql = "0.9.29"
