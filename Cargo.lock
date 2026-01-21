@@ -3,27 +3,6 @@
 version = 4
 
 [[package]]
-name = "ZigistryBackend"
-version = "0.0.1"
-dependencies = [
- "chrono",
- "futures",
- "keyword_extraction",
- "lazy_static",
- "libsql",
- "regex",
- "reqwest",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_with",
- "sqlx",
- "stop-words",
- "tokio",
- "toml",
-]
-
-[[package]]
 name = "aes"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3911,4 +3890,25 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "zigistry"
+version = "0.0.1"
+dependencies = [
+ "chrono",
+ "futures",
+ "keyword_extraction",
+ "lazy_static",
+ "libsql",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_with",
+ "sqlx",
+ "stop-words",
+ "tokio",
+ "toml",
 ]
