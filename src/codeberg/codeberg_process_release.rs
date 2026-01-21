@@ -1,29 +1,25 @@
-use sqlx::SqlitePool;
+use libsql::{Connection, params};
 
 use super::types;
 use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
-use crate::custom_types;
-use std::collections::HashMap;
 
-pub async fn process_release(
-    owner_name: &str,
-    repo_name: &str,
-    repo_id: &str,
-    pool: &SqlitePool,
-) -> Result<HashMap<String, custom_types::Release>, Box<dyn std::error::Error>> {
+pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, pool: &Connection) {
     let release_url =
         format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/releases");
 
-    let client = reqwest::Client::new().get(&release_url).send().await?;
+    let client = reqwest::Client::new()
+        .get(&release_url)
+        .send()
+        .await
+        .unwrap();
 
     if client.status() != reqwest::StatusCode::OK {
-        return Ok(HashMap::new());
+        return;
     }
 
-    let responce_as_json = client.json::<types::releases_types::Root>().await?;
+    let responce_as_json = client.json::<types::releases_types::Root>().await.unwrap();
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
     // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/build.zig.zon
-    let all_releases = HashMap::new();
     for i in responce_as_json {
         let details = match get_build_zig_zon_data(&owner_name, &repo_name, &i.tag_name, true).await
         {
@@ -31,49 +27,49 @@ pub async fn process_release(
             Err(_) => (String::new(), Vec::new()),
         };
 
-        let this_specific_release_id: Option<i64> = sqlx::query_scalar(
-            r#"
+        let this_specific_release_id: u64 = pool
+            .execute(
+                r#"
                 INSERT OR IGNORE INTO releases
                     (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
                 VALUES(?, ?, ?, ?, ?, ?)
-                RETURNING id
             "#,
-        )
-        .bind(&repo_id)
-        .bind(&i.tag_name)
-        .bind(i.prerelease)
-        .bind(i.published_at)
-        .bind(details.0)
-        .bind(get_readme_url(&owner_name, &repo_name, &i.tag_name, true, false).await.0)
-        .fetch_optional(pool)
-        .await
-        .unwrap();
-        match this_specific_release_id {
-            Some(this_specific_release_id) => {
-                for dependency in details.1.clone() {
-                    sqlx::query(
-                        r#"
+                params![
+                    &repo_id,
+                    i.tag_name.clone(),
+                    i.prerelease,
+                    i.published_at,
+                    details.0,
+                    get_readme_url(&owner_name, &repo_name, &i.tag_name, true, false)
+                        .await
+                        .0,
+                ],
+            )
+            .await
+            .unwrap();
+
+        if this_specific_release_id != 0 {
+            for dependency in details.1.clone() {
+                pool.execute(
+                    r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    )
-                    .bind(this_specific_release_id)
-                    .bind(dependency.name)
-                    .bind(dependency.hash)
-                    .bind(dependency.lazy)
-                    .bind(dependency.url)
-                    .bind(dependency.path)
-                    .execute(pool)
-                    .await
-                    .unwrap();
-                }
+                    params![
+                        this_specific_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
+                )
+                .await
+                .unwrap();
             }
-            None => {
-                println!("Somehow {repo_id} didn't return.");
-            }
+        } else {
+            println!("Somehow {repo_id} didn't return.");
         }
     }
-
-    Ok(all_releases)
 }

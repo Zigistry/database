@@ -20,7 +20,6 @@ serde_json = "1.0.145"
 serde_with = "3.16.1"
 regex = "1.12.2"
 toml = "0.9.10"
-sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio", "macros"] }
 stop-words = "0.9.0"
 keyword_extraction = "1.5.0"
 libsql = "0.9.29"

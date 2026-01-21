@@ -1,16 +1,30 @@
-use sqlx::{self, Executor, SqlitePool};
 use std::fs::File;
+
+use libsql::{Builder, Connection};
+
+const START_FROM_SCRATCH: bool = false;
 
 const DATABASE_SCHEMA: &str = include_str!("../../Database_SQL_Files/database_schema.sql");
 
-pub async fn init_database() -> Result<SqlitePool, Box<dyn std::error::Error>> {
+pub async fn connect_to_database() -> Result<Connection, Box<dyn std::error::Error>> {
     File::create("./zigistry.db")?;
-    let pool = SqlitePool::connect("sqlite:./zigistry.db").await?;
-    pool.execute(DATABASE_SCHEMA).await.unwrap();
+    let db = Builder::new_remote(
+        "libsql://my-remote-db.com".to_string(),
+        "my-auth-token".to_string(),
+    )
+    .build()
+    .await
+    .unwrap();
+    let pool = db.connect().unwrap();
+    if START_FROM_SCRATCH {
+        pool.execute(DATABASE_SCHEMA, ()).await.unwrap();
+    }
     Ok(pool)
 }
 
-pub async fn wrap_up(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
-    pool.execute("VACUUM").await.unwrap();
+pub async fn wrap_up(pool: &Connection) -> Result<(), Box<dyn std::error::Error>> {
+    if START_FROM_SCRATCH {
+        pool.execute("VACUUM", ()).await.unwrap();
+    }
     Ok(())
 }

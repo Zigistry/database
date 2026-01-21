@@ -64,7 +64,8 @@ pub async fn fetch_repos_for_sections(pool: &SqlitePool) -> Result<(), Box<dyn s
                     .unwrap()
                     .to_string();
                 res2 = res2
-                    .strip_prefix(r#"{"data":{"repository":"#).unwrap()
+                    .strip_prefix(r#"{"data":{"repository":"#)
+                    .unwrap()
                     .strip_suffix("}}")
                     .expect(&res2)
                     .to_string();

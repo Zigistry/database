@@ -8,10 +8,10 @@ use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
 use chrono::{Months, NaiveDate};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
-use sqlx::SqlitePool;
+use libsql::{Connection, params};
 
 pub async fn fetch_all_codeberg_repos(
-    pool: &SqlitePool,
+    pool: &Connection,
     query: &str,
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -53,36 +53,24 @@ pub async fn fetch_all_codeberg_repos(
                     false,
                     true
                 ).await;
-                    sqlx::query(
+                    pool.execute(
                         r#"
                             INSERT OR IGNORE INTO users
                                 (id, platform, avatar_id, bio)
                             VALUES (?, ?, ?, ?)
                         "#,
+                        params![
+                            &user_id,
+                            "codeberg",
+                            // I am using owner login name
+                            // for the avatar id because
+                            // it works and uses very low storage
+                            // as compaired to storing the entire
+                            // avatar url.
+                            repository.owner.avatar_url.rsplit('/').next().unwrap().to_string(),
+                                repository.owner.description.clone()
+                            ]
                     )
-                    .bind(&user_id)
-                    // I am using owner login name
-                    // for the avatar id because
-                    // it works and uses very low storage
-                    // as compaired to storing the entire
-                    // avatar url.
-                    .bind("codeberg")
-                    .bind(repository.owner.avatar_url.rsplit('/').next().unwrap().to_string())
-                    .bind(repository.owner.description.clone())
-                    .bind(
-                        repository
-                            .owner
-                            .followers_count
-                    )
-                    .bind(
-                        repository
-                            .owner
-                            .following_count
-                    )
-                    .bind(repository.owner.location.clone())
-                    .bind(repository.owner.description.clone())
-                    .bind(repository.owner.website.clone())
-                    .execute(pool)
                     .await
                     .unwrap();
 
@@ -92,7 +80,7 @@ pub async fn fetch_all_codeberg_repos(
                         Err(_) => (String::new(), Vec::new()),
                     };
 
-                    sqlx::query(
+                    pool.execute(
                         r#"
                             INSERT OR IGNORE INTO repos
                                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
@@ -100,71 +88,76 @@ pub async fn fetch_all_codeberg_repos(
                                 is_fork, license, primary_language, search_keywords)
                             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         "#,
-            ).bind(&repo_id)
-            .bind(
-                repository
-                    .owner
-                    .avatar_url
-                    .rsplit("/")
-                    .next()
-                    .unwrap()
-                    .to_string()
-            )
-        .bind(user_id)
-            .bind("codeberg")
-            .bind(repository.description.to_string())
-            .bind(repository.open_issues_count)
-            .bind(repository.default_branch.clone())
-            .bind(repository.forks_count)
-            .bind(repository.stars_count)
-            .bind(repository.watchers_count)
-            .bind(repository.updated_at.clone())
-            .bind(repository.created_at.clone())
-            .bind(repository.archived)
-            .bind(repository.archived)
-            .bind(repository.fork)
-            .bind("Not Found") // Only for now
-            .bind(repository.language.clone())
-            .bind(keywords)
-            .execute(pool).await.unwrap();
+                        params![
+                            &repo_id,
+                            repository
+                                .owner
+                                .avatar_url
+                                .rsplit("/")
+                                .next()
+                                .unwrap()
+                                .to_string(),
+                            user_id,
+                            "codeberg",
+                            repository.description.to_string(),
+                            repository.open_issues_count,
+                            repository.default_branch.clone(),
+                            repository.forks_count,
+                            repository.stars_count,
+                            repository.watchers_count,
+                            repository.updated_at.clone(),
+                            repository.created_at.clone(),
+                            repository.archived,
+                            repository.archived,
+                            repository.fork,
+                            "Not Found", // Only for now
+                            repository.language.clone(),
+                            keywords
+                        ]
+                    )
+                    .await
+                    .unwrap();
 
-            let default_branch_release_id: Option<i64> = sqlx::query_scalar(
+            let rows_affected = pool.execute(
                 r#"
                     INSERT OR IGNORE INTO releases
                         (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
                     VALUES(?, ?, ?, ?, ?, ?)
-                    RETURNING id
                 "#,
-            )
-            .bind(&repo_id)
-            .bind("__ZIGISTRY__DEFAULT__BRANCH__")
-            .bind(false)
-            .bind(repository.created_at.clone())
-            .bind(build_zig_zon_data.0.clone())
-            .bind(
-                readme_url
-            )
-            .fetch_optional(pool)
-            .await
-            .expect(&("Failed on ".to_string() + &repo_id));
+                params![
+                    &repo_id,
+                    "__ZIGISTRY__DEFAULT__BRANCH__",
+                    false,
+                    repository.created_at.clone(),
+                    build_zig_zon_data.0.clone(),
+                    readme_url
+                ],
+            ).await.unwrap();
+
+            let default_branch_release_id = if rows_affected > 0 {
+                Some(pool.last_insert_rowid())
+            } else {
+                None
+            };
 
         match default_branch_release_id {
                 Some(default_branch_release_id) => {
                     for dependency in build_zig_zon_data.1.clone() {
-                        sqlx::query(
+                        pool.execute(
                             r#"
                                 INSERT INTO release_dependencies
                                     (release_id, name, hash, lazy, url, path)
                                 VALUES(?, ?, ?, ?, ?, ?)
                             "#,
+                            params![
+                                default_branch_release_id,
+                                dependency.name,
+                                dependency.hash,
+                                dependency.lazy,
+                                dependency.url,
+                                dependency.path
+                            ]
                         )
-                        .bind(default_branch_release_id)
-                        .bind(dependency.name)
-                        .bind(dependency.hash)
-                        .bind(dependency.lazy)
-                        .bind(dependency.url)
-                        .bind(dependency.path)
-                        .execute(pool)
                         .await
                         .unwrap();
                     }
@@ -178,27 +171,29 @@ pub async fn fetch_all_codeberg_repos(
             .unwrap_or_default();
                     if repository.topics.contains(&"zig-package".to_string())
                     {
-                        sqlx::query(
+                        pool.execute(
                                     r#"
                                         INSERT OR IGNORE INTO packages
                                             (repo_id)
                                         VALUES(?)
                                     "#,
+                                    params![
+                                        &repo_id
+                                    ]
                                 )
-                                .bind(repo_id)
-                                .execute(pool)
                                 .await
                                 .unwrap();
                     } else {
-                        sqlx::query(
+                        pool.execute(
                                     r#"
                                         INSERT OR IGNORE INTO programs
                                             (repo_id)
                                         VALUES(?)
                                     "#,
+                                    params![
+                                        &repo_id
+                                    ]
                                 )
-                                .bind(repo_id)
-                                .execute(pool)
                                 .await
                                 .unwrap();
                     }
@@ -218,14 +213,14 @@ pub async fn fetch_all_codeberg_repos(
 }
 
 pub async fn codeberg_main(
-    pool: &SqlitePool,
+    pool: &Connection,
     start_date: NaiveDate,
     end_date: NaiveDate,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    fetch_all_codeberg_repos(&pool, "zig-package", start_date, end_date)
+    fetch_all_codeberg_repos(pool, "zig-package", start_date, end_date)
         .await
         .unwrap();
-    fetch_all_codeberg_repos(&pool, "zig", start_date, end_date)
+    fetch_all_codeberg_repos(pool, "zig", start_date, end_date)
         .await
         .unwrap();
     Ok(())
