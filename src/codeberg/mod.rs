@@ -60,7 +60,7 @@ pub async fn fetch_all_codeberg_repos(
                             VALUES (?, ?, ?, ?)
                         "#,
                         params![
-                            &user_id,
+                            user_id.clone(),
                             "codeberg",
                             // I am using owner login name
                             // for the avatar id because
@@ -89,7 +89,7 @@ pub async fn fetch_all_codeberg_repos(
                             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         "#,
                         params![
-                            &repo_id,
+                            repo_id.clone(),
                             repository
                                 .owner
                                 .avatar_url
@@ -125,7 +125,7 @@ pub async fn fetch_all_codeberg_repos(
                     VALUES(?, ?, ?, ?, ?, ?)
                 "#,
                 params![
-                    &repo_id,
+                    repo_id.clone(),
                     "__ZIGISTRY__DEFAULT__BRANCH__",
                     false,
                     repository.created_at.clone(),
@@ -167,10 +167,9 @@ pub async fn fetch_all_codeberg_repos(
                 }
             }
             process_release(&repository.owner.login, &repository.name,&repo_id, &pool)
-            .await
-            .unwrap_or_default();
-                    if repository.topics.contains(&"zig-package".to_string())
-                    {
+            .await;
+            if repository.topics.contains(&"zig-package".to_string())
+            {
                         pool.execute(
                                     r#"
                                         INSERT OR IGNORE INTO packages
@@ -178,7 +177,7 @@ pub async fn fetch_all_codeberg_repos(
                                         VALUES(?)
                                     "#,
                                     params![
-                                        &repo_id
+                                        repo_id.clone()
                                     ]
                                 )
                                 .await
@@ -191,7 +190,7 @@ pub async fn fetch_all_codeberg_repos(
                                         VALUES(?)
                                     "#,
                                     params![
-                                        &repo_id
+                                        repo_id.clone()
                                     ]
                                 )
                                 .await

@@ -6,33 +6,35 @@ use chrono::{Months, NaiveDate};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
-use sqlx::SqlitePool;
+use libsql::Connection;
+use libsql::params;
 use std::error::Error;
 
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
-pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &SqlitePool) {
+pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &Connection) {
     let user_id = format!("gh/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
     // println!("Processing User: {}", repository.owner.login);
-    sqlx::query(
+    pool.execute(
         r#"
             INSERT OR IGNORE INTO users
                 (id, platform, avatar_id, bio)
             VALUES (?, ?, ?, ?)
         "#,
+        params![
+            &user_id,
+            "github",
+            // I am using owner login name
+            // for the avatar id because
+            // it works and uses very low storage
+            // as compaired to storing the entire
+            // avatar url.
+            &repository.owner.login.clone(),
+            &repository.owner.bio.clone()
+        ],
     )
-    .bind(&user_id)
-    // I am using owner login name
-    // for the avatar id because
-    // it works and uses very low storage
-    // as compaired to storing the entire
-    // avatar url.
-    .bind("github")
-    .bind(repository.owner.login.clone())
-    .bind(repository.owner.bio.clone())
-    .execute(pool)
     .await
     .unwrap();
 
@@ -70,7 +72,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         _ => ("404 unable to find readme.".to_string(), String::new()),
     };
 
-    sqlx::query(
+    pool.execute(
         r#"
             INSERT OR IGNORE INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
@@ -78,68 +80,70 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
                 is_fork, license, primary_language, search_keywords)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
+        params![
+            &repo_id,
+            &user_id,
+            "github",
+            repository.description.clone(),
+            repository.issues.total_count,
+            &repository.default_branch_ref.clone().unwrap_or_default().name,
+            repository.fork_count,
+            repository.stargazer_count,
+            repository.watchers.total_count,
+            &repository.pushed_at,
+            &repository.created_at,
+            repository.is_archived,
+            repository.is_disabled,
+            repository.is_fork,
+            repository.license_info.clone().unwrap_or_default().spdx_id,
+            repository.primary_language.clone().unwrap_or_default().name,
+            readme_keywords
+        ],
     )
-    .bind(&repo_id)
-    .bind(repository.owner.login.clone())
-    .bind(&user_id)
-    .bind("github")
-    .bind(repository.description.clone())
-    .bind(repository.issues.total_count)
-    .bind(&repository.default_branch_ref.clone().unwrap_or_default().name)
-    .bind(repository.fork_count)
-    .bind(repository.stargazer_count)
-    .bind(repository.watchers.total_count)
-    .bind(&repository.pushed_at)
-    .bind(&repository.created_at)
-    .bind(repository.is_archived)
-    .bind(repository.is_disabled)
-    .bind(repository.is_fork)
-    .bind(repository.license_info.clone().unwrap_or_default().spdx_id)
-    .bind(repository.primary_language.clone().unwrap_or_default().name)
-    .bind(readme_keywords)
-    .execute(pool)
     .await.unwrap();
     // eprintln!("Processing Repository: {}", repository.name);
 
-    let default_branch_release_id: Option<i64> = sqlx::query_scalar(
-        r#"
+    let default_branch_release_id: u64 = pool
+        .execute(
+            r#"
             INSERT OR IGNORE INTO releases
                 (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
             VALUES(?, ?, ?, ?, ?, ?)
             RETURNING id
         "#,
-    )
-    .bind(&repo_id)
-    .bind("__ZIGISTRY__DEFAULT__BRANCH__")
-    .bind(false)
-    .bind(repository.created_at.clone())
-    .bind(build_zig_zon_data.0.clone())
-    .bind(readme_url)
-    .fetch_optional(pool)
-    .await
-    .unwrap();
-    match default_branch_release_id {
-        Some(default_branch_release_id) => {
+            params![
+                &repo_id,
+                "__ZIGISTRY__DEFAULT__BRANCH__",
+                false,
+                &repository.created_at,
+                &build_zig_zon_data.0,
+                &readme_url,
+            ],
+        )
+        .await
+        .unwrap();
+    if default_branch_release_id != 0 {
             for dependency in build_zig_zon_data.1.clone() {
-                sqlx::query(
+                pool.execute(
                     r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
+                    params![
+                        default_branch_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
                 )
-                .bind(default_branch_release_id)
-                .bind(dependency.name)
-                .bind(dependency.hash)
-                .bind(dependency.lazy)
-                .bind(dependency.url)
-                .bind(dependency.path)
-                .execute(pool)
                 .await
                 .unwrap();
             }
         }
-        None => {
+        else {
             println!("Got None for: {}", &repo_id);
         }
     }
