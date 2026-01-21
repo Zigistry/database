@@ -5,7 +5,7 @@ pub mod types;
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::constants::ASYNC_LIMIT;
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
-use chrono::{Months, NaiveDate};
+use chrono::{Days, Months, NaiveDateTime};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
@@ -13,15 +13,16 @@ use libsql::{Connection, params};
 pub async fn fetch_all_codeberg_repos(
     pool: &Connection,
     query: &str,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+    step: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut page = 1;
     let client = reqwest::Client::new();
     let start = start_date;
     let end = end_date;
     let mut lower = start;
-    let mut upper = start.checked_add_months(Months::new(6)).unwrap();
+    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
     loop {
         loop {
             let url = format!(
@@ -213,13 +214,14 @@ pub async fn fetch_all_codeberg_repos(
 
 pub async fn codeberg_main(
     pool: &Connection,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+    step: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    fetch_all_codeberg_repos(pool, "zig-package", start_date, end_date)
+    fetch_all_codeberg_repos(pool, "zig-package", start_date, end_date, step)
         .await
         .unwrap();
-    fetch_all_codeberg_repos(pool, "zig", start_date, end_date)
+    fetch_all_codeberg_repos(pool, "zig", start_date, end_date, step)
         .await
         .unwrap();
     Ok(())

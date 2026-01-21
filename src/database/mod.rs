@@ -1,16 +1,16 @@
-use std::fs::File;
-
+use dotenv::dotenv;
 use libsql::{Builder, Connection};
+use std::env;
 
 const START_FROM_SCRATCH: bool = false;
 
 const DATABASE_SCHEMA: &str = include_str!("../../Database_SQL_Files/database_schema.sql");
 
 pub async fn connect_to_database() -> Result<Connection, Box<dyn std::error::Error>> {
-    File::create("./zigistry.db")?;
+    dotenv().ok();
     let db = Builder::new_remote(
-        "libsql://my-remote-db.com".to_string(),
-        "my-auth-token".to_string(),
+        env::var("DATABASE_URL").expect("DATABASE_URL not found"),
+        env::var("API_KEY").expect("API_KEY not found"),
     )
     .build()
     .await
