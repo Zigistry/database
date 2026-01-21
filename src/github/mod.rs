@@ -2,7 +2,7 @@ pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types};
-use chrono::{Months, NaiveDate, Utc};
+use chrono::{Months, NaiveDate};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
@@ -236,10 +236,12 @@ pub async fn process_query(
     query: &str,
     is_package: bool,
     pool: &SqlitePool,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Yes, 8th Feb 2016, Zig release date.
-    let start = NaiveDate::from_ymd_opt(2016, 2, 8).unwrap();
-    let end = Utc::now().date_naive();
+    let start = start_date;
+    let end = end_date;
     let mut lower = start;
     let mut upper = start.checked_add_months(Months::new(6)).unwrap();
     let client = reqwest::Client::new();
@@ -330,9 +332,17 @@ pub async fn process_query(
     return Ok(());
 }
 
-pub async fn github_main(pool: &SqlitePool) -> Result<(), Box<dyn Error>> {
-    process_query("zig-package", true, &pool).await.unwrap();
-    process_query("zig", false, &pool).await.unwrap();
+pub async fn github_main(
+    pool: &SqlitePool,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<(), Box<dyn Error>> {
+    process_query("zig-package", true, &pool, start_date, end_date)
+        .await
+        .unwrap();
+    process_query("zig", false, &pool, start_date, end_date)
+        .await
+        .unwrap();
     Ok(())
 }
 

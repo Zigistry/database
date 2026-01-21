@@ -25,7 +25,7 @@ mod dependents_calculator;
 mod github;
 mod sections;
 
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
 use std::{env, error::Error};
@@ -46,11 +46,17 @@ lazy_static! {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let args: Vec<String> = env::args().collect();
     let pool = database::init_database().await.unwrap();
+
+    let start_date = NaiveDate::parse_from_str(&args[1], "%Y-%m-%dT%H:%M:%SZ").unwrap();
+    let end_date = NaiveDate::parse_from_str(&args[2], "%Y-%m-%dT%H:%M:%SZ").unwrap();
 
     eprintln!("Starting");
     let timer_start = Utc::now();
-    codeberg::codeberg_main(&pool).await.unwrap();
+    codeberg::codeberg_main(&pool, start_date, end_date)
+        .await
+        .unwrap();
     eprintln!(
         "Codeberg completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
@@ -63,7 +69,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         (Utc::now() - timer_start).num_minutes()
     );
 
-    github::github_main(&pool).await.unwrap();
+    github::github_main(&pool, start_date, end_date)
+        .await
+        .unwrap();
     eprintln!(
         "GitHub completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
