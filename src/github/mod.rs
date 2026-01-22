@@ -2,7 +2,7 @@ pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types};
-use chrono::{Days, Months, NaiveDateTime, Utc};
+use chrono::{Days, Months, NaiveDateTime};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
@@ -14,8 +14,8 @@ use std::sync::Arc;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
-pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String, is_package: bool) {
-    let fifteen_minutes_ago = Utc::now().naive_utc() - chrono::Duration::minutes(30);
+pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String, is_package: bool, time_15_minutes_ago: NaiveDateTime) {
+    // 30, so that this is fail safe. And coveres all previous nproblems.
     let client = Arc::new(reqwest::Client::new());
     let mut has_next = true;
     let mut next: Option<String> = None;
@@ -24,7 +24,7 @@ pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String,
         let query_to_send = serde_json::json!({
             "query": GH_GRAPH_QL_QUERY,
             "variables":  {
-                "query": format!("topic:{query} pushed:>{}", fifteen_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
+                "query": format!("topic:{query} pushed:>{}", time_15_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
                 "next_value": next
             }
         });
@@ -57,6 +57,7 @@ pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String,
                 async move {
                     println!("processing {} from :  {is_package}", node.name);
                     process_repository(&node, is_package, &conn, &cli).await;
+                    println!("processing completed {} from :  {is_package}", node.name);
                 }
             })
             .await;
@@ -64,7 +65,7 @@ pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String,
         println!("Just processed: {} many repos.", process_nodes.len());
     }
 
-    println!("Database got updated for >{fifteen_minutes_ago}")
+    println!("Database got updated for >{time_15_minutes_ago}")
 }
 
 pub async fn process_repository(

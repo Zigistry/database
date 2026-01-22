@@ -1,3 +1,4 @@
+use chrono::Utc;
 use std::error::Error;
 use std::sync::Arc;
 use zigistry::database;
@@ -7,13 +8,26 @@ use zigistry::github::process_last_15_minutes;
 async fn main() -> Result<(), Box<dyn Error>> {
     let pool = Arc::new(database::connect_to_database().await.unwrap());
     println!("Connected");
+    // I am doing  - chrono::Duration::minutes(15) to make sure
+    // If the api takes some time to update, that is still covered.
+    let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(15);
     loop {
-        eprintln!("Continuing cron job iteration");
-        process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false).await;
+        let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
+        eprintln!("Starting cron job iteration at {}", current_time);
+
+        process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_time_stamp).await;
         eprintln!("Zig completed");
-        process_last_15_minutes(Arc::clone(&pool), "zig-package".to_string(), true).await;
+        process_last_15_minutes(
+            Arc::clone(&pool),
+            "zig-package".to_string(),
+            true,
+            last_time_stamp,
+        )
+        .await;
         eprintln!("Zig-package completed");
-        eprintln!("Entering hault for 9000 seconds");
-        tokio::time::sleep(std::time::Duration::from_secs(9000)).await;
+        eprintln!("Entering halt for 900 seconds");
+
+        last_time_stamp = current_time;
+        tokio::time::sleep(std::time::Duration::from_secs(900)).await;
     }
 }
