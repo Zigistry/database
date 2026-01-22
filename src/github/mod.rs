@@ -2,7 +2,7 @@ pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types};
-use chrono::{Days, Months, NaiveDateTime};
+use chrono::{Days, Months, NaiveDateTime, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
@@ -12,6 +12,88 @@ use std::error::Error;
 
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
+
+pub async fn process_last_30_minutes(pool: &Connection, query: String, is_package: bool) {
+    let fifteen_minutes_ago = Utc::now().naive_utc() - chrono::Duration::minutes(30);
+    let client = reqwest::Client::new();
+    let mut has_next = true;
+    let mut next: Option<String> = None;
+
+    while has_next {
+        let query_to_send = serde_json::json!({
+            "query": GH_GRAPH_QL_QUERY,
+            "variables": {
+                "query": format!("topic:{query} pushed:>{}", fifteen_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
+                "next_value": next
+            }
+        });
+        let mut retry_count = 0usize;
+        let text = loop {
+            if retry_count > 8 {
+                panic!("Tried {} times, still problem.", retry_count);
+            }
+
+            match client
+                .post("https://api.github.com/graphql")
+                .header("Authorization", GITHUB_KEY.to_string())
+                .header("User-Agent", "zigistry.dev")
+                .json(&query_to_send)
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    if !resp.status().is_success() {
+                        eprintln!("problem: {}", resp.status());
+                        retry_count += 1;
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        continue;
+                    }
+                    match resp.text().await {
+                        Ok(body) => break body,
+                        Err(e) => {
+                            eprintln!("problem: {e}");
+                            retry_count += 1;
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            continue;
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("GitHub Error: {e}");
+                    retry_count += 1;
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    continue;
+                }
+            }
+        };
+
+        if text == EMPTY_REPLY {
+            has_next = false;
+            continue;
+        }
+        let res2: types::Root = match serde_json::from_str(&text) {
+            Ok(t) => t,
+            Err(t) => {
+                eprintln!("Got this response:");
+                eprintln!("{text}");
+                panic!("Got this problem: {t}");
+            }
+        };
+        eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
+        has_next = res2.data.search.page_info.has_next_page;
+        next = Option::from(res2.data.search.page_info.end_cursor);
+        let process_nodes = res2.data.search.nodes;
+        stream::iter(&process_nodes)
+            .for_each_concurrent(5, |node| async move {
+                println!("processing {}", node.name);
+                process_repository(&node, is_package, pool).await;
+            })
+            .await;
+        println!("Just processed: {} many repos.", process_nodes.len());
+    }
+
+    println!("Database got updated for >{fifteen_minutes_ago}")
+}
 
 pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &Connection) {
     let user_id = format!("gh/{}", repository.owner.login).to_lowercase();
@@ -82,6 +164,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         "#,
         params![
             repo_id.clone(),
+            repository.owner.login.clone(),
             user_id.clone(),
             "github",
             repository.description.clone(),
@@ -101,7 +184,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         ],
     )
     .await.unwrap();
-    // eprintln!("Processing Repository: {}", repository.name);
+    eprintln!("Processing Repository: {}", repository.name);
 
     let default_branch_release_id: u64 = pool
         .execute(
