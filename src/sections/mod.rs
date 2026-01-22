@@ -78,7 +78,7 @@ pub async fn fetch_repos_for_sections(pool: &Connection) -> Result<(), Box<dyn s
                         panic!("Huge Problem.");
                     }
                 };
-                process_repository(&res, true, pool).await;
+                process_repository(&res, true, pool, &client).await;
                 pool.execute(
                     r#"
                     INSERT INTO index_sections(section_name, repo_id)
