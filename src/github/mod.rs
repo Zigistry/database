@@ -6,14 +6,14 @@ use chrono::{Days, Months, NaiveDateTime, Utc};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
-use libsql::Connection;
+use libsql::{Connection};
 use libsql::params;
 use std::error::Error;
 
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
-pub async fn process_last_30_minutes(pool: &Connection, query: String, is_package: bool) {
+pub async fn process_last_30_minutes(connection: &Connection, query: String, is_package: bool) {
     let fifteen_minutes_ago = Utc::now().naive_utc() - chrono::Duration::minutes(30);
     let client = reqwest::Client::new();
     let mut has_next = true;
@@ -85,8 +85,8 @@ pub async fn process_last_30_minutes(pool: &Connection, query: String, is_packag
         let process_nodes = res2.data.search.nodes;
         stream::iter(&process_nodes)
             .for_each_concurrent(5, |node| async move {
-                println!("processing {}", node.name);
-                process_repository(&node, is_package, pool).await;
+                println!("processing {} from : {is_package}", node.name);
+                process_repository(&node, is_package, connection).await;
             })
             .await;
         println!("Just processed: {} many repos.", process_nodes.len());
@@ -95,11 +95,13 @@ pub async fn process_last_30_minutes(pool: &Connection, query: String, is_packag
     println!("Database got updated for >{fifteen_minutes_ago}")
 }
 
-pub async fn process_repository(repository: &types::Node, is_package: bool, pool: &Connection) {
+pub async fn process_repository(repository: &types::Node, is_package: bool, connection: &Connection) {
     let user_id = format!("gh/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
     // println!("Processing User: {}", repository.owner.login);
-    pool.execute(
+    let transaction = connection.transaction().await.unwrap();
+
+    transaction.execute(
         r#"
             INSERT OR IGNORE INTO users
                 (id, platform, avatar_id, bio)
@@ -154,7 +156,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         _ => ("404 unable to find readme.".to_string(), String::new()),
     };
 
-    pool.execute(
+    transaction.execute(
         r#"
             INSERT OR IGNORE INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
@@ -186,7 +188,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
     .await.unwrap();
     eprintln!("Processing Repository: {}", repository.name);
 
-    let default_branch_release_id: u64 = pool
+    let default_branch_release_id: u64 = transaction
         .execute(
             r#"
             INSERT OR IGNORE INTO releases
@@ -207,7 +209,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         .unwrap();
     if default_branch_release_id != 0 {
         for dependency in build_zig_zon_data.1.clone() {
-            pool.execute(
+            transaction.execute(
                 r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
@@ -248,7 +250,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         )
         .await;
 
-        let this_specific_release_id: u64 = pool
+        let this_specific_release_id: u64 = transaction
             .execute(
                 r#"
             INSERT OR IGNORE INTO releases
@@ -268,7 +270,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
             .unwrap();
         if this_specific_release_id != 0 {
             for dependency in bzz_results.1.clone() {
-                pool.execute(
+                transaction.execute(
                     r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
@@ -291,7 +293,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         }
     }
     if is_package {
-        pool.execute(
+        transaction.execute(
             r#"
                  INSERT OR IGNORE INTO packages
                     (repo_id)
@@ -302,7 +304,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         .await
         .unwrap();
     } else {
-        pool.execute(
+        transaction.execute(
             r#"
                  INSERT OR IGNORE INTO programs
                     (repo_id)
@@ -313,6 +315,7 @@ pub async fn process_repository(repository: &types::Node, is_package: bool, pool
         .await
         .unwrap();
     }
+    transaction.commit().await.unwrap();
 }
 
 pub async fn process_query(
