@@ -50,6 +50,7 @@ pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String,
         let process_nodes = res2.data.search.nodes;
 
         // Increased concurrency to 20 (was 5)
+        // Maybe I can increate it later.
         stream::iter(&process_nodes)
             .for_each_concurrent(5, |node| {
                 let conn = Arc::clone(&connection);

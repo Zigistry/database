@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await;
         eprintln!("Zig-package completed");
         eprintln!("Entering halt for 900 seconds");
-
+        // Now I also need to update https://codeberg.org/api/v1/repos/search?q=zig-package&sort=updated&order=desc&limit=50&page=1
         last_time_stamp = current_time;
         tokio::time::sleep(std::time::Duration::from_secs(900)).await;
     }

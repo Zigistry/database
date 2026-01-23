@@ -1,12 +1,6 @@
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::{env, error::Error};
-use zigistry::codeberg;
-use zigistry::database;
-use zigistry::dependents_calculator::calculate_dependents;
-use zigistry::github::{self, process_repository};
-use zigistry::sections::fetch_repos_for_sections;
+use zigistry::github::process_repository;
 
 #[derive(Debug, Deserialize)]
 struct Config {

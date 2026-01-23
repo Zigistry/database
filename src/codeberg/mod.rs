@@ -3,6 +3,7 @@ mod helper_functions;
 pub mod types;
 
 use crate::codeberg::helper_functions::get_readme_url;
+use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
 use chrono::{Days, Months, NaiveDateTime};
@@ -10,78 +11,59 @@ use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
 
-pub async fn fetch_all_codeberg_repos(
-    pool: &Connection,
-    query: &str,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
-    step: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut page = 1;
-    let client = reqwest::Client::new();
-    let start = start_date;
-    let end = end_date;
-    let mut lower = start;
-    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
-    loop {
-        loop {
-            let url = format!(
-                "https://codeberg.org/api/v1/repos/search?q={query}&limit=100&page={page}&topic=true&start_date={lower}&end_date={upper}",
-            );
-
-            eprintln!("Processing: {}", url);
-
-            let responce = client
-                .get(&url)
-                .header("Authorization", &*CODEBERG_KEY)
-                .send()
-                .await?
-                .json::<types::types::Root>()
-                .await?;
-
-            if responce.data.is_empty() {
-                break;
-            }
-
-            stream::iter(responce.data)
-                .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
-                    let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
-                    let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
-                    let (readme_url, keywords) = get_readme_url(
-                    &repository.owner.login,
-                    repository.name.as_str(),
-                    &repository.default_branch,
-                    false,
-                    true
-                ).await;
-                    pool.execute(
-                        r#"
+pub async fn process_repo(repository: Daum, pool: &Connection) {
+    let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
+    let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
+    let (readme_url, keywords) = get_readme_url(
+        &repository.owner.login,
+        repository.name.as_str(),
+        &repository.default_branch,
+        false,
+        true,
+    )
+    .await;
+    let transaction = pool.transaction().await.unwrap();
+    transaction
+        .execute(
+            r#"
                             INSERT OR IGNORE INTO users
                                 (id, platform, avatar_id, bio)
                             VALUES (?, ?, ?, ?)
                         "#,
-                        params![
-                            user_id.clone(),
-                            "codeberg",
-                            // I am using owner login name
-                            // for the avatar id because
-                            // it works and uses very low storage
-                            // as compaired to storing the entire
-                            // avatar url.
-                            repository.owner.avatar_url.rsplit('/').next().unwrap().to_string(),
-                                repository.owner.description.clone()
-                            ]
-                    )
-                    .await
-                    .unwrap();
+            params![
+                user_id.clone(),
+                "codeberg",
+                // I am using owner login name
+                // for the avatar id because
+                // it works and uses very low storage
+                // as compaired to storing the entire
+                // avatar url.
+                repository
+                    .owner
+                    .avatar_url
+                    .rsplit('/')
+                    .next()
+                    .unwrap()
+                    .to_string(),
+                repository.owner.description.clone()
+            ],
+        )
+        .await
+        .unwrap();
 
-                    let build_zig_zon_data = match get_build_zig_zon_data(&repository.owner.login, &repository.name, "HEAD", false).await
-                    {
-                        Ok(t) => t,
-                        Err(_) => (String::new(), Vec::new()),
-                    };
+    let build_zig_zon_data = match get_build_zig_zon_data(
+        &repository.owner.login,
+        &repository.name,
+        "HEAD",
+        false,
+    )
+    .await
+    {
+        Ok(t) => t,
+        Err(_) => (String::new(), Vec::new()),
+    };
 
-                    pool.execute(
+    transaction.execute(
                         r#"
                             INSERT OR IGNORE INTO repos
                                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
@@ -119,7 +101,7 @@ pub async fn fetch_all_codeberg_repos(
                     .await
                     .unwrap();
 
-            let rows_affected = pool.execute(
+    let rows_affected = transaction.execute(
                 r#"
                     INSERT OR IGNORE INTO releases
                         (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
@@ -135,70 +117,106 @@ pub async fn fetch_all_codeberg_repos(
                 ],
             ).await.unwrap();
 
-            let default_branch_release_id = if rows_affected > 0 {
-                Some(pool.last_insert_rowid())
-            } else {
-                None
-            };
+    let default_branch_release_id = if rows_affected > 0 {
+        Some(transaction.last_insert_rowid())
+    } else {
+        None
+    };
 
-        match default_branch_release_id {
-                Some(default_branch_release_id) => {
-                    for dependency in build_zig_zon_data.1.clone() {
-                        pool.execute(
-                            r#"
+    match default_branch_release_id {
+        Some(default_branch_release_id) => {
+            for dependency in build_zig_zon_data.1.clone() {
+                transaction
+                    .execute(
+                        r#"
                                 INSERT INTO release_dependencies
                                     (release_id, name, hash, lazy, url, path)
                                 VALUES(?, ?, ?, ?, ?, ?)
                             "#,
-                            params![
-                                default_branch_release_id,
-                                dependency.name,
-                                dependency.hash,
-                                dependency.lazy,
-                                dependency.url,
-                                dependency.path
-                            ]
-                        )
-                        .await
-                        .unwrap();
-                    }
-                }
-                None => {
-                    println!("Got None for: {}", &repo_id);
-                }
+                        params![
+                            default_branch_release_id,
+                            dependency.name,
+                            dependency.hash,
+                            dependency.lazy,
+                            dependency.url,
+                            dependency.path
+                        ],
+                    )
+                    .await
+                    .unwrap();
             }
-            process_release(&repository.owner.login, &repository.name,&repo_id, &pool)
-            .await;
-            if repository.topics.contains(&"zig-package".to_string())
-            {
-                        pool.execute(
-                                    r#"
-                                        INSERT OR IGNORE INTO packages
-                                            (repo_id)
-                                        VALUES(?)
-                                    "#,
-                                    params![
-                                        repo_id.clone()
-                                    ]
-                                )
-                                .await
-                                .unwrap();
-                    } else {
-                        pool.execute(
-                                    r#"
-                                        INSERT OR IGNORE INTO programs
-                                            (repo_id)
-                                        VALUES(?)
-                                    "#,
-                                    params![
-                                        repo_id.clone()
-                                    ]
-                                )
-                                .await
-                                .unwrap();
-                    }
-            })
-            .await;
+        }
+        None => {
+            println!("Got None for: {}", &repo_id);
+        }
+    }
+    process_release(&repository.owner.login, &repository.name, &repo_id, &pool).await;
+    if repository.topics.contains(&"zig-package".to_string()) {
+        transaction
+            .execute(
+                r#"
+                        INSERT OR IGNORE INTO packages
+                            (repo_id)
+                        VALUES(?)
+                    "#,
+                params![repo_id.clone()],
+            )
+            .await
+            .unwrap();
+    } else {
+        transaction
+            .execute(
+                r#"
+                        INSERT OR IGNORE INTO programs
+                            (repo_id)
+                        VALUES(?)
+                    "#,
+                params![repo_id.clone()],
+            )
+            .await
+            .unwrap();
+    }
+    transaction.commit().await.unwrap();
+}
+
+pub async fn fetch_all_codeberg_repos(
+    pool: &Connection,
+    query: &str,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+    step: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut page = 1;
+    let client = reqwest::Client::new();
+    let start = start_date;
+    let end = end_date;
+    let mut lower = start;
+    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
+    loop {
+        loop {
+            let url = format!(
+                "https://codeberg.org/api/v1/repos/search?q={query}&limit=100&page={page}&topic=true&start_date={lower}&end_date={upper}",
+            );
+
+            eprintln!("Processing: {}", url);
+
+            let responce = client
+                .get(&url)
+                .header("Authorization", &*CODEBERG_KEY)
+                .send()
+                .await?
+                .json::<types::types::Root>()
+                .await?;
+
+            if responce.data.is_empty() {
+                break;
+            }
+
+            stream::iter(responce.data)
+                .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
+                    process_repo(repository, pool).await;
+                })
+                .await;
             page += 1;
         }
 
