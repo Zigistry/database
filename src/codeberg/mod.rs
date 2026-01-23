@@ -4,7 +4,8 @@ pub mod types;
 
 use chrono::{DateTime, Utc};
 
-use std::str::FromStr;
+use std::clone;
+use std::sync::Arc;
 
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::codeberg::types::types::Daum;
@@ -15,7 +16,7 @@ use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
 
-pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime, pool: Connection) {
+pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime, pool: Arc<Connection>) {
     let url = format!(
         "https://codeberg.org/api/v1/repos/search?q={query}&sort=updated&order=desc&limit=100&page=1"
     );
@@ -31,7 +32,7 @@ pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDate
         .unwrap();
 
     let mut repos_to_actually_process = Vec::new();
-    for repository in responce.data {
+    for repository in &responce.data {
         if DateTime::parse_from_rfc3339(&repository.updated_at)
             .unwrap()
             .with_timezone(&Utc)
@@ -43,15 +44,18 @@ pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDate
             break;
         }
     }
-    stream::iter(responce.data)
-        .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
-            process_repo(repository, pool).await;
+    stream::iter(responce.clone().data.clone())
+        .for_each_concurrent(ASYNC_LIMIT, |repository| {
+        let value = pool.clone();
+        async move {
+            process_repo(repository, value).await;
+        }
         })
         .await;
     println!("{:?}", repos_to_actually_process);
 }
 
-pub async fn process_repo(repository: Daum, pool: &Connection) {
+pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
     let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
     let (readme_url, keywords) = get_readme_url(
@@ -220,7 +224,7 @@ pub async fn process_repo(repository: Daum, pool: &Connection) {
 }
 
 pub async fn fetch_all_codeberg_repos(
-    pool: &Connection,
+    pool: Arc<Connection>,
     query: &str,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
@@ -252,9 +256,13 @@ pub async fn fetch_all_codeberg_repos(
                 break;
             }
 
+            let pool = pool.clone();
             stream::iter(responce.data)
-                .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
-                    process_repo(repository, pool).await;
+                .for_each_concurrent(ASYNC_LIMIT, move |repository| {
+                    let pool = pool.clone();
+                    async move {
+                        process_repo(repository, pool).await;
+                    }
                 })
                 .await;
             page += 1;
@@ -276,10 +284,11 @@ pub async fn codeberg_main(
     end_date: NaiveDateTime,
     step: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    fetch_all_codeberg_repos(pool, "zig-package", start_date, end_date, step)
+    let pool = Arc::new(pool.clone());
+    fetch_all_codeberg_repos(pool.clone(), "zig-package", start_date, end_date, step)
         .await
         .unwrap();
-    fetch_all_codeberg_repos(pool, "zig", start_date, end_date, step)
+    fetch_all_codeberg_repos(pool.clone(), "zig", start_date, end_date, step)
         .await
         .unwrap();
     Ok(())
