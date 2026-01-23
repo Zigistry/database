@@ -1,9 +1,9 @@
 use chrono::Utc;
 use std::error::Error;
 use std::sync::Arc;
+use zigistry::codeberg;
 use zigistry::database;
 use zigistry::github;
-use zigistry::codeberg;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -12,13 +12,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // I am doing  - chrono::Duration::minutes(15) to make sure
     // If the api takes some time to update, that is still covered.
     let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(30);
-    codeberg::process_last_15_minutes("zig", last_time_stamp, pool).await;
-    codeberg::process_last_15_minutes("zig-package", last_time_stamp, pool).await;
     loop {
         let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
         eprintln!("Starting cron job iteration at {}", current_time);
-
-        github::process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_time_stamp).await;
+        codeberg::process_last_15_minutes("zig", last_time_stamp, Arc::clone(&pool)).await;
+        codeberg::process_last_15_minutes("zig-package", last_time_stamp, Arc::clone(&pool)).await;
+        github::process_last_15_minutes(
+            Arc::clone(&pool),
+            "zig".to_string(),
+            false,
+            last_time_stamp,
+        )
+        .await;
         eprintln!("Zig completed");
         github::process_last_15_minutes(
             Arc::clone(&pool),
