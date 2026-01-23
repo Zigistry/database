@@ -2,6 +2,8 @@ mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
 
+use std::str::FromStr;
+
 use crate::codeberg::helper_functions::get_readme_url;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
@@ -10,6 +12,33 @@ use chrono::{Days, Months, NaiveDateTime};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
+
+pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime) {
+    let url = format!(
+        "https://codeberg.org/api/v1/repos/search?q={query}&sort=updated&order=desc&limit=100&page=1"
+    );
+    let client = reqwest::Client::new();
+    let responce = client
+        .get(&url)
+        .header("Authorization", &*CODEBERG_KEY)
+        .send()
+        .await
+        .unwrap()
+        .json::<types::types::Root>()
+        .await
+        .unwrap();
+
+    let mut repos_to_actually_process = Vec::new();
+    for repository in responce.data {
+        if NaiveDateTime::from_str(&repository.updated_at).unwrap() > time_15_minutes_ago {
+            repos_to_actually_process.push(repository);
+        } else {
+            break;
+        }
+    }
+
+    println!("{:?}", repos_to_actually_process);
+}
 
 pub async fn process_repo(repository: Daum, pool: &Connection) {
     let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
