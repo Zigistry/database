@@ -2,7 +2,8 @@ use chrono::Utc;
 use std::error::Error;
 use std::sync::Arc;
 use zigistry::database;
-use zigistry::github::process_last_15_minutes;
+use zigistry::github;
+use zigistry::codeberg;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -10,8 +11,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Connected");
     // I am doing  - chrono::Duration::minutes(15) to make sure
     // If the api takes some time to update, that is still covered.
-    let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(15);
-    process_last_15_minutes(pool, "zig".to_string(), false, last_time_stamp).await;
+    let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(30);
+    codeberg::process_last_15_minutes("zig", last_time_stamp).await;
     Ok(())
     // loop {
     //     let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);

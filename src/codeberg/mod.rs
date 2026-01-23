@@ -2,6 +2,8 @@ mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
 
+use chrono::{DateTime, Utc};
+
 use std::str::FromStr;
 
 use crate::codeberg::helper_functions::get_readme_url;
@@ -30,7 +32,10 @@ pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDate
 
     let mut repos_to_actually_process = Vec::new();
     for repository in responce.data {
-        if NaiveDateTime::from_str(&repository.updated_at).unwrap() > time_15_minutes_ago {
+        if DateTime::parse_from_rfc3339(&repository.updated_at)
+        .unwrap()
+        .with_timezone(&Utc)
+        .naive_utc() > time_15_minutes_ago {
             repos_to_actually_process.push(repository);
         } else {
             break;
