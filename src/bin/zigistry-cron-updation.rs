@@ -11,23 +11,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // I am doing  - chrono::Duration::minutes(15) to make sure
     // If the api takes some time to update, that is still covered.
     let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(15);
-    loop {
-        let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
-        eprintln!("Starting cron job iteration at {}", current_time);
+    process_last_15_minutes(pool, "zig".to_string(), false, last_time_stamp).await;
+    Ok(())
+    // loop {
+    //     let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
+    //     eprintln!("Starting cron job iteration at {}", current_time);
 
-        process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_time_stamp).await;
-        eprintln!("Zig completed");
-        process_last_15_minutes(
-            Arc::clone(&pool),
-            "zig-package".to_string(),
-            true,
-            last_time_stamp,
-        )
-        .await;
-        eprintln!("Zig-package completed");
-        eprintln!("Entering halt for 900 seconds");
-        // Now I also need to update https://codeberg.org/api/v1/repos/search?q=zig-package&sort=updated&order=desc&limit=50&page=1
-        last_time_stamp = current_time;
-        tokio::time::sleep(std::time::Duration::from_secs(900)).await;
-    }
+    //     process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_time_stamp).await;
+    //     eprintln!("Zig completed");
+    //     process_last_15_minutes(
+    //         Arc::clone(&pool),
+    //         "zig-package".to_string(),
+    //         true,
+    //         last_time_stamp,
+    //     )
+    //     .await;
+    //     eprintln!("Zig-package completed");
+    //     eprintln!("Entering halt for 900 seconds");
+    //     // Now I also need to update https://codeberg.org/api/v1/repos/search?q=zig-package&sort=updated&order=desc&limit=50&page=1
+    //     last_time_stamp = current_time;
+    //     tokio::time::sleep(std::time::Duration::from_secs(900)).await;
+    // }
 }
