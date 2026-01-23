@@ -15,7 +15,7 @@ use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
 
-pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime) {
+pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime, pool: Connection) {
     let url = format!(
         "https://codeberg.org/api/v1/repos/search?q={query}&sort=updated&order=desc&limit=100&page=1"
     );
@@ -33,15 +33,21 @@ pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDate
     let mut repos_to_actually_process = Vec::new();
     for repository in responce.data {
         if DateTime::parse_from_rfc3339(&repository.updated_at)
-        .unwrap()
-        .with_timezone(&Utc)
-        .naive_utc() > time_15_minutes_ago {
+            .unwrap()
+            .with_timezone(&Utc)
+            .naive_utc()
+            > time_15_minutes_ago
+        {
             repos_to_actually_process.push(repository);
         } else {
             break;
         }
     }
-
+    stream::iter(responce.data)
+        .for_each_concurrent(ASYNC_LIMIT, |repository| async move {
+            process_repo(repository, pool).await;
+        })
+        .await;
     println!("{:?}", repos_to_actually_process);
 }
 

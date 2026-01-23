@@ -12,7 +12,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // I am doing  - chrono::Duration::minutes(15) to make sure
     // If the api takes some time to update, that is still covered.
     let mut last_time_stamp = Utc::now().naive_utc() - chrono::Duration::minutes(30);
-    codeberg::process_last_15_minutes("zig", last_time_stamp).await;
+    codeberg::process_last_15_minutes("zig", last_time_stamp, &pool).await;
+    codeberg::process_last_15_minutes("zig-package", last_time_stamp, &pool).await;
     Ok(())
     // loop {
     //     let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
