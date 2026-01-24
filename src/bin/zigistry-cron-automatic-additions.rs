@@ -16,7 +16,7 @@ async fn index() -> impl Responder {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    thread::spawn(|| {
+    let server_thingy = thread::spawn(|| {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let my_server = HttpServer::new(|| App::new().service(index))
@@ -26,7 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             my_server.run().await.unwrap();
         });
     });
-    thread::spawn(|| {
+
+    let cron_thingy = thread::spawn(|| {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let pool = Arc::new(database::connect_to_database().await.unwrap());
@@ -71,6 +72,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 tokio::time::sleep(std::time::Duration::from_secs(900)).await;
             }
         });
-    }).join().unwrap();
+    });
+
+    server_thingy.join().unwrap();
+    cron_thingy.join().unwrap();
+
     Ok(())
 }
