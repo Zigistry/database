@@ -15,24 +15,24 @@ permissions:
   contents: write
 
 jobs:
-  create_zig_binary:
-    runs-on: ubuntu-latest
+  # create_zig_binary:
+  #   runs-on: ubuntu-latest
 
-    # Got to know this from: https://github.com/marketplace/actions/setup-git-config
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+  #   # Got to know this from: https://github.com/marketplace/actions/setup-git-config
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v6
 
-      - name: installing zig
-        uses: mlugg/setup-zig@v2
+  #     - name: installing zig
+  #       uses: mlugg/setup-zig@v2
 
-      - name: Update readme_database
-        run: zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
+  #     - name: Update readme_database
+  #       run: zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
 
-      - name: Upload binary
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database search_preparer --clobber
+  #     - name: Upload binary
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: gh release upload database search_preparer --clobber
 
   create_rust_binary:
     runs-on: ubuntu-latest
@@ -46,9 +46,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Building binary
-        run: cargo build --release
+        run:  cargo build --release --bin zigistry-cron-automatic-additions
 
       - name: Upload binary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database target/release/ZigistryBackend --clobber
+        run: gh release upload database target/release/zigistry-cron-automatic-additions --clobber

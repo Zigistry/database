@@ -1,10 +1,7 @@
 mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
-
 use chrono::{DateTime, Utc};
-
-use std::clone;
 use std::sync::Arc;
 
 use crate::codeberg::helper_functions::get_readme_url;
@@ -16,7 +13,11 @@ use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
 
-pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDateTime, pool: Arc<Connection>) {
+pub async fn process_last_15_minutes(
+    query: &str,
+    time_15_minutes_ago: NaiveDateTime,
+    pool: Arc<Connection>,
+) {
     let url = format!(
         "https://codeberg.org/api/v1/repos/search?q={query}&sort=updated&order=desc&limit=100&page=1"
     );
@@ -44,18 +45,23 @@ pub async fn process_last_15_minutes(query: &str, time_15_minutes_ago: NaiveDate
             break;
         }
     }
-    stream::iter(responce.clone().data.clone())
-        .for_each_concurrent(ASYNC_LIMIT, |repository| {
-        let value = pool.clone();
-        async move {
-            process_repo(repository, value).await;
-        }
+    println!(
+        "GOING TO PROCESS: {} many repos",
+        repos_to_actually_process.len()
+    );
+    stream::iter(repos_to_actually_process.clone())
+        .for_each_concurrent(5, |repo| {
+            let value = pool.clone();
+            println!("Prociessing: {}", &repo.clone().name);
+            async move {
+                process_repo(repo.clone(), value).await;
+            }
         })
         .await;
-    println!("{:?}", repos_to_actually_process);
+    println!("{:?}", repos_to_actually_process.clone());
 }
 
-pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
+pub async fn process_repo(repository: Daum, pool: Arc<Connection>, only_insert_or_update: bool) {
     let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
     let (readme_url, keywords) = get_readme_url(
@@ -194,7 +200,13 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
             println!("Got None for: {}", &repo_id);
         }
     }
-    process_release(&repository.owner.login, &repository.name, &repo_id, &pool).await;
+    process_release(
+        &repository.owner.login,
+        &repository.name,
+        &repo_id,
+        &transaction,
+    )
+    .await;
     if repository.topics.contains(&"zig-package".to_string()) {
         transaction
             .execute(
