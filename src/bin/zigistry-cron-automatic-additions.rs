@@ -1,12 +1,32 @@
+use actix_web::App;
+use actix_web::HttpServer;
+use actix_web::Responder;
+use actix_web::get;
 use chrono::Utc;
 use std::error::Error;
 use std::sync::Arc;
+use std::thread;
 use zigistry::codeberg;
 use zigistry::database;
 use zigistry::github;
 
+#[get("/")]
+async fn index() -> impl Responder {
+    "Status: Active"
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    thread::spawn(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let my_server = HttpServer::new(|| App::new().service(index))
+                .bind(("0.0.0.0", 7860))
+                .unwrap();
+            println!("Server at: 0.0.0.0:7860");
+            my_server.run().await.unwrap();
+        });
+    });
     let pool = Arc::new(database::connect_to_database().await.unwrap());
     println!("Connected");
     // I am doing  - chrono::Duration::minutes(15) to make sure
