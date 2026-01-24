@@ -54,7 +54,7 @@ pub async fn process_last_15_minutes(
             let value = pool.clone();
             println!("Prociessing: {}", &repo.clone().name);
             async move {
-                process_repo(repo.clone(), value).await;
+                process_repo(repo.clone(), value, true).await;
             }
         })
         .await;
@@ -73,33 +73,63 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>, only_insert_o
     )
     .await;
     let transaction = pool.transaction().await.unwrap();
-    transaction
-        .execute(
-            r#"
+    if only_insert_or_update {
+        transaction
+            .execute(
+                r#"
+                            INSERT OR REPLACE INTO users
+                                (id, platform, avatar_id, bio)
+                            VALUES (?, ?, ?, ?)
+                        "#,
+                params![
+                    user_id.clone(),
+                    "codeberg",
+                    // I am using owner login name
+                    // for the avatar id because
+                    // it works and uses very low storage
+                    // as compaired to storing the entire
+                    // avatar url.
+                    repository
+                        .owner
+                        .avatar_url
+                        .rsplit('/')
+                        .next()
+                        .unwrap()
+                        .to_string(),
+                    repository.owner.description.clone()
+                ],
+            )
+            .await
+            .unwrap();
+    } else {
+        transaction
+            .execute(
+                r#"
                             INSERT OR IGNORE INTO users
                                 (id, platform, avatar_id, bio)
                             VALUES (?, ?, ?, ?)
                         "#,
-            params![
-                user_id.clone(),
-                "codeberg",
-                // I am using owner login name
-                // for the avatar id because
-                // it works and uses very low storage
-                // as compaired to storing the entire
-                // avatar url.
-                repository
-                    .owner
-                    .avatar_url
-                    .rsplit('/')
-                    .next()
-                    .unwrap()
-                    .to_string(),
-                repository.owner.description.clone()
-            ],
-        )
-        .await
-        .unwrap();
+                params![
+                    user_id.clone(),
+                    "codeberg",
+                    // I am using owner login name
+                    // for the avatar id because
+                    // it works and uses very low storage
+                    // as compaired to storing the entire
+                    // avatar url.
+                    repository
+                        .owner
+                        .avatar_url
+                        .rsplit('/')
+                        .next()
+                        .unwrap()
+                        .to_string(),
+                    repository.owner.description.clone()
+                ],
+            )
+            .await
+            .unwrap();
+    }
 
     let build_zig_zon_data = match get_build_zig_zon_data(
         &repository.owner.login,
@@ -113,59 +143,117 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>, only_insert_o
         Err(_) => (String::new(), Vec::new()),
     };
 
-    transaction.execute(
-                        r#"
-                            INSERT OR IGNORE INTO repos
-                                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
-                                , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                                is_fork, license, primary_language, search_keywords)
-                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        "#,
-                        params![
-                            repo_id.clone(),
-                            repository
-                                .owner
-                                .avatar_url
-                                .rsplit("/")
-                                .next()
-                                .unwrap()
-                                .to_string(),
-                            user_id,
-                            "codeberg",
-                            repository.description.to_string(),
-                            repository.open_issues_count,
-                            repository.default_branch.clone(),
-                            repository.forks_count,
-                            repository.stars_count,
-                            repository.watchers_count,
-                            repository.updated_at.clone(),
-                            repository.created_at.clone(),
-                            repository.archived,
-                            repository.archived,
-                            repository.fork,
-                            "Not Found", // Only for now
-                            repository.language.clone(),
-                            keywords
-                        ]
-                    )
-                    .await
-                    .unwrap();
+    if only_insert_or_update {
+        transaction.execute(
+                            r#"
+                                INSERT OR REPLACE INTO repos
+                                    (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
+                                    , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                                    is_fork, license, primary_language, search_keywords)
+                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            "#,
+                            params![
+                                repo_id.clone(),
+                                repository
+                                    .owner
+                                    .avatar_url
+                                    .rsplit("/")
+                                    .next()
+                                    .unwrap()
+                                    .to_string(),
+                                user_id,
+                                "codeberg",
+                                repository.description.to_string(),
+                                repository.open_issues_count,
+                                repository.default_branch.clone(),
+                                repository.forks_count,
+                                repository.stars_count,
+                                repository.watchers_count,
+                                repository.updated_at.clone(),
+                                repository.created_at.clone(),
+                                repository.archived,
+                                repository.archived,
+                                repository.fork,
+                                "Not Found", // Only for now
+                                repository.language.clone(),
+                                keywords
+                            ]
+                        )
+                        .await
+                        .unwrap();
+    } else {
+        transaction.execute(
+                            r#"
+                                INSERT OR IGNORE INTO repos
+                                    (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
+                                    , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                                    is_fork, license, primary_language, search_keywords)
+                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            "#,
+                            params![
+                                repo_id.clone(),
+                                repository
+                                    .owner
+                                    .avatar_url
+                                    .rsplit("/")
+                                    .next()
+                                    .unwrap()
+                                    .to_string(),
+                                user_id,
+                                "codeberg",
+                                repository.description.to_string(),
+                                repository.open_issues_count,
+                                repository.default_branch.clone(),
+                                repository.forks_count,
+                                repository.stars_count,
+                                repository.watchers_count,
+                                repository.updated_at.clone(),
+                                repository.created_at.clone(),
+                                repository.archived,
+                                repository.archived,
+                                repository.fork,
+                                "Not Found", // Only for now
+                                repository.language.clone(),
+                                keywords
+                            ]
+                        )
+                        .await
+                        .unwrap();
+    }
 
-    let rows_affected = transaction.execute(
-                r#"
-                    INSERT OR IGNORE INTO releases
-                        (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                    VALUES(?, ?, ?, ?, ?, ?)
-                "#,
-                params![
-                    repo_id.clone(),
-                    "__ZIGISTRY__DEFAULT__BRANCH__",
-                    false,
-                    repository.created_at.clone(),
-                    build_zig_zon_data.0.clone(),
-                    readme_url
-                ],
-            ).await.unwrap();
+    let rows_affected = if only_insert_or_update {
+        transaction.execute(
+                    r#"
+                        INSERT OR REPLACE INTO releases
+                            (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                        VALUES(?, ?, ?, ?, ?, ?)
+                    "#,
+                    params![
+                        repo_id.clone(),
+                        "__ZIGISTRY__DEFAULT__BRANCH__",
+                        false,
+                        repository.created_at.clone(),
+                        build_zig_zon_data.0.clone(),
+                        readme_url
+                    ],
+                ).await.unwrap()
+    } else {
+        transaction.execute(
+                    r#"
+                        INSERT OR IGNORE INTO releases
+                            (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                        VALUES(?, ?, ?, ?, ?, ?)
+                    "#,
+                    params![
+                        repo_id.clone(),
+                        "__ZIGISTRY__DEFAULT__BRANCH__",
+                        false,
+                        repository.created_at.clone(),
+                        build_zig_zon_data.0.clone(),
+                        readme_url
+                    ],
+                ).await.unwrap()
+    };
 
     let default_branch_release_id = if rows_affected > 0 {
         Some(transaction.last_insert_rowid())
@@ -273,7 +361,7 @@ pub async fn fetch_all_codeberg_repos(
                 .for_each_concurrent(ASYNC_LIMIT, move |repository| {
                     let pool = pool.clone();
                     async move {
-                        process_repo(repository, pool).await;
+                        process_repo(repository, pool, false).await;
                     }
                 })
                 .await;
