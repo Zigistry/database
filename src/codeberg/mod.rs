@@ -22,15 +22,32 @@ pub async fn process_last_15_minutes(
         "https://codeberg.org/api/v1/repos/search?q={query}&sort=updated&order=desc&limit=100&page=1"
     );
     let client = reqwest::Client::new();
-    let responce = client
-        .get(&url)
-        .header("Authorization", &*CODEBERG_KEY)
-        .send()
-        .await
-        .unwrap()
-        .json::<types::types::Root>()
-        .await
-        .unwrap();
+    let mut responce = Option::None;
+    for _ in 0..5 {
+        match client
+            .get(&url)
+            .header("Authorization", &*CODEBERG_KEY)
+            .send()
+            .await
+        {
+            Ok(resp) => match resp.json::<types::types::Root>().await {
+                Ok(val) => {
+                    responce = Some(val);
+                    break;
+                }
+                Err(e) => {
+                    eprintln!("Failed to parse JSON: {}", e);
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            },
+            Err(e) => {
+                eprintln!("Failed to send request: {}", e);
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+        }
+    }
+
+    let responce = responce.expect("Codeberg failed after 5 retries :(");
 
     let mut repos_to_actually_process = Vec::new();
     for repository in &responce.data {
@@ -344,13 +361,37 @@ pub async fn fetch_all_codeberg_repos(
 
             eprintln!("Processing: {}", url);
 
-            let responce = client
-                .get(&url)
-                .header("Authorization", &*CODEBERG_KEY)
-                .send()
-                .await?
-                .json::<types::types::Root>()
-                .await?;
+            let mut responce = Option::None;
+            for _ in 0..5 {
+                match client
+                    .get(&url)
+                    .header("Authorization", &*CODEBERG_KEY)
+                    .send()
+                    .await
+                {
+                    Ok(resp) => match resp.json::<types::types::Root>().await {
+                        Ok(val) => {
+                            responce = Some(val);
+                            break;
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to parse JSON: {}", e);
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("Failed to send request: {}", e);
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    }
+                }
+            }
+
+            let responce = responce.ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Failed to fetch data from Codeberg after 5 retries",
+                )
+            })?;
 
             if responce.data.is_empty() {
                 break;
