@@ -43,6 +43,25 @@ CREATE TABLE repos (
   FOREIGN KEY (owner) REFERENCES users (id)
 );
 
+
+-- I do search for "All repos where username is username"
+CREATE INDEX repo_owner_index ON repos(owner);
+-- Again, I do this, specially for the top 10 latest repos
+CREATE INDEX repo_created_at_index ON repos(created_at);
+-- again, for repos with most stars
+CREATE INDEX repo_star_count_index ON repos(stargazer_count);
+-- Whenever someone visits a repo page, that page
+-- needs "ALl the releases with of that repo."
+CREATE INDEX releases_repo_index ON releases(repo_id);
+-- Also, for every release, I need to get
+-- all the dependencies of that release.
+CREATE INDEX release_dependencies_release_id_index ON release_dependencies(release_id);
+-- Ok, on every package I also need number of repo topics.
+CREATE INDEX repo_topics_repo_id_index ON repo_topics(repo_id);
+-- Ok, on every package I also need number of repo dependents.
+CREATE INDEX repo_dependents_repo_id_index ON repo_dependents(repo_id);
+
+
 CREATE VIRTUAL TABLE repo_search USING fts5(
     repo_id,
     keywords,
@@ -62,6 +81,7 @@ CREATE TABLE repo_topics (
   -- Limit is 50, hence
   topic VARCHAR(60) NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
+  UNIQUE (repo_id, topic)
 );
 
 CREATE TABLE repo_dependents (
@@ -98,6 +118,7 @@ CREATE TABLE index_sections (
   section_name VARCHAR(10) NOT NULL,
   repo_id VARCHAR(150) NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
+  UNIQUE (section_name, repo_id)
 );
 
 CREATE TABLE packages (
