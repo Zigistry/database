@@ -14,7 +14,12 @@ use std::sync::Arc;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
-pub async fn process_last_15_minutes(connection: Arc<Connection>, query: String, is_package: bool, time_15_minutes_ago: NaiveDateTime) {
+pub async fn process_last_15_minutes(
+    connection: Arc<Connection>,
+    query: String,
+    is_package: bool,
+    time_15_minutes_ago: NaiveDateTime,
+) {
     // 30, so that this is fail safe. And coveres all previous nproblems.
     let client = Arc::new(reqwest::Client::new());
     let mut has_next = true;
@@ -454,7 +459,7 @@ pub async fn get_build_zig_zon_data(
     client: &reqwest::Client,
 ) -> Result<(String, Vec<custom_types::Dependency>), Box<dyn Error>> {
     let url = format!(
-        "https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/build.zig. zon"
+        "https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/build.zig.zon"
     );
     let text = client.get(&url).send().await?.text().await?;
 
