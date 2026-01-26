@@ -63,7 +63,7 @@ pub async fn get_build_zig_zon_data(
 ) -> Result<(String, Vec<custom_types::Dependency>), Box<dyn std::error::Error>> {
     let branch_or_tag_value = if is_tag { "tag" } else { "branch" };
     let url = format!(
-        "https://codeberg.org/{owner_name}/{repo_name}/raw/{branch_or_tag_value}/{branch_or_tag}/"
+        "https://codeberg.org/{owner_name}/{repo_name}/raw/{branch_or_tag_value}/{branch_or_tag}/build.zig.zon"
     );
 
     let client = reqwest::Client::new();
