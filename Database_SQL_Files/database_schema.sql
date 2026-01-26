@@ -35,7 +35,7 @@ CREATE TABLE repos (
   is_disabled BOOLEAN NOT NULL,
   is_fork BOOLEAN NOT NULL,
   minimum_zig_version TEXT NOT NULL, -- Again, this I have added a join to make sure
-                                     -- I don't have to read the default branch information just to get this info.
+  -- I don't have to read the default branch information just to get this info.
   -- Simple google tells, its just 36 characters, so, ok?
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
@@ -43,51 +43,33 @@ CREATE TABLE repos (
   FOREIGN KEY (owner) REFERENCES users (id)
 );
 
-
--- I do search for "All repos where username is username"
-CREATE INDEX repo_owner_index ON repos(owner);
--- Again, I do this, specially for the top 10 latest repos
-CREATE INDEX repo_created_at_index ON repos(created_at);
--- again, for repos with most stars
-CREATE INDEX repo_star_count_index ON repos(stargazer_count);
--- Whenever someone visits a repo page, that page
--- needs "ALl the releases with of that repo."
-CREATE INDEX releases_repo_index ON releases(repo_id);
--- Also, for every release, I need to get
--- all the dependencies of that release.
-CREATE INDEX release_dependencies_release_id_index ON release_dependencies(release_id);
--- Ok, on every package I also need number of repo topics.
-CREATE INDEX repo_topics_repo_id_index ON repo_topics(repo_id);
--- Ok, on every package I also need number of repo dependents.
-CREATE INDEX repo_dependents_repo_id_index ON repo_dependents(repo_id);
-
-
-CREATE VIRTUAL TABLE repo_search USING fts5(
-    repo_id,
-    keywords,
-    content='',
-    tokenize = 'porter'
+CREATE VIRTUAL TABLE repo_search USING fts5 (
+  repo_id,
+  keywords,
+  content = '',
+  tokenize = 'porter'
 );
 
 -- Doing this to make sure, no duplicate repo_id is added.
-CREATE TRIGGER repo_search_unique_insert
-BEFORE INSERT ON repo_search
-BEGIN
-    DELETE FROM repo_search WHERE repo_id = NEW.repo_id;
+CREATE TRIGGER repo_search_unique_insert BEFORE INSERT ON repo_search BEGIN
+DELETE FROM repo_search
+WHERE
+  repo_id = NEW.repo_id;
+
 END;
 
 CREATE TABLE repo_topics (
   repo_id VARCHAR(150) NOT NULL,
   -- Limit is 50, hence
   topic VARCHAR(60) NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos (id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id),
   UNIQUE (repo_id, topic)
 );
 
 CREATE TABLE repo_dependents (
   repo_id VARCHAR(150) NOT NULL,
   dependent TEXT NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos (id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id),
   UNIQUE (repo_id, dependent)
 );
 
@@ -100,7 +82,7 @@ CREATE TABLE releases (
   minimum_zig_version TEXT NOT NULL,
   readme_url TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id),
-  UNIQUE(repo_id, version)
+  UNIQUE (repo_id, version)
 );
 
 CREATE TABLE release_dependencies (
@@ -117,7 +99,7 @@ CREATE TABLE release_dependencies (
 CREATE TABLE index_sections (
   section_name VARCHAR(10) NOT NULL,
   repo_id VARCHAR(150) NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos (id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id),
   UNIQUE (section_name, repo_id)
 );
 
@@ -130,3 +112,26 @@ CREATE TABLE programs (
   repo_id VARCHAR(150) NOT NULL PRIMARY KEY,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
+
+-- I do search for "All repos where username is username"
+CREATE INDEX repo_owner_index ON repos (owner);
+
+-- Again, I do this, specially for the top 10 latest repos
+CREATE INDEX repo_created_at_index ON repos (created_at);
+
+-- again, for repos with most stars
+CREATE INDEX repo_star_count_index ON repos (stargazer_count);
+
+-- Whenever someone visits a repo page, that page
+-- needs "ALl the releases with of that repo."
+CREATE INDEX releases_repo_index ON releases (repo_id, published_at DESC);
+
+-- Also, for every release, I need to get
+-- all the dependencies of that release
+CREATE INDEX release_dependencies_release_id_index ON release_dependencies (release_id);
+
+-- Ok, on every package I also need number of repo topics.
+CREATE INDEX repo_topics_repo_id_index ON repo_topics (repo_id);
+
+-- Ok, on every package I also need number of repo dependents.
+CREATE INDEX repo_dependents_repo_id_index ON repo_dependents (repo_id);

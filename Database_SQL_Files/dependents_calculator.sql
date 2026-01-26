@@ -19,11 +19,7 @@ WITH
   ),
   cleaned AS (
     SELECT
-      replace(
-        replace(url, 'www.', ''),
-        '.git',
-        ''
-      ) AS url,
+      replace(replace(url, 'www.', ''), '.git', '') AS url,
       dependent
     FROM
       base

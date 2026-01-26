@@ -43,10 +43,10 @@ fragment RepoFields on Repository {
     avatarUrl
     login
     ... on User {
-        bio
+      bio
     }
     ... on Organization {
-        description
+      description
     }
   }
   repositoryTopics(first: 7) {

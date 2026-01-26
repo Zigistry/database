@@ -46,7 +46,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Building binary
-        run:  cargo build --release --bin zigistry-cron-automatic-additions
+        run: cargo build --release --bin zigistry-cron-automatic-additions
 
       - name: Upload binary
         env:
