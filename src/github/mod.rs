@@ -172,12 +172,17 @@ pub async fn process_repository(
 
     eprintln!("Processing Repository: {}", repository.name);
 
-    let default_branch_release_id: u64 = transaction
-        .execute(
+    let mut rows = transaction
+        .query(
             r#"
-            INSERT OR IGNORE INTO releases
+            INSERT INTO releases
                 (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
             VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, version) DO UPDATE SET
+                is_prerelease = excluded.is_prerelease,
+                published_at = excluded.published_at,
+                minimum_zig_version = excluded.minimum_zig_version,
+                readme_url = excluded.readme_url
             RETURNING id
         "#,
             params![
@@ -192,29 +197,36 @@ pub async fn process_repository(
         .await
         .unwrap();
 
-    if default_branch_release_id != 0 {
-        for dependency in build_zig_zon_data.1.clone() {
-            transaction
-                .execute(
-                    r#"
+    let default_branch_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+
+    // Clear old dependencies before inserting new ones to ensure they are up to date
+    transaction
+        .execute(
+            "DELETE FROM release_dependencies WHERE release_id = ?",
+            params![default_branch_release_id],
+        )
+        .await
+        .unwrap();
+
+    for dependency in build_zig_zon_data.1.clone() {
+        transaction
+            .execute(
+                r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    params![
-                        default_branch_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
-                    ],
-                )
-                .await
-                .unwrap();
-        }
-    } else {
-        println!("Got None for:  {}", &repo_id);
+                params![
+                    default_branch_release_id,
+                    dependency.name,
+                    dependency.hash,
+                    dependency.lazy,
+                    dependency.url,
+                    dependency.path,
+                ],
+            )
+            .await
+            .unwrap();
     }
 
     // Process releases in parallel where possible
@@ -240,12 +252,18 @@ pub async fn process_repository(
         )
         .await;
 
-        let this_specific_release_id: u64 = transaction
-            .execute(
+        let mut rows = transaction
+            .query(
                 r#"
-            INSERT OR IGNORE INTO releases
+            INSERT INTO releases
                 (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
             VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, version) DO UPDATE SET
+                is_prerelease = excluded.is_prerelease,
+                published_at = excluded.published_at,
+                minimum_zig_version = excluded.minimum_zig_version,
+                readme_url = excluded.readme_url
+            RETURNING id
         "#,
                 params![
                     repo_id.clone(),
@@ -259,29 +277,36 @@ pub async fn process_repository(
             .await
             .unwrap();
 
-        if this_specific_release_id != 0 {
-            for dependency in bzz_results.1.clone() {
-                transaction
-                    .execute(
-                        r#"
+        let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+
+        // Clear old dependencies before inserting new ones to ensure they are up to date
+        transaction
+            .execute(
+                "DELETE FROM release_dependencies WHERE release_id = ?",
+                params![this_specific_release_id],
+            )
+            .await
+            .unwrap();
+
+        for dependency in bzz_results.1.clone() {
+            transaction
+                .execute(
+                    r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                        params![
-                            this_specific_release_id,
-                            dependency.name,
-                            dependency.hash,
-                            dependency.lazy,
-                            dependency.url,
-                            dependency.path,
-                        ],
-                    )
-                    .await
-                    .unwrap();
-            }
-        } else {
-            println!("Somehow {repo_id} didn't return.");
+                    params![
+                        this_specific_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
+                )
+                .await
+                .unwrap();
         }
     }
 

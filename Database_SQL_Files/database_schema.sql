@@ -63,7 +63,8 @@ CREATE TABLE releases (
   published_at TIMESTAMP NOT NULL,
   minimum_zig_version TEXT NOT NULL,
   readme_url TEXT NOT NULL,
-  FOREIGN KEY (repo_id) REFERENCES repos (id)
+  FOREIGN KEY (repo_id) REFERENCES repos (id),
+  UNIQUE(repo_id, version)
 );
 
 CREATE TABLE release_dependencies (

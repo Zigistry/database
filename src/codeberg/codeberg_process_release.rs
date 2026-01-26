@@ -27,15 +27,21 @@ pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, p
             Err(_) => (String::new(), Vec::new()),
         };
 
-        let this_specific_release_id: u64 = pool
-            .execute(
+        let mut rows = pool
+            .query(
                 r#"
-                INSERT OR IGNORE INTO releases
+                INSERT INTO releases
                     (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
                 VALUES(?, ?, ?, ?, ?, ?)
+                ON CONFLICT(repo_id, version) DO UPDATE SET
+                    is_prerelease = excluded.is_prerelease,
+                    published_at = excluded.published_at,
+                    minimum_zig_version = excluded.minimum_zig_version,
+                    readme_url = excluded.readme_url
+                RETURNING id
             "#,
                 params![
-                    &repo_id,
+                    repo_id,
                     i.tag_name.clone(),
                     i.prerelease,
                     i.published_at,
@@ -48,28 +54,34 @@ pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, p
             .await
             .unwrap();
 
-        if this_specific_release_id != 0 {
-            for dependency in details.1.clone() {
-                pool.execute(
-                    r#"
+        let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+
+        // Clear old dependencies before inserting new ones to ensure they are up to date
+        pool.execute(
+            "DELETE FROM release_dependencies WHERE release_id = ?",
+            params![this_specific_release_id],
+        )
+        .await
+        .unwrap();
+
+        for dependency in details.1.clone() {
+            pool.execute(
+                r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    params![
-                        this_specific_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
-                    ],
-                )
-                .await
-                .unwrap();
-            }
-        } else {
-            println!("Somehow {repo_id} didn't return.");
+                params![
+                    this_specific_release_id,
+                    dependency.name,
+                    dependency.hash,
+                    dependency.lazy,
+                    dependency.url,
+                    dependency.path,
+                ],
+            )
+            .await
+            .unwrap();
         }
     }
 }

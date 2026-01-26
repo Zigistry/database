@@ -238,72 +238,60 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>, only_insert_o
                         .unwrap();
     }
 
-    let rows_affected = if only_insert_or_update {
-        transaction.execute(
-                    r#"
-                        INSERT OR REPLACE INTO releases
-                            (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+    let mut rows = transaction
+        .query(
+            r#"
+            INSERT INTO releases
+                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+            VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, version) DO UPDATE SET
+                is_prerelease = excluded.is_prerelease,
+                published_at = excluded.published_at,
+                minimum_zig_version = excluded.minimum_zig_version,
+                readme_url = excluded.readme_url
+            RETURNING id
+        "#,
+            params![
+                repo_id.clone(),
+                "__ZIGISTRY__DEFAULT__BRANCH__",
+                false,
+                repository.created_at.clone(),
+                build_zig_zon_data.0.clone(),
+                readme_url
+            ],
+        )
+        .await
+        .unwrap();
+
+    let default_branch_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+
+    transaction
+        .execute(
+            "DELETE FROM release_dependencies WHERE release_id = ?",
+            params![default_branch_release_id],
+        )
+        .await
+        .unwrap();
+
+    for dependency in build_zig_zon_data.1.clone() {
+        transaction
+            .execute(
+                r#"
+                        INSERT INTO release_dependencies
+                            (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                    params![
-                        repo_id.clone(),
-                        "__ZIGISTRY__DEFAULT__BRANCH__",
-                        false,
-                        repository.created_at.clone(),
-                        build_zig_zon_data.0.clone(),
-                        readme_url
-                    ],
-                ).await.unwrap()
-    } else {
-        transaction.execute(
-                    r#"
-                        INSERT OR IGNORE INTO releases
-                            (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                        VALUES(?, ?, ?, ?, ?, ?)
-                    "#,
-                    params![
-                        repo_id.clone(),
-                        "__ZIGISTRY__DEFAULT__BRANCH__",
-                        false,
-                        repository.created_at.clone(),
-                        build_zig_zon_data.0.clone(),
-                        readme_url
-                    ],
-                ).await.unwrap()
-    };
-
-    let default_branch_release_id = if rows_affected > 0 {
-        Some(transaction.last_insert_rowid())
-    } else {
-        None
-    };
-
-    match default_branch_release_id {
-        Some(default_branch_release_id) => {
-            for dependency in build_zig_zon_data.1.clone() {
-                transaction
-                    .execute(
-                        r#"
-                                INSERT INTO release_dependencies
-                                    (release_id, name, hash, lazy, url, path)
-                                VALUES(?, ?, ?, ?, ?, ?)
-                            "#,
-                        params![
-                            default_branch_release_id,
-                            dependency.name,
-                            dependency.hash,
-                            dependency.lazy,
-                            dependency.url,
-                            dependency.path
-                        ],
-                    )
-                    .await
-                    .unwrap();
-            }
-        }
-        None => {
-            println!("Got None for: {}", &repo_id);
-        }
+                params![
+                    default_branch_release_id,
+                    dependency.name,
+                    dependency.hash,
+                    dependency.lazy,
+                    dependency.url,
+                    dependency.path
+                ],
+            )
+            .await
+            .unwrap();
     }
     process_release(
         &repository.owner.login,
