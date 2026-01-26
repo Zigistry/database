@@ -4,6 +4,13 @@
 -- I don't want, sql to process 2 queries on every request,
 -- too much latency. To cut down on latency, avatar_id will
 -- be duplicated for both repos and users.
+CREATE TABLE users (
+  id VARCHAR(45) PRIMARY KEY,
+  avatar_id VARCHAR(65) NOT NULL,
+  platform VARCHAR(10) NOT NULL,
+  bio VARCHAR(260)
+);
+
 CREATE TABLE repos (
   -- The username is 40 characters at max, repo name is 100 and the key and slashes is 5
   -- Hence, I can keep this at 150.
@@ -27,13 +34,28 @@ CREATE TABLE repos (
   is_archived BOOLEAN NOT NULL,
   is_disabled BOOLEAN NOT NULL,
   is_fork BOOLEAN NOT NULL,
+  minimum_zig_version TEXT NOT NULL, -- Again, this I have added a join to make sure
+                                     -- I don't have to read the default branch information just to get this info.
   -- Simple google tells, its just 36 characters, so, ok?
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
   primary_language VARCHAR(50) NOT NULL,
-  search_keywords TEXT NOT NULL,
   FOREIGN KEY (owner) REFERENCES users (id)
 );
+
+CREATE VIRTUAL TABLE repo_search USING fts5(
+    repo_id,
+    keywords,
+    content='',
+    tokenize = 'porter'
+);
+
+-- Doing this to make sure, no duplicate repo_id is added.
+CREATE TRIGGER repo_search_unique_insert
+BEFORE INSERT ON repo_search
+BEGIN
+    DELETE FROM repo_search WHERE repo_id = NEW.repo_id;
+END;
 
 CREATE TABLE repo_topics (
   repo_id VARCHAR(150) NOT NULL,
@@ -42,17 +64,11 @@ CREATE TABLE repo_topics (
   FOREIGN KEY (repo_id) REFERENCES repos (id)
 );
 
-CREATE TABLE users (
-  id VARCHAR(45) PRIMARY KEY,
-  avatar_id VARCHAR(65) NOT NULL,
-  platform VARCHAR(10) NOT NULL,
-  bio VARCHAR(260)
-);
-
 CREATE TABLE repo_dependents (
   repo_id VARCHAR(150) NOT NULL,
   dependent TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id)
+  UNIQUE (repo_id, dependent)
 );
 
 CREATE TABLE releases (
@@ -74,7 +90,8 @@ CREATE TABLE release_dependencies (
   lazy TEXT NOT NULL,
   url TEXT NOT NULL,
   path TEXT NOT NULL,
-  FOREIGN KEY (release_id) REFERENCES releases (id)
+  FOREIGN KEY (release_id) REFERENCES releases (id),
+  UNIQUE (release_id, name)
 );
 
 CREATE TABLE index_sections (

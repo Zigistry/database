@@ -12,7 +12,7 @@ pub fn main() {
     let config: Config = toml::from_str(&toml_content).unwrap();
 
     for repo in config.manual_additions {
-        process_repository(repository, is_package, pool);
+        process_repository(repo, is_package, pool);
     }
     println!("{:?}", config);
 }

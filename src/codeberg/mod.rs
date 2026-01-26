@@ -408,12 +408,11 @@ pub async fn fetch_all_codeberg_repos(
 }
 
 pub async fn codeberg_main(
-    pool: &Connection,
+    pool: Arc<Connection>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
     step: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let pool = Arc::new(pool.clone());
     fetch_all_codeberg_repos(pool.clone(), "zig-package", start_date, end_date, step)
         .await
         .unwrap();
