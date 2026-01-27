@@ -21,6 +21,7 @@ const MY_GQL_QUERY: &str = include_str!("../../GitHub_GQL_API_Files/single_repo.
 
 async fn process_repo(repo: &str, client: &reqwest::Client, connection: Arc<libsql::Connection>) {
     let mut repo_name_iter = repo.split('/');
+    let _ = repo_name_iter.next().unwrap(); // this is the provider like gh or cb, ONLY gh is supported for now.
     let owner = repo_name_iter.next().unwrap();
     let name = repo_name_iter.next().unwrap();
 
@@ -33,13 +34,21 @@ async fn process_repo(repo: &str, client: &reqwest::Client, connection: Arc<libs
     });
     let response = client
         .post("https://api.github.com/graphql")
-        .header("Authorization", "Bearer ".to_string() + &*GITHUB_KEY)
+        .header("User-Agent", "zigistry")
+        .header("Authorization", &*GITHUB_KEY)
         .json(&query_to_send)
         .send()
         .await
         .unwrap();
     let response_body = response.text().await.unwrap();
-    let response_json: Node = serde_json::from_str(&response_body).unwrap();
+
+    let resbody = response_body
+        .strip_prefix("{\"data\":{\"repository\":")
+        .unwrap()
+        .strip_suffix("}}")
+        .unwrap();
+    println!("Response body: {}", resbody);
+    let response_json: Node = serde_json::from_str(&resbody).unwrap();
     process_repository(&response_json, true, &connection, &client).await;
 }
 

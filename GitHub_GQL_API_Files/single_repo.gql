@@ -1,5 +1,5 @@
-query ($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
+query ($owner_name: String!, $repo_name: String!) {
+  repository(owner: $owner_name, name: $repo_name) {
     ...RepoFields
   }
 }

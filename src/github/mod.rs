@@ -193,8 +193,8 @@ pub async fn process_repository(
     transaction
         .execute(
             r#"
-            INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
-        "#,
+                INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
+            "#,
             params![repo_id.clone(), readme_keywords],
         )
         .await
@@ -205,16 +205,16 @@ pub async fn process_repository(
     let mut rows = transaction
         .query(
             r#"
-            INSERT INTO releases
-                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-            VALUES(?, ?, ?, ?, ?, ?)
-            ON CONFLICT(repo_id, version) DO UPDATE SET
-                is_prerelease = excluded.is_prerelease,
-                published_at = excluded.published_at,
-                minimum_zig_version = excluded.minimum_zig_version,
-                readme_url = excluded.readme_url
-            RETURNING id
-        "#,
+                INSERT INTO releases
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                VALUES(?, ?, ?, ?, ?, ?)
+                ON CONFLICT(repo_id, version) DO UPDATE SET
+                    is_prerelease = excluded.is_prerelease,
+                    published_at = excluded.published_at,
+                    minimum_zig_version = excluded.minimum_zig_version,
+                    readme_url = excluded.readme_url
+                RETURNING id
+            "#,
             params![
                 repo_id.clone(),
                 "__ZIGISTRY__DEFAULT__BRANCH__",
@@ -285,16 +285,16 @@ pub async fn process_repository(
         let mut rows = transaction
             .query(
                 r#"
-            INSERT INTO releases
-                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-            VALUES(?, ?, ?, ?, ?, ?)
-            ON CONFLICT(repo_id, version) DO UPDATE SET
-                is_prerelease = excluded.is_prerelease,
-                published_at = excluded.published_at,
-                minimum_zig_version = excluded.minimum_zig_version,
-                readme_url = excluded.readme_url
-            RETURNING id
-        "#,
+                    INSERT INTO releases
+                        (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                    VALUES(?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(repo_id, version) DO UPDATE SET
+                        is_prerelease = excluded.is_prerelease,
+                        published_at = excluded.published_at,
+                        minimum_zig_version = excluded.minimum_zig_version,
+                        readme_url = excluded.readme_url
+                    RETURNING id
+                "#,
                 params![
                     repo_id.clone(),
                     release.tag_name.clone(),

@@ -135,74 +135,77 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
     };
 
     transaction.execute(
-                        r#"
-                            INSERT INTO repos
-                                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
-                                , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                                is_fork, license, primary_language, search_keywords)
-                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ON CONFLICT(id) DO UPDATE SET
-                                avatar_id = excluded.avatar_id,
-                                owner = excluded.owner,
-                                platform = excluded.platform,
-                                description = excluded.description,
-                                issues_count = excluded.issues_count,
-                                default_branch_name = excluded.default_branch_name,
-                                fork_count = excluded.fork_count,
-                                stargazer_count = excluded.stargazer_count,
-                                watchers_count = excluded.watchers_count,
-                                pushed_at = excluded.pushed_at,
-                                created_at = excluded.created_at,
-                                is_archived = excluded.is_archived,
-                                is_disabled = excluded.is_disabled,
-                                is_fork = excluded.is_fork,
-                                license = excluded.license,
-                                primary_language = excluded.primary_language,
-                                search_keywords = excluded.search_keywords
-                        "#,
-                        params![
-                            repo_id.clone(),
-                            repository
-                                .owner
-                                .avatar_url
-                                .rsplit("/")
-                                .next()
-                                .unwrap()
-                                .to_string(),
-                            user_id,
-                            "codeberg",
-                            repository.description.to_string(),
-                            repository.open_issues_count,
-                            repository.default_branch.clone(),
-                            repository.forks_count,
-                            repository.stars_count,
-                            repository.watchers_count,
-                            repository.updated_at.clone(),
-                            repository.created_at.clone(),
-                            repository.archived,
-                            repository.archived,
-                            repository.fork,
-                            "Not Found", // Only for now
-                            repository.language.clone(),
-                            keywords
-                        ]
-                    )
-                    .await
-                    .unwrap();
+        r#"
+            INSERT INTO repos (id, avatar_id, owner, platform, description, issues_count,
+                default_branch_name, fork_count, stargazer_count, watchers_count, pushed_at, created_at,
+                is_archived, is_disabled, is_fork, minimum_zig_version, license, primary_language)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                avatar_id = excluded.avatar_id,
+                owner = excluded.owner,
+                platform = excluded.platform,
+                description = excluded.description,
+                issues_count = excluded.issues_count,
+                default_branch_name = excluded.default_branch_name,
+                fork_count = excluded.fork_count,
+                stargazer_count = excluded.stargazer_count,
+                watchers_count = excluded.watchers_count,
+                pushed_at = excluded.pushed_at,
+                created_at = excluded.created_at,
+                is_archived = excluded.is_archived,
+                is_disabled = excluded.is_disabled,
+                is_fork = excluded.is_fork,
+                minimum_zig_version = excluded.minimum_zig_version,
+                license = excluded.license,
+                primary_language = excluded.primary_language;
+        "#,
+        params![
+            repo_id.clone(),
+            repository.owner.avatar_url.rsplit("/").next().unwrap().to_string(),
+            user_id,
+            "codeberg",
+            repository.description.to_string(),
+            repository.open_issues_count,
+            repository.default_branch.clone(),
+            repository.forks_count,
+            repository.stars_count,
+            repository.watchers_count,
+            repository.updated_at.clone(),
+            repository.created_at.clone(),
+            repository.archived,
+            repository.archived,
+            repository.fork,
+            build_zig_zon_data.0.clone(),
+            "-",
+            repository.language.clone(),
+        ]
+    )
+    .await
+    .unwrap();
+
+    transaction
+        .execute(
+            r#"
+                INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
+            "#,
+            params![repo_id.clone(), keywords],
+        )
+        .await
+        .unwrap();
 
     let mut rows = transaction
         .query(
             r#"
-            INSERT INTO releases
-                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-            VALUES(?, ?, ?, ?, ?, ?)
-            ON CONFLICT(repo_id, version) DO UPDATE SET
-                is_prerelease = excluded.is_prerelease,
-                published_at = excluded.published_at,
-                minimum_zig_version = excluded.minimum_zig_version,
-                readme_url = excluded.readme_url
-            RETURNING id
-        "#,
+                INSERT INTO releases
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                VALUES(?, ?, ?, ?, ?, ?)
+                ON CONFLICT(repo_id, version) DO UPDATE SET
+                    is_prerelease = excluded.is_prerelease,
+                    published_at = excluded.published_at,
+                    minimum_zig_version = excluded.minimum_zig_version,
+                    readme_url = excluded.readme_url
+                RETURNING id
+            "#,
             params![
                 repo_id.clone(),
                 "__ZIGISTRY__DEFAULT__BRANCH__",
@@ -229,10 +232,10 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         transaction
             .execute(
                 r#"
-                        INSERT INTO release_dependencies
-                            (release_id, name, hash, lazy, url, path)
-                        VALUES(?, ?, ?, ?, ?, ?)
-                    "#,
+                    INSERT INTO release_dependencies
+                        (release_id, name, hash, lazy, url, path)
+                    VALUES(?, ?, ?, ?, ?, ?)
+                "#,
                 params![
                     default_branch_release_id,
                     dependency.name,
@@ -256,10 +259,10 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         transaction
             .execute(
                 r#"
-                        INSERT OR IGNORE INTO packages
-                            (repo_id)
-                        VALUES(?)
-                    "#,
+                    INSERT OR IGNORE INTO packages
+                        (repo_id)
+                    VALUES(?)
+                "#,
                 params![repo_id.clone()],
             )
             .await
@@ -268,10 +271,10 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         transaction
             .execute(
                 r#"
-                        INSERT OR IGNORE INTO programs
-                            (repo_id)
-                        VALUES(?)
-                    "#,
+                    INSERT OR IGNORE INTO programs
+                        (repo_id)
+                    VALUES(?)
+                "#,
                 params![repo_id.clone()],
             )
             .await
