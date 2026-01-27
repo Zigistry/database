@@ -1,9 +1,14 @@
-use libsql::{Connection, params};
+use libsql::{Transaction, params};
 
 use super::types;
 use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
 
-pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, pool: &Connection) {
+pub async fn process_release(
+    owner_name: &str,
+    repo_name: &str,
+    repo_id: &str,
+    transaction: &Transaction,
+) {
     let release_url =
         format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/releases");
 
@@ -27,7 +32,7 @@ pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, p
             Err(_) => (String::new(), Vec::new()),
         };
 
-        let mut rows = pool
+        let mut rows = transaction
             .query(
                 r#"
                 INSERT INTO releases
@@ -57,31 +62,33 @@ pub async fn process_release(owner_name: &str, repo_name: &str, repo_id: &str, p
         let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
 
         // Clear old dependencies before inserting new ones to ensure they are up to date
-        pool.execute(
-            "DELETE FROM release_dependencies WHERE release_id = ?",
-            params![this_specific_release_id],
-        )
-        .await
-        .unwrap();
+        transaction
+            .execute(
+                "DELETE FROM release_dependencies WHERE release_id = ?",
+                params![this_specific_release_id],
+            )
+            .await
+            .unwrap();
 
         for dependency in details.1.clone() {
-            pool.execute(
-                r#"
+            transaction
+                .execute(
+                    r#"
                         INSERT INTO release_dependencies
                             (release_id, name, hash, lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
-                params![
-                    this_specific_release_id,
-                    dependency.name,
-                    dependency.hash,
-                    dependency.lazy,
-                    dependency.url,
-                    dependency.path,
-                ],
-            )
-            .await
-            .unwrap();
+                    params![
+                        this_specific_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
+                )
+                .await
+                .unwrap();
         }
     }
 }

@@ -193,6 +193,16 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         .await
         .unwrap();
 
+    transaction
+        .execute(
+            r#"
+                INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
+            "#,
+            params![repo_id.clone(), repository.topics.join(",").clone()],
+        )
+        .await
+        .unwrap();
+
     let mut rows = transaction
         .query(
             r#"

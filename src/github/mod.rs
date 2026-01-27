@@ -148,7 +148,7 @@ pub async fn process_repository(
             INSERT INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, license, primary_language)
+                is_fork, minimum_zig_version, license, primary_language)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 avatar_id = excluded.avatar_id,
@@ -184,7 +184,12 @@ pub async fn process_repository(
             repository.is_archived,
             repository.is_disabled,
             repository.is_fork,
-            repository.license_info.clone().unwrap_or_default().spdx_id,
+            build_zig_zon_data.0.clone(),
+            repository
+                .license_info
+                .as_ref()
+                .and_then(|l| Some(l.spdx_id.clone()))
+                .unwrap_or_else(|| "-".to_string()),
             repository.primary_language.clone().unwrap_or_default().name,
         ],
     )
@@ -196,6 +201,26 @@ pub async fn process_repository(
                 INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
             "#,
             params![repo_id.clone(), readme_keywords],
+        )
+        .await
+        .unwrap();
+
+    transaction
+        .execute(
+            r#"
+                INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
+            "#,
+            params![
+                repo_id.clone(),
+                repository
+                    .repository_topics
+                    .edges
+                    .iter()
+                    .map(|element| element.node.topic.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(",")
+                    .clone()
+            ],
         )
         .await
         .unwrap();
