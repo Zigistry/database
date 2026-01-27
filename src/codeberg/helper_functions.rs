@@ -43,7 +43,9 @@ pub async fn get_readme_url(
                         &crate::stop_words_in_eng,
                     ));
                     // Afaik, 200 keywords is overkill.
-                    let keywords = rake.get_ranked_keyword(200);
+                    let mut keywords = rake.get_ranked_keyword(200);
+                    keywords.push(owner_name.to_string());
+                    keywords.push(repo_name.to_string());
                     let keyword_string = keywords.join(" ");
                     return (readme_possible_url, keyword_string);
                 }

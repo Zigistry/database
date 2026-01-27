@@ -120,9 +120,13 @@ pub async fn process_repository(
     transaction
         .execute(
             r#"
-            INSERT OR IGNORE INTO users
+            INSERT INTO users
                 (id, platform, avatar_id, bio)
             VALUES (?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                platform = excluded.platform,
+                avatar_id = excluded.avatar_id,
+                bio = excluded.bio
         "#,
             params![
                 user_id.clone(),
@@ -141,11 +145,28 @@ pub async fn process_repository(
 
     transaction.execute(
         r#"
-            INSERT OR IGNORE INTO repos
+            INSERT INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, license, primary_language, search_keywords)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                is_fork, license, primary_language)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                avatar_id = excluded.avatar_id,
+                owner = excluded.owner,
+                platform = excluded.platform,
+                description = excluded.description,
+                issues_count = excluded.issues_count,
+                default_branch_name = excluded.default_branch_name,
+                fork_count = excluded.fork_count,
+                stargazer_count = excluded.stargazer_count,
+                watchers_count = excluded.watchers_count,
+                pushed_at = excluded.pushed_at,
+                created_at = excluded.created_at,
+                is_archived = excluded.is_archived,
+                is_disabled = excluded.is_disabled,
+                is_fork = excluded.is_fork,
+                license = excluded.license,
+                primary_language = excluded.primary_language
         "#,
         params![
             repo_id. clone(),
@@ -165,10 +186,19 @@ pub async fn process_repository(
             repository.is_fork,
             repository.license_info.clone().unwrap_or_default().spdx_id,
             repository.primary_language.clone().unwrap_or_default().name,
-            readme_keywords
         ],
     )
-    .await. unwrap();
+    .await.unwrap();
+
+    transaction
+        .execute(
+            r#"
+            INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
+        "#,
+            params![repo_id.clone(), readme_keywords],
+        )
+        .await
+        .unwrap();
 
     eprintln!("Processing Repository: {}", repository.name);
 
@@ -454,7 +484,9 @@ pub async fn get_readme_url_and_keywords(
                                     &content,
                                     &crate::stop_words_in_eng,
                                 ));
-                                let keywords = rake.get_ranked_keyword(200);
+                                let mut keywords = rake.get_ranked_keyword(200);
+                                keywords.push(owner_name.to_string());
+                                keywords.push(repo_name.to_string());
                                 let keyword_string = keywords.join(" ");
                                 return (Some(url), Some(keyword_string));
                             }

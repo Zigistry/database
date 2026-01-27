@@ -33,9 +33,9 @@ CREATE TABLE repos (
   created_at TIMESTAMP NOT NULL,
   -- I just realised that the boolean type is like an integer only.
   -- I added check that it should only be either true or false. i.e 0, 1
-  is_archived BOOLEAN NOT NULL CHECK (is_archived IN (0,1)),
-  is_disabled BOOLEAN NOT NULL CHECK (is_disabled IN (0,1)),
-  is_fork BOOLEAN NOT NULL CHECK (is_fork IN (0,1)),
+  is_archived BOOLEAN NOT NULL CHECK (is_archived IN (0, 1)),
+  is_disabled BOOLEAN NOT NULL CHECK (is_disabled IN (0, 1)),
+  is_fork BOOLEAN NOT NULL CHECK (is_fork IN (0, 1)),
   minimum_zig_version TEXT NOT NULL, -- Again, this I have added a join to make sure
   -- I don't have to read the default branch information just to get this info.
   -- Simple google tells, its just 36 characters, so, ok?
@@ -53,20 +53,8 @@ CREATE VIRTUAL TABLE repo_search USING fts5 (
 );
 
 -- Doing this to make sure, no duplicate repo_id is added.
-CREATE TRIGGER repo_search_unique_insert BEFORE INSERT ON repo_search BEGIN
-DELETE FROM repo_search
-WHERE
-  repo_id = NEW.repo_id;
-
-END;
-
-CREATE TRIGGER repo_delete_cleanup
-AFTER DELETE ON repos
-BEGIN
-  DELETE FROM repo_search
-  WHERE repo_id = OLD.id;
-END;
-
+-- I will be using this query:
+-- INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
 CREATE TABLE repo_topics (
   repo_id VARCHAR(150) NOT NULL,
   -- Limit is 50, hence
@@ -148,4 +136,5 @@ CREATE INDEX repo_dependents_repo_id_index ON repo_dependents (repo_id);
 -- I do search for "All packages where username is username", and also
 -- for  "All programs where username is username"
 CREATE INDEX packages_repo_id_index ON packages (repo_id);
+
 CREATE INDEX programs_repo_id_index ON programs (repo_id);

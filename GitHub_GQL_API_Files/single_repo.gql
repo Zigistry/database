@@ -1,0 +1,58 @@
+query ($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    ...RepoFields
+  }
+}
+
+fragment RepoFields on Repository {
+  name
+  description
+  issues {
+    totalCount
+  }
+  defaultBranchRef {
+    name
+  }
+  forkCount
+  stargazerCount
+  watchers {
+    totalCount
+  }
+  pushedAt
+  createdAt
+  isArchived
+  isDisabled
+  isFork
+  licenseInfo {
+    spdxId
+  }
+  owner {
+    avatarUrl
+    login
+    ... on User {
+      bio
+    }
+    ... on Organization {
+      description
+    }
+  }
+  repositoryTopics(first: 7) {
+    edges {
+      node {
+        topic {
+          name
+        }
+      }
+    }
+  }
+  releases(first: 10, orderBy: { field: CREATED_AT, direction: DESC }) {
+    nodes {
+      tagName
+      isPrerelease
+      publishedAt
+    }
+  }
+  primaryLanguage {
+    name
+  }
+}

@@ -2,9 +2,11 @@
 # repositories in each of these.
 
 
-manual_additions = []
+[manual_additions]
 
-[sections]
+extras = ["gh/rohanvashisht1234/zorsig"]
+
+[manual_additions.sections]
 games = [
   "gh/Not-Nik/raylib-zig",
   "gh/hexops/mach",
