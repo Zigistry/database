@@ -26,10 +26,8 @@ pub mod dependents_calculator;
 pub mod github;
 pub mod sections;
 
-use chrono::{NaiveDate, Utc};
-use dependents_calculator::calculate_dependents;
 use lazy_static::lazy_static;
-use std::{env, error::Error};
+use std::env;
 use stop_words::{LANGUAGE, get};
 
 lazy_static! {
