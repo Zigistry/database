@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use libsql::{Builder, Connection};
-use std::env;
+// use std::env;
 
 const START_FROM_SCRATCH: bool = true;
 
@@ -18,11 +18,4 @@ pub async fn connect_to_database() -> Result<Connection, Box<dyn std::error::Err
         pool.execute_batch(DATABASE_SCHEMA).await.unwrap();
     }
     Ok(pool)
-}
-
-pub async fn wrap_up(pool: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    if START_FROM_SCRATCH {
-        pool.execute("VACUUM", ()).await.unwrap();
-    }
-    Ok(())
 }

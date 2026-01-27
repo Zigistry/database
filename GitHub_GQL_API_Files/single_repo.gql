@@ -27,7 +27,6 @@ fragment RepoFields on Repository {
     spdxId
   }
   owner {
-    avatarUrl
     login
     ... on User {
       bio
@@ -36,7 +35,7 @@ fragment RepoFields on Repository {
       description
     }
   }
-  repositoryTopics(first: 7) {
+  repositoryTopics(first: 10) {
     edges {
       node {
         topic {

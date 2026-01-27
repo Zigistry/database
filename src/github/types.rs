@@ -83,7 +83,6 @@ pub struct LicenseInfo {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Owner {
-    pub avatar_url: String,
     pub login: String,
     pub bio: Option<String>,
 }

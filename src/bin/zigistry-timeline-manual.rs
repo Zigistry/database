@@ -6,7 +6,6 @@ use zigistry::codeberg;
 use zigistry::database;
 use zigistry::dependents_calculator::calculate_dependents;
 use zigistry::github;
-use zigistry::sections::fetch_repos_for_sections;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -28,7 +27,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let timer_start = Utc::now();
-    fetch_repos_for_sections(&pool).await.unwrap();
     eprintln!(
         "Sections completed successfully in {} minutes",
         (Utc::now() - timer_start).num_minutes()

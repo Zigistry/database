@@ -149,7 +149,7 @@ pub async fn process_repository(
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
                 is_fork, minimum_zig_version, license, primary_language)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 avatar_id = excluded.avatar_id,
                 owner = excluded.owner,
@@ -253,6 +253,7 @@ pub async fn process_repository(
         .unwrap();
 
     let default_branch_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+    drop(rows);
 
     // Clear old dependencies before inserting new ones to ensure they are up to date
     transaction
@@ -333,6 +334,7 @@ pub async fn process_repository(
             .unwrap();
 
         let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+        drop(rows);
 
         // Clear old dependencies before inserting new ones to ensure they are up to date
         transaction
