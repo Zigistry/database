@@ -1,94 +1,56 @@
-use libsql::{Transaction, params};
-
 use super::types;
 use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
+use crate::codeberg::codeberg_data::ReleaseData;
 
-pub async fn process_release(
+pub async fn fetch_releases(
     owner_name: &str,
     repo_name: &str,
-    repo_id: &str,
-    transaction: &Transaction,
-) {
+) -> Vec<ReleaseData> {
     let release_url =
         format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/releases");
 
-    let client = reqwest::Client::new()
+    let client_res = reqwest::Client::new()
         .get(&release_url)
         .send()
-        .await
-        .unwrap();
+        .await;
+
+    let client = match client_res {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
 
     if client.status() != reqwest::StatusCode::OK {
-        return;
+        return Vec::new();
     }
 
-    let responce_as_json = client.json::<types::releases_types::Root>().await.unwrap();
-    // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/README.md
-    // https://codeberg.org/FObersteiner/zdt/raw/tag/v0.8.2-zig_0.15/build.zig.zon
-    for i in responce_as_json {
-        let details = match get_build_zig_zon_data(&owner_name, &repo_name, &i.tag_name, true).await
-        {
-            Ok(r) => r,
-            Err(_) => (String::new(), Vec::new()),
-        };
+    let responce_as_json = match client.json::<types::releases_types::Root>().await {
+        Ok(j) => j,
+        Err(_) => return Vec::new(),
+    };
 
-        let mut rows = transaction
-            .query(
-                r#"
-                INSERT INTO releases
-                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                VALUES(?, ?, ?, ?, ?, ?)
-                ON CONFLICT(repo_id, version) DO UPDATE SET
-                    is_prerelease = excluded.is_prerelease,
-                    published_at = excluded.published_at,
-                    minimum_zig_version = excluded.minimum_zig_version,
-                    readme_url = excluded.readme_url
-                RETURNING id
-            "#,
-                params![
-                    repo_id,
-                    i.tag_name.clone(),
-                    i.prerelease,
-                    i.published_at,
-                    details.0,
-                    get_readme_url(&owner_name, &repo_name, &i.tag_name, true, false)
-                        .await
-                        .0,
-                ],
-            )
-            .await
-            .unwrap();
+    // We can fetch releases concurrently
+    let futures = responce_as_json.into_iter().map(|i| {
+        let owner = owner_name.to_string();
+        let repo = repo_name.to_string();
+        async move {
+            let details = match get_build_zig_zon_data(&owner, &repo, &i.tag_name, true).await
+            {
+                Ok(r) => r,
+                Err(_) => (String::new(), Vec::new()),
+            };
 
-        let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+            let (readme_url, _) = get_readme_url(&owner, &repo, &i.tag_name, true, false).await;
 
-        // Clear old dependencies before inserting new ones to ensure they are up to date
-        transaction
-            .execute(
-                "DELETE FROM release_dependencies WHERE release_id = ?",
-                params![this_specific_release_id],
-            )
-            .await
-            .unwrap();
-
-        for dependency in details.1.clone() {
-            transaction
-                .execute(
-                    r#"
-                        INSERT INTO release_dependencies
-                            (release_id, name, hash, lazy, url, path)
-                        VALUES(?, ?, ?, ?, ?, ?)
-                    "#,
-                    params![
-                        this_specific_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
-                    ],
-                )
-                .await
-                .unwrap();
+            ReleaseData {
+                tag_name: i.tag_name,
+                is_prerelease: i.prerelease,
+                published_at: i.published_at,
+                minimum_zig_version: details.0,
+                readme_url,
+                dependencies: details.1,
+            }
         }
-    }
+    });
+    
+    futures::future::join_all(futures).await
 }

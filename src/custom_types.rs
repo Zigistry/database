@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 /// This is all the data I get from build.zig.zonn
 #[skip_serializing_none]
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Dependency {
     #[serde(rename = "n")]
     pub name: String,

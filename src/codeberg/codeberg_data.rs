@@ -1,0 +1,25 @@
+use crate::codeberg::types::types::Daum;
+use crate::custom_types::Dependency;
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReleaseData {
+    pub tag_name: String,
+    pub is_prerelease: bool,
+    pub published_at: String, // ISO timestamp
+    pub minimum_zig_version: String,
+    pub readme_url: String,
+    pub dependencies: Vec<Dependency>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RepoData {
+    pub repository: Daum,
+    pub user_id: String,
+    pub repo_id: String,
+    pub readme_url: String,
+    pub readme_keywords: String,
+    pub build_zig_zon_version: String,
+    pub build_zig_zon_dependencies: Vec<Dependency>,
+    pub releases: Vec<ReleaseData>,
+}

@@ -1,17 +1,19 @@
+mod codeberg_data;
 mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
-use crate::codeberg::helper_functions::get_readme_url;
+use crate::codeberg::codeberg_data::{ReleaseData, RepoData};
+use crate::codeberg::helper_functions::get_build_zig_zon_data;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
-use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
+use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
 use chrono::NaiveDateTime;
-use codeberg_process_release::process_release;
+use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
-use libsql::{Connection, params};
+use libsql::{Connection, Transaction, params};
 
 pub async fn process_last_15_minutes(
     query: &str,
@@ -66,19 +68,23 @@ pub async fn process_last_15_minutes(
         "GOING TO PROCESS: {} many repos",
         repos_to_actually_process.len()
     );
-    stream::iter(repos_to_actually_process.clone())
-        .for_each_concurrent(5, |repo| {
-            let value = pool.clone();
-            println!("Prociessing: {}", &repo.clone().name);
-            async move {
-                process_repo(repo.clone(), value).await;
-            }
+    let transaction = pool.transaction().await.unwrap();
+
+    let stream = stream::iter(repos_to_actually_process.into_iter())
+        .map(|repo| get_repo_data(repo.clone()))
+        .buffer_unordered(5);
+
+    stream
+        .for_each(|data| async {
+            send_repo_data_to_database(&transaction, data).await;
         })
         .await;
-    println!("{:?}", repos_to_actually_process.clone());
+
+    transaction.commit().await.unwrap();
+    println!("Transaction committed.");
 }
 
-pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
+pub async fn get_repo_data(repository: Daum) -> RepoData {
     let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
     let (readme_url, keywords) = get_readme_url(
@@ -89,7 +95,36 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         true,
     )
     .await;
-    let transaction = pool.transaction().await.unwrap();
+
+    let build_zig_zon_data = match get_build_zig_zon_data(
+        &repository.owner.login,
+        &repository.name,
+        "HEAD",
+        false,
+    )
+    .await
+    {
+        Ok(t) => t,
+        Err(_) => (String::new(), Vec::new()),
+    };
+
+    let releases = fetch_releases(&repository.owner.login, &repository.name).await;
+
+    RepoData {
+        repository,
+        user_id,
+        repo_id,
+        readme_url,
+        readme_keywords: keywords,
+        build_zig_zon_version: build_zig_zon_data.0,
+        build_zig_zon_dependencies: build_zig_zon_data.1,
+        releases,
+    }
+}
+
+pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoData) {
+    let repository = data.repository;
+
     transaction
         .execute(
             r#"
@@ -102,7 +137,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
                             bio = excluded.bio
                 "#,
             params![
-                user_id.clone(),
+                data.user_id.clone(),
                 "codeberg",
                 // I am using owner login name
                 // for the avatar id because
@@ -121,18 +156,6 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         )
         .await
         .unwrap();
-
-    let build_zig_zon_data = match get_build_zig_zon_data(
-        &repository.owner.login,
-        &repository.name,
-        "HEAD",
-        false,
-    )
-    .await
-    {
-        Ok(t) => t,
-        Err(_) => (String::new(), Vec::new()),
-    };
 
     transaction.execute(
         r#"
@@ -160,9 +183,9 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
                 primary_language = excluded.primary_language;
         "#,
         params![
-            repo_id.clone(),
+            data.repo_id.clone(),
             repository.owner.avatar_url.rsplit("/").next().unwrap().to_string(),
-            user_id,
+            data.user_id,
             "codeberg",
             repository.description.to_string(),
             repository.open_issues_count,
@@ -175,7 +198,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
             repository.archived,
             repository.archived,
             repository.fork,
-            build_zig_zon_data.0.clone(),
+            data.build_zig_zon_version.clone(),
             "-",
             repository.language.clone(),
         ]
@@ -188,7 +211,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
             r#"
                 INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
             "#,
-            params![repo_id.clone(), keywords],
+            params![data.repo_id.clone(), data.readme_keywords],
         )
         .await
         .unwrap();
@@ -198,7 +221,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
             r#"
                 INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
             "#,
-            params![repo_id.clone(), repository.topics.join(",").clone()],
+            params![data.repo_id.clone(), repository.topics.join(",").clone()],
         )
         .await
         .unwrap();
@@ -217,12 +240,12 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
                 RETURNING id
             "#,
             params![
-                repo_id.clone(),
+                data.repo_id.clone(),
                 "__ZIGISTRY__DEFAULT__BRANCH__",
                 false,
                 repository.created_at.clone(),
-                build_zig_zon_data.0.clone(),
-                readme_url
+                data.build_zig_zon_version.clone(),
+                data.readme_url
             ],
         )
         .await
@@ -238,7 +261,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
         .await
         .unwrap();
 
-    for dependency in build_zig_zon_data.1.clone() {
+    for dependency in data.build_zig_zon_dependencies {
         transaction
             .execute(
                 r#"
@@ -258,13 +281,66 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
             .await
             .unwrap();
     }
-    process_release(
-        &repository.owner.login,
-        &repository.name,
-        &repo_id,
-        &transaction,
-    )
-    .await;
+
+    // Perist releases
+    for r in data.releases {
+        let mut rows = transaction
+            .query(
+                r#"
+                INSERT INTO releases
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                VALUES(?, ?, ?, ?, ?, ?)
+                ON CONFLICT(repo_id, version) DO UPDATE SET
+                    is_prerelease = excluded.is_prerelease,
+                    published_at = excluded.published_at,
+                    minimum_zig_version = excluded.minimum_zig_version,
+                    readme_url = excluded.readme_url
+                RETURNING id
+            "#,
+                params![
+                    data.repo_id.clone(),
+                    r.tag_name,
+                    r.is_prerelease,
+                    r.published_at,
+                    r.minimum_zig_version,
+                    r.readme_url,
+                ],
+            )
+            .await
+            .unwrap();
+
+        let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
+
+        transaction
+            .execute(
+                "DELETE FROM release_dependencies WHERE release_id = ?",
+                params![this_specific_release_id],
+            )
+            .await
+            .unwrap();
+
+        for dependency in r.dependencies {
+            transaction
+                .execute(
+                    r#"
+                        INSERT INTO release_dependencies
+                            (release_id, name, hash, lazy, url, path)
+                        VALUES(?, ?, ?, ?, ?, ?)
+                    "#,
+                    params![
+                        this_specific_release_id,
+                        dependency.name,
+                        dependency.hash,
+                        dependency.lazy,
+                        dependency.url,
+                        dependency.path,
+                    ],
+                )
+                .await
+                .unwrap();
+        }
+    }
+
     if repository.topics.contains(&"zig-package".to_string()) {
         transaction
             .execute(
@@ -273,7 +349,7 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
                         (repo_id)
                     VALUES(?)
                 "#,
-                params![repo_id.clone()],
+                params![data.repo_id.clone()],
             )
             .await
             .unwrap();
@@ -285,12 +361,11 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
                         (repo_id)
                     VALUES(?)
                 "#,
-                params![repo_id.clone()],
+                params![data.repo_id.clone()],
             )
             .await
             .unwrap();
     }
-    transaction.commit().await.unwrap();
 }
 
 pub async fn fetch_all_codeberg_repos(
@@ -342,15 +417,16 @@ pub async fn fetch_all_codeberg_repos(
             break;
         }
 
-        let pool = pool.clone();
+        let transaction = pool.transaction().await.unwrap();
         stream::iter(responce.data)
-            .for_each_concurrent(ASYNC_LIMIT, move |repository| {
-                let pool = pool.clone();
-                async move {
-                    process_repo(repository, pool).await;
-                }
+            .map(|repository| get_repo_data(repository))
+            .buffer_unordered(ASYNC_LIMIT)
+            .for_each(|data| async {
+                send_repo_data_to_database(&transaction, data).await;
             })
             .await;
+
+        transaction.commit().await.unwrap();
         page += 1;
     }
 

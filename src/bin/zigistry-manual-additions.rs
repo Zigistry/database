@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use zigistry::{
     GITHUB_KEY,
     database::connect_to_database,
-    github::{process_repo, types::Node},
+    github::{get_repo_data, persist_repo_data, types::Node},
 };
 
 #[derive(Debug, Deserialize)]
@@ -54,7 +54,10 @@ async fn process_repo_from_string(
         .strip_suffix("}}")
         .unwrap();
     let response_json: Node = serde_json::from_str(&resbody).unwrap();
-    process_repo(&response_json, true, &connection, &client).await;
+    let data = zigistry::github::get_repo_data(&response_json, true, &client).await;
+    let transaction = connection.transaction().await.unwrap();
+    zigistry::github::persist_repo_data(&transaction, data).await;
+    transaction.commit().await.unwrap();
 }
 
 #[tokio::main]

@@ -1,13 +1,15 @@
+pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
+use crate::github::github_data::{ReleaseData, RepoData};
+use crate::github::types::Node;
 use crate::{GITHUB_KEY, custom_types};
 use chrono::{Days, NaiveDateTime};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
-use libsql::Connection;
-use libsql::params;
+use libsql::{Connection, Transaction, params};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -56,17 +58,20 @@ pub async fn process_last_15_minutes(
 
         // Increased concurrency to 20 (was 5)
         // Maybe I can increate it later.
-        stream::iter(&process_nodes)
-            .for_each_concurrent(5, |node| {
-                let conn = Arc::clone(&connection);
+
+        let transaction = connection.transaction().await.unwrap();
+        stream::iter(process_nodes.clone())
+            .map(|node| {
                 let cli = Arc::clone(&client);
-                async move {
-                    println!("processing {} from :  {is_package}", node.name);
-                    process_repo(&node, is_package, &conn, &cli).await;
-                    println!("processing completed {} from :  {is_package}", node.name);
-                }
+                async move { get_repo_data(&node, is_package, &cli).await }
+            })
+            .buffer_unordered(5)
+            .for_each(|data| async {
+                persist_repo_data(&transaction, data).await;
             })
             .await;
+
+        transaction.commit().await.unwrap();
 
         println!("Just processed: {} many repos.", process_nodes.len());
     }
@@ -74,16 +79,14 @@ pub async fn process_last_15_minutes(
     println!("Database got updated for >{time_15_minutes_ago}")
 }
 
-pub async fn process_repo(
-    repository: &types::Node,
+pub async fn get_repo_data(
+    repository: &Node,
     is_package: bool,
-    connection: &Connection,
     client: &reqwest::Client,
-) {
+) -> RepoData {
     let user_id = format!("gh/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("gh/{}/{}", repository.owner.login, repository.name).to_lowercase();
 
-    // Fetch build. zig. zon and README in parallel instead of sequentially
     let default_branch_name = repository
         .default_branch_ref
         .clone()
@@ -114,8 +117,51 @@ pub async fn process_repo(
         _ => ("404 unable to find readme. ".to_string(), String::new()),
     };
 
-    // Single transaction for all inserts
-    let transaction = connection.transaction().await.unwrap();
+    let releases_iter = repository.releases.nodes.iter();
+    let releases_futures = releases_iter.map(|release| {
+        let owner = repository.owner.login.clone();
+        let name = repository.name.clone();
+        let tag = release.tag_name.clone();
+        let release_clone = release.clone();
+        let cli = client.clone();
+
+        async move {
+            let (readme_url, _) =
+                match get_readme_url_and_keywords(&owner, &name, &tag, false, &cli).await {
+                    (Some(url), _) => (url, String::new()),
+                    _ => ("404 unable to find readme.".to_string(), String::new()),
+                };
+
+            let bzz_results = get_build_zig_zon_data_wrapper(&owner, &name, &tag, &cli).await;
+
+            ReleaseData {
+                tag_name: release_clone.tag_name,
+                is_prerelease: release_clone.is_prerelease,
+                published_at: release_clone.published_at,
+                minimum_zig_version: bzz_results.0,
+                readme_url,
+                dependencies: bzz_results.1,
+            }
+        }
+    });
+
+    let releases = futures::future::join_all(releases_futures).await;
+
+    RepoData {
+        repository: repository.clone(),
+        is_package,
+        user_id,
+        repo_id,
+        readme_url,
+        readme_keywords,
+        build_zig_zon_version: build_zig_zon_data.0,
+        build_zig_zon_dependencies: build_zig_zon_data.1,
+        releases,
+    }
+}
+
+pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
+    let repository = data.repository;
 
     transaction
         .execute(
@@ -129,13 +175,8 @@ pub async fn process_repo(
                 bio = excluded.bio
         "#,
             params![
-                user_id.clone(),
+                data.user_id.clone(),
                 "github",
-                // I am using owner login name
-                // for the avatar id because
-                // it works and uses very low storage
-                // as compaired to storing the entire
-                // avatar url.
                 repository.owner.login.clone(),
                 repository.owner.bio.clone()
             ],
@@ -169,9 +210,9 @@ pub async fn process_repo(
                 primary_language = excluded.primary_language
         "#,
         params![
-            repo_id. clone(),
+            data.repo_id.clone(),
             repository.owner. login.clone(),
-            user_id.clone(),
+            data.user_id.clone(),
             "github",
             repository.description.clone(),
             repository.issues. total_count,
@@ -184,7 +225,7 @@ pub async fn process_repo(
             repository.is_archived,
             repository.is_disabled,
             repository.is_fork,
-            build_zig_zon_data.0.clone(),
+            data.build_zig_zon_version.clone(),
             repository
                 .license_info
                 .as_ref()
@@ -200,7 +241,7 @@ pub async fn process_repo(
             r#"
                 INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
             "#,
-            params![repo_id.clone(), readme_keywords],
+            params![data.repo_id.clone(), data.readme_keywords],
         )
         .await
         .unwrap();
@@ -211,7 +252,7 @@ pub async fn process_repo(
                 INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
             "#,
             params![
-                repo_id.clone(),
+                data.repo_id.clone(),
                 repository
                     .repository_topics
                     .edges
@@ -241,12 +282,12 @@ pub async fn process_repo(
                 RETURNING id
             "#,
             params![
-                repo_id.clone(),
+                data.repo_id.clone(),
                 "__ZIGISTRY__DEFAULT__BRANCH__",
                 false,
                 repository.created_at.clone(),
-                build_zig_zon_data.0.clone(),
-                readme_url.clone(),
+                data.build_zig_zon_version.clone(),
+                data.readme_url.clone(),
             ],
         )
         .await
@@ -264,7 +305,7 @@ pub async fn process_repo(
         .await
         .unwrap();
 
-    for dependency in build_zig_zon_data.1.clone() {
+    for dependency in data.build_zig_zon_dependencies {
         transaction
             .execute(
                 r#"
@@ -285,29 +326,8 @@ pub async fn process_repo(
             .unwrap();
     }
 
-    // Process releases in parallel where possible
-    for release in &repository.releases.nodes {
-        let (readme_url, _) = match get_readme_url_and_keywords(
-            &repository.owner.login,
-            &repository.name,
-            &release.tag_name,
-            false,
-            client,
-        )
-        .await
-        {
-            (Some(url), _) => (url, String::new()),
-            _ => ("404 unable to find readme.".to_string(), String::new()),
-        };
-
-        let bzz_results = get_build_zig_zon_data_wrapper(
-            &repository.owner.login,
-            &repository.name,
-            &release.tag_name,
-            client,
-        )
-        .await;
-
+    // Just sending processed data to the transaction.
+    for release_data in data.releases {
         let mut rows = transaction
             .query(
                 r#"
@@ -322,12 +342,12 @@ pub async fn process_repo(
                     RETURNING id
                 "#,
                 params![
-                    repo_id.clone(),
-                    release.tag_name.clone(),
-                    release.is_prerelease,
-                    release.published_at.clone(),
-                    bzz_results.0.clone(),
-                    readme_url,
+                    data.repo_id.clone(),
+                    release_data.tag_name,
+                    release_data.is_prerelease,
+                    release_data.published_at,
+                    release_data.minimum_zig_version,
+                    release_data.readme_url,
                 ],
             )
             .await
@@ -345,7 +365,7 @@ pub async fn process_repo(
             .await
             .unwrap();
 
-        for dependency in bzz_results.1.clone() {
+        for dependency in release_data.dependencies {
             transaction
                 .execute(
                     r#"
@@ -367,7 +387,7 @@ pub async fn process_repo(
         }
     }
 
-    if is_package {
+    if data.is_package {
         transaction
             .execute(
                 r#"
@@ -375,7 +395,7 @@ pub async fn process_repo(
                     (repo_id)
                 VALUES(?)
             "#,
-                params![repo_id],
+                params![data.repo_id],
             )
             .await
             .unwrap();
@@ -387,12 +407,11 @@ pub async fn process_repo(
                     (repo_id)
                 VALUES(?)
             "#,
-                params![repo_id],
+                params![data.repo_id],
             )
             .await
             .unwrap();
     }
-    transaction.commit().await.unwrap();
 }
 
 pub async fn process_query(
@@ -446,15 +465,20 @@ pub async fn process_query(
         }
 
         // Increased concurrency from 100 to handle the parallel work better
+
+        let transaction = pool.transaction().await.unwrap();
         stream::iter(&nodes)
-            .for_each_concurrent(50, |node| {
-                let conn = Arc::clone(&pool);
+            .map(|node| {
                 let cli = Arc::clone(&client);
-                async move {
-                    process_repo(&node, is_package, &conn, &cli).await;
-                }
+                async move { get_repo_data(node, is_package, &cli).await }
+            })
+            .buffer_unordered(50)
+            .for_each(|data| async {
+                persist_repo_data(&transaction, data).await;
             })
             .await;
+
+        transaction.commit().await.unwrap();
 
         lower = upper;
         upper = lower.checked_add_days(Days::new(step)).unwrap();
