@@ -2,7 +2,7 @@ use dotenv::dotenv;
 use libsql::{Builder, Connection};
 // use std::env;
 
-const START_FROM_SCRATCH: bool = true;
+const START_FROM_SCRATCH: bool = false;
 
 const DATABASE_SCHEMA: &str = include_str!("../../Database_SQL_Files/database_schema.sql");
 

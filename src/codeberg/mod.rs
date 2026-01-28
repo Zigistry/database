@@ -8,7 +8,7 @@ use crate::codeberg::helper_functions::get_readme_url;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
-use chrono::{Days, Months, NaiveDateTime};
+use chrono::{Days, NaiveDateTime};
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
@@ -363,7 +363,7 @@ pub async fn fetch_all_codeberg_repos(
         }
 
         lower = upper;
-        upper = lower.checked_add_months(Months::new(6)).unwrap();
+        upper = lower.checked_add_days(Days::new(step)).unwrap();
         if lower > end {
             break;
         }

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use zigistry::{
     GITHUB_KEY,
     database::connect_to_database,
-    github::{process_repository, types::Node},
+    github::{process_repo, types::Node},
 };
 
 #[derive(Debug, Deserialize)]
@@ -19,7 +19,11 @@ struct Config {
 
 const MY_GQL_QUERY: &str = include_str!("../../GitHub_GQL_API_Files/single_repo.gql");
 
-async fn process_repo(repo: &str, client: &reqwest::Client, connection: Arc<libsql::Connection>) {
+async fn process_repo_from_string(
+    repo: &str,
+    client: &reqwest::Client,
+    connection: Arc<libsql::Connection>,
+) {
     let mut repo_name_iter = repo.split('/');
     let _ = repo_name_iter.next().unwrap(); // this is the provider like gh or cb, ONLY gh is supported for now.
     let owner = repo_name_iter.next().unwrap();
@@ -50,7 +54,7 @@ async fn process_repo(repo: &str, client: &reqwest::Client, connection: Arc<libs
         .strip_suffix("}}")
         .unwrap();
     let response_json: Node = serde_json::from_str(&resbody).unwrap();
-    process_repository(&response_json, true, &connection, &client).await;
+    process_repo(&response_json, true, &connection, &client).await;
 }
 
 #[tokio::main]
@@ -63,11 +67,11 @@ pub async fn main() {
     let connection = Arc::new(connect_to_database().await.unwrap());
 
     for repo in config.manual_additions.extras {
-        process_repo(&repo, &client, connection.clone()).await;
+        process_repo_from_string(&repo, &client, connection.clone()).await;
     }
     for (section, repos) in config.manual_additions.sections {
         for repo in repos {
-            process_repo(&repo, &client, connection.clone()).await;
+            process_repo_from_string(&repo, &client, connection.clone()).await;
             connection
                 .execute(
                     "INSERT OR REPLACE INTO index_sections (section_name, repo_id) VALUES (?, ?)",

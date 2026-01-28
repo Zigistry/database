@@ -2,7 +2,7 @@ pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::{GITHUB_KEY, custom_types};
-use chrono::{Days, Months, NaiveDateTime};
+use chrono::{Days, NaiveDateTime};
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};
@@ -62,7 +62,7 @@ pub async fn process_last_15_minutes(
                 let cli = Arc::clone(&client);
                 async move {
                     println!("processing {} from :  {is_package}", node.name);
-                    process_repository(&node, is_package, &conn, &cli).await;
+                    process_repo(&node, is_package, &conn, &cli).await;
                     println!("processing completed {} from :  {is_package}", node.name);
                 }
             })
@@ -74,7 +74,7 @@ pub async fn process_last_15_minutes(
     println!("Database got updated for >{time_15_minutes_ago}")
 }
 
-pub async fn process_repository(
+pub async fn process_repo(
     repository: &types::Node,
     is_package: bool,
     connection: &Connection,
@@ -451,13 +451,13 @@ pub async fn process_query(
                 let conn = Arc::clone(&pool);
                 let cli = Arc::clone(&client);
                 async move {
-                    process_repository(&node, is_package, &conn, &cli).await;
+                    process_repo(&node, is_package, &conn, &cli).await;
                 }
             })
             .await;
 
         lower = upper;
-        upper = lower.checked_add_months(Months::new(6)).unwrap();
+        upper = lower.checked_add_days(Days::new(step)).unwrap();
         if lower > end {
             break;
         }
