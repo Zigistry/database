@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let timer_start = Utc::now();
     // Just found out that codeberg doesn't depend on date, time, or created at
     // the pagination is like, unlimited.
-    codeberg::codeberg_main(Arc::clone(&pool)).await.unwrap();
+    // codeberg::codeberg_main(Arc::clone(&pool)).await.unwrap();
     eprintln!(
         "Codeberg completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),

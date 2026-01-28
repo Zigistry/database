@@ -438,7 +438,7 @@ pub async fn process_query(
             let query_to_send = serde_json::json!({
                 "query": GH_GRAPH_QL_QUERY,
                 "variables":  {
-                    "query": format!("topic:{query} created:{lower}..{upper}"),
+                    "query": format!("topic:{query} created:{}..{}", lower.format("%Y-%m-%dT%H:%M:%SZ"), upper.format("%Y-%m-%dT%H:%M:%SZ")),
                     "next_value": next
                 }
             });
