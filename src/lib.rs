@@ -22,7 +22,6 @@ pub mod codeberg;
 pub mod constants;
 pub mod custom_types;
 pub mod database;
-pub mod dependents_calculator;
 pub mod github;
 
 use lazy_static::lazy_static;

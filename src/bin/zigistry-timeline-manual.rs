@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::{env, error::Error};
 use zigistry::codeberg;
 use zigistry::database;
-use zigistry::dependents_calculator::calculate_dependents;
 use zigistry::github;
 
 #[tokio::main]
@@ -20,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let timer_start = Utc::now();
     // Just found out that codeberg doesn't depend on date, time, or created at
     // the pagination is like, unlimited.
-    // codeberg::codeberg_main(Arc::clone(&pool)).await.unwrap();
+    codeberg::codeberg_main(Arc::clone(&pool)).await.unwrap();
     eprintln!(
         "Codeberg completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
@@ -39,6 +38,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "GitHub completed successfully in {}minutes.",
         (Utc::now() - timer_start).num_minutes(),
     );
-    calculate_dependents(&pool).await;
     Ok(())
 }
