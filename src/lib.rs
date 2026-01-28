@@ -24,7 +24,6 @@ pub mod custom_types;
 pub mod database;
 pub mod dependents_calculator;
 pub mod github;
-pub mod sections;
 
 use lazy_static::lazy_static;
 use std::env;

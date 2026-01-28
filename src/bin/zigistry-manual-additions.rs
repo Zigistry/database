@@ -42,12 +42,13 @@ async fn process_repo(repo: &str, client: &reqwest::Client, connection: Arc<libs
         .unwrap();
     let response_body = response.text().await.unwrap();
 
+    println!("Got this: {}", response_body);
+
     let resbody = response_body
         .strip_prefix("{\"data\":{\"repository\":")
         .unwrap()
         .strip_suffix("}}")
         .unwrap();
-    println!("Response body: {}", resbody);
     let response_json: Node = serde_json::from_str(&resbody).unwrap();
     process_repository(&response_json, true, &connection, &client).await;
 }
@@ -64,9 +65,16 @@ pub async fn main() {
     for repo in config.manual_additions.extras {
         process_repo(&repo, &client, connection.clone()).await;
     }
-    for repo in config.manual_additions.sections.values() {
-        for repo in repo {
+    for (section, repos) in config.manual_additions.sections {
+        for repo in repos {
             process_repo(&repo, &client, connection.clone()).await;
+            connection
+                .execute(
+                    "INSERT OR REPLACE INTO index_sections (section_name, repo_id) VALUES (?, ?)",
+                    (section.clone().to_lowercase(), repo.clone().to_lowercase()),
+                )
+                .await
+                .expect(&format!("FAILED ON: {repo}"));
         }
     }
 }
