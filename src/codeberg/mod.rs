@@ -8,7 +8,7 @@ use crate::codeberg::helper_functions::get_readme_url;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_build_zig_zon_data};
-use chrono::{Days, NaiveDateTime};
+use chrono::NaiveDateTime;
 use codeberg_process_release::process_release;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, params};
@@ -296,93 +296,71 @@ pub async fn process_repo(repository: Daum, pool: Arc<Connection>) {
 pub async fn fetch_all_codeberg_repos(
     pool: Arc<Connection>,
     query: &str,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
-    step: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut page = 1;
     let client = reqwest::Client::new();
-    let start = start_date;
-    let end = end_date;
-    let mut lower = start;
-    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
     loop {
-        loop {
-            let url = format!(
-                "https://codeberg.org/api/v1/repos/search?q={query}&limit=100&page={page}&topic=true&start_date={lower}&end_date={upper}",
-            );
+        let url = format!(
+            "https://codeberg.org/api/v1/repos/search?q={query}&limit=100&page={page}&topic=true",
+        );
 
-            eprintln!("Processing: {}", url);
+        eprintln!("Processing: {}", url);
 
-            let mut responce = Option::None;
-            for _ in 0..5 {
-                match client
-                    .get(&url)
-                    .header("Authorization", &*CODEBERG_KEY)
-                    .send()
-                    .await
-                {
-                    Ok(resp) => match resp.json::<types::types::Root>().await {
-                        Ok(val) => {
-                            responce = Some(val);
-                            break;
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to parse JSON: {}", e);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                        }
-                    },
+        let mut responce = Option::None;
+        for _ in 0..5 {
+            match client
+                .get(&url)
+                .header("Authorization", &*CODEBERG_KEY)
+                .send()
+                .await
+            {
+                Ok(resp) => match resp.json::<types::types::Root>().await {
+                    Ok(val) => {
+                        responce = Some(val);
+                        break;
+                    }
                     Err(e) => {
-                        eprintln!("Failed to send request: {}", e);
+                        eprintln!("Failed to parse JSON: {}", e);
                         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                     }
+                },
+                Err(e) => {
+                    eprintln!("Failed to send request: {}", e);
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 }
             }
-
-            let responce = responce.ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Failed to fetch data from Codeberg after 5 retries",
-                )
-            })?;
-
-            if responce.data.is_empty() {
-                break;
-            }
-
-            let pool = pool.clone();
-            stream::iter(responce.data)
-                .for_each_concurrent(ASYNC_LIMIT, move |repository| {
-                    let pool = pool.clone();
-                    async move {
-                        process_repo(repository, pool).await;
-                    }
-                })
-                .await;
-            page += 1;
         }
 
-        lower = upper;
-        upper = lower.checked_add_days(Days::new(step)).unwrap();
-        if lower > end {
+        let responce = responce.ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to fetch data from Codeberg after 5 retries",
+            )
+        })?;
+
+        if responce.data.is_empty() {
             break;
         }
+
+        let pool = pool.clone();
+        stream::iter(responce.data)
+            .for_each_concurrent(ASYNC_LIMIT, move |repository| {
+                let pool = pool.clone();
+                async move {
+                    process_repo(repository, pool).await;
+                }
+            })
+            .await;
+        page += 1;
     }
 
     Ok(())
 }
 
-pub async fn codeberg_main(
-    pool: Arc<Connection>,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
-    step: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
-    fetch_all_codeberg_repos(pool.clone(), "zig-package", start_date, end_date, step)
+pub async fn codeberg_main(pool: Arc<Connection>) -> Result<(), Box<dyn std::error::Error>> {
+    fetch_all_codeberg_repos(pool.clone(), "zig-package")
         .await
         .unwrap();
-    fetch_all_codeberg_repos(pool.clone(), "zig", start_date, end_date, step)
-        .await
-        .unwrap();
+    fetch_all_codeberg_repos(pool.clone(), "zig").await.unwrap();
     Ok(())
 }
