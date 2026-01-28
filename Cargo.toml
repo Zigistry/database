@@ -24,6 +24,3 @@ keyword_extraction = "1.5.0"
 libsql = "0.9.29"
 dotenv = "0.15.0"
 actix-web = "4.12.1"
-
-[profile.release]
-target-feature = ["+crt-static"]

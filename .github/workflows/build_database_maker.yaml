@@ -30,6 +30,8 @@ jobs:
         run: rustup target add x86_64-unknown-linux-musl
 
       - name: Build static binary
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
         run: cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions
 
       - name: Upload binary
