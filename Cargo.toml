@@ -8,18 +8,17 @@ path = "src/lib.rs"
 
 [dependencies]
 futures = "0.3.31"
-tokio = { version = "1.48.0", features = ["full"] }
+tokio = { version = "1.49.0", features = ["full"] }
 
 lazy_static = "1.5.0"
-reqwest = { version = "0.12.26", features = ["json"] }
-chrono = "0.4.42"
+reqwest = { version = "0.13.1", features = ["json"] }
+chrono = "0.4.43"
 
 serde = "1.0.228"
 serde_derive = "1.0.228"
-serde_json = "1.0.145"
+serde_json = "1.0.149"
 serde_with = "3.16.1"
-regex = "1.12.2"
-toml = "0.9.10"
+toml = "0.9.11"
 stop-words = "0.9.0"
 keyword_extraction = "1.5.0"
 libsql = "0.9.29"
