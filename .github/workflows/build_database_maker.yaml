@@ -15,25 +15,6 @@ permissions:
   contents: write
 
 jobs:
-  # create_zig_binary:
-  #   runs-on: ubuntu-latest
-
-  #   # Got to know this from: https://github.com/marketplace/actions/setup-git-config
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v6
-
-  #     - name: installing zig
-  #       uses: mlugg/setup-zig@v2
-
-  #     - name: Update readme_database
-  #       run: zig build-exe ./src/search_preparer.zig -O ReleaseSafe -lc
-
-  #     - name: Upload binary
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: gh release upload database search_preparer --clobber
-
   create_rust_binary:
     runs-on: ubuntu-latest
 
@@ -45,10 +26,13 @@ jobs:
       - name: Rust installation
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Building binary
-        run: cargo build --release --bin zigistry-cron-automatic-additions
+      - name: Install musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
+      - name: Build static binary
+        run: cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions
 
       - name: Upload binary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database target/release/zigistry-cron-automatic-additions --clobber
+        run: gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions --clobber
