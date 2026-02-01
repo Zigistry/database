@@ -67,9 +67,7 @@ pub async fn process_last_15_minutes(
     let transaction = pool.transaction().await.unwrap();
 
     let stream = stream::iter(repos_to_actually_process.into_iter())
-        .map(|repo| get_repo_data(repo.clone()))
-        .buffer_unordered(5);
-
+        .then(|repo| async move { get_repo_data(repo.clone()).await });
     stream
         .for_each(|data| async {
             send_repo_data_to_database(&transaction, data).await;

@@ -72,8 +72,6 @@ pub async fn process_last_15_minutes(
         transaction.commit().await.unwrap();
 
     }
-
-    println!("Database got updated for >{time_15_minutes_ago}")
 }
 
 pub async fn get_repo_data(
