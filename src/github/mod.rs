@@ -46,12 +46,10 @@ pub async fn process_last_15_minutes(
         let res2: types::Root = match serde_json::from_str(&text) {
             Ok(t) => t,
             Err(t) => {
-                eprintln!("Got this response: {text}");
                 panic!("Got this problem: {t}");
             }
         };
 
-        eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
         has_next = res2.data.search.page_info.has_next_page;
         next = Option::from(res2.data.search.page_info.end_cursor);
         let process_nodes = res2.data.search.nodes;
@@ -73,7 +71,6 @@ pub async fn process_last_15_minutes(
 
         transaction.commit().await.unwrap();
 
-        println!("Just processed: {} many repos.", process_nodes.len());
     }
 
     println!("Database got updated for >{time_15_minutes_ago}")
@@ -265,8 +262,6 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         )
         .await
         .unwrap();
-
-    eprintln!("Processing Repository: {}", repository.name);
 
     let mut rows = transaction
         .query(

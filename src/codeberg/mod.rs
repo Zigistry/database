@@ -5,7 +5,7 @@ pub mod types;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
-use crate::codeberg::codeberg_data::{ReleaseData, RepoData};
+use crate::codeberg::codeberg_data::RepoData;
 use crate::codeberg::helper_functions::get_build_zig_zon_data;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
@@ -64,10 +64,6 @@ pub async fn process_last_15_minutes(
             break;
         }
     }
-    println!(
-        "GOING TO PROCESS: {} many repos",
-        repos_to_actually_process.len()
-    );
     let transaction = pool.transaction().await.unwrap();
 
     let stream = stream::iter(repos_to_actually_process.into_iter())
@@ -81,7 +77,6 @@ pub async fn process_last_15_minutes(
         .await;
 
     transaction.commit().await.unwrap();
-    println!("Transaction committed.");
 }
 
 pub async fn get_repo_data(repository: Daum) -> RepoData {
