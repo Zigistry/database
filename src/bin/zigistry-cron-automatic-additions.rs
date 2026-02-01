@@ -14,7 +14,19 @@ use zigistry::github;
 
 #[get("/")]
 async fn index(last_updated: actix_web::web::Data<Arc<RwLock<NaiveDateTime>>>) -> impl Responder {
-    format!("Status: Active {}", last_updated.read().unwrap())
+    format!(
+        r#"[status]
+value = "Active"
+
+[last_updated]
+value = "{}"
+
+[current_utc_time]
+value = "{}"
+"#,
+        last_updated.read().unwrap(),
+        Utc::now().naive_utc()
+    )
 }
 
 #[actix_web::main]
