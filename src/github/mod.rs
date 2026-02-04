@@ -16,6 +16,45 @@ use std::sync::Arc;
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
 
+pub fn has_zig_in_top_languages(repository: &Node) -> bool {
+    fn contains_zig(value: &serde_json::Value) -> bool {
+        match value {
+            serde_json::Value::String(name) => name.eq_ignore_ascii_case("zig"),
+            serde_json::Value::Array(items) => items.iter().any(contains_zig),
+            serde_json::Value::Object(map) => {
+                if let Some(serde_json::Value::String(name)) = map.get("name") {
+                    if name.eq_ignore_ascii_case("zig") {
+                        return true;
+                    }
+                }
+                if let Some(node) = map.get("node") {
+                    if contains_zig(node) {
+                        return true;
+                    }
+                }
+                if let Some(edges) = map.get("edges") {
+                    if contains_zig(edges) {
+                        return true;
+                    }
+                }
+                if let Some(nodes) = map.get("nodes") {
+                    if contains_zig(nodes) {
+                        return true;
+                    }
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
+    repository
+        .languages
+        .as_ref()
+        .map(contains_zig)
+        .unwrap_or(false)
+}
+
 pub async fn process_last_15_minutes(
     connection: Arc<Connection>,
     query: String,
@@ -58,7 +97,8 @@ pub async fn process_last_15_minutes(
         // Maybe I can increate it later.
 
         let transaction = connection.transaction().await.unwrap();
-        stream::iter(process_nodes.clone())
+        stream::iter(process_nodes)
+            .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
             .map(|node| {
                 let cli = Arc::clone(&client);
                 async move { get_repo_data(&node, is_package, &cli).await }
@@ -460,10 +500,11 @@ pub async fn process_query(
         // Increased concurrency from 100 to handle the parallel work better
 
         let transaction = pool.transaction().await.unwrap();
-        stream::iter(&nodes)
+        stream::iter(nodes)
+            .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
             .map(|node| {
                 let cli = Arc::clone(&client);
-                async move { get_repo_data(node, is_package, &cli).await }
+                async move { get_repo_data(&node, is_package, &cli).await }
             })
             .buffer_unordered(50)
             .for_each(|data| async {

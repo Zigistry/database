@@ -32,16 +32,32 @@ pub async fn process_last_15_minutes(
             .send()
             .await
         {
-            Ok(resp) => match resp.json::<types::types::Root>().await {
-                Ok(val) => {
-                    responce = Some(val);
-                    break;
-                }
-                Err(e) => {
-                    eprintln!("Failed to parse JSON: {}", e);
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                    eprintln!("Codeberg status: {}", resp.status());
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    continue;
                 }
-            },
+
+                match resp.text().await {
+                    Ok(body) => match serde_json::from_str::<types::types::Root>(&body) {
+                        Ok(val) => {
+                            responce = Some(val);
+                            break;
+                        }
+                        Err(e) => {
+                            let snippet: String = body.chars().take(300).collect();
+                            eprintln!("Failed to parse JSON: {}", e);
+                            eprintln!("Codeberg body (truncated): {}", snippet);
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("Failed to read response body: {}", e);
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    }
+                }
+            }
             Err(e) => {
                 eprintln!("Failed to send request: {}", e);
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -382,16 +398,32 @@ pub async fn fetch_all_codeberg_repos(
                 .send()
                 .await
             {
-                Ok(resp) => match resp.json::<types::types::Root>().await {
-                    Ok(val) => {
-                        responce = Some(val);
-                        break;
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to parse JSON: {}", e);
+                Ok(resp) => {
+                    if !resp.status().is_success() {
+                        eprintln!("Codeberg status: {}", resp.status());
                         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        continue;
                     }
-                },
+
+                    match resp.text().await {
+                        Ok(body) => match serde_json::from_str::<types::types::Root>(&body) {
+                            Ok(val) => {
+                                responce = Some(val);
+                                break;
+                            }
+                            Err(e) => {
+                                let snippet: String = body.chars().take(300).collect();
+                                eprintln!("Failed to parse JSON: {}", e);
+                                eprintln!("Codeberg body (truncated): {}", snippet);
+                                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            }
+                        },
+                        Err(e) => {
+                            eprintln!("Failed to read response body: {}", e);
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        }
+                    }
+                }
                 Err(e) => {
                     eprintln!("Failed to send request: {}", e);
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;

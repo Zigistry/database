@@ -1,5 +1,6 @@
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
+use serde_json::Value;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,6 +49,7 @@ pub struct Node {
     pub repository_topics: RepositoryTopics,
     pub releases: Releases,
     pub primary_language: Option<PrimaryLanguage>,
+    pub languages: Option<Value>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

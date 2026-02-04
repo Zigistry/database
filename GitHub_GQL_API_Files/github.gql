@@ -67,4 +67,12 @@ fragment RepoFields on Repository {
   primaryLanguage {
     name
   }
+  languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+    edges {
+      size
+      node {
+        name
+      }
+    }
+  }
 }

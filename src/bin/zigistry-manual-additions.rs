@@ -54,6 +54,13 @@ async fn process_repo_from_string(
         .strip_suffix("}}")
         .unwrap();
     let response_json: Node = serde_json::from_str(&resbody).unwrap();
+    if !zigistry::github::has_zig_in_top_languages(&response_json) {
+        eprintln!(
+            "Skipping {} - Zig is not in the top 10 languages.",
+            repo.to_lowercase()
+        );
+        return;
+    }
     let data = zigistry::github::get_repo_data(&response_json, true, &client).await;
     let transaction = connection.transaction().await.unwrap();
     zigistry::github::persist_repo_data(&transaction, data).await;
