@@ -1,10 +1,6 @@
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc};
-use zigistry::{
-    GITHUB_KEY,
-    database::connect_to_database,
-    github::{get_repo_data, persist_repo_data, types::Node},
-};
+use zigistry::{GITHUB_KEY, database::connect_to_database, github::types::Node};
 
 #[derive(Debug, Deserialize)]
 struct ManualAdditions {
