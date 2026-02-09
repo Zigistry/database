@@ -640,7 +640,7 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
         match client
             .post("https://api.github.com/graphql")
             .header("Authorization", GITHUB_KEY.to_string())
-            .header("User-Agent", "zigistry. dev")
+            .header("User-Agent", "zigistry.dev")
             .json(&query_to_send)
             .send()
             .await

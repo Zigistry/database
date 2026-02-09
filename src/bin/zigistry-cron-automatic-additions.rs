@@ -24,7 +24,7 @@ current_utc_time = "{}""#,
     )
 }
 
-#[actix_web::main]
+#[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
     let pool = Arc::new(database::connect_to_database().await.unwrap());
 
@@ -39,7 +39,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         std::process::exit(1);
     }));
 
-    actix_web::rt::spawn(async move {
+    tokio::spawn(async move {
         // I am doing  - chrono::Duration::minutes(15) to make sure
         // If the api takes some time to update, that is still covered.
         loop {
@@ -60,7 +60,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
 
             *last_time_stamp_clone.write().unwrap() = current_time;
 
-            actix_web::rt::time::sleep(std::time::Duration::from_secs(900)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(900)).await;
         }
     });
 
