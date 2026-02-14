@@ -8,7 +8,6 @@ use chrono::Utc;
 use std::error::Error;
 use std::sync::Arc;
 use std::sync::RwLock;
-use zigistry::codeberg;
 use zigistry::database;
 use zigistry::github;
 
@@ -46,8 +45,6 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
             let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
             let last_ts = *last_time_stamp_clone.read().unwrap();
 
-            codeberg::process_last_15_minutes("zig", last_ts, Arc::clone(&pool)).await;
-            codeberg::process_last_15_minutes("zig-package", last_ts, Arc::clone(&pool)).await;
             github::process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_ts)
                 .await;
             github::process_last_15_minutes(
