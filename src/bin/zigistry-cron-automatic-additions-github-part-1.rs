@@ -1,24 +1,18 @@
-use actix_web::App;
-use actix_web::HttpServer;
-use actix_web::Responder;
-use actix_web::get;
-use actix_web::web;
-use chrono::NaiveDateTime;
-use chrono::Utc;
+use actix_web::{App, HttpServer, Responder, get, web};
+use chrono::{NaiveDateTime, Utc};
 use std::error::Error;
 use std::sync::Arc;
-use std::sync::RwLock;
-use zigistry::database;
-use zigistry::github;
+use tokio::sync::RwLock;
+use zigistry::{database, github};
 
 #[get("/")]
-async fn index(last_updated: actix_web::web::Data<Arc<RwLock<NaiveDateTime>>>) -> impl Responder {
+async fn index(last_updated: web::Data<Arc<RwLock<NaiveDateTime>>>) -> impl Responder {
     format!(
         r#"[cron_job]
 status = "Active"
 last_updated = "{}"
 current_utc_time = "{}""#,
-        last_updated.read().unwrap(),
+        last_updated.read().await,
         Utc::now().naive_utc()
     )
 }
@@ -43,10 +37,15 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         // If the api takes some time to update, that is still covered.
         loop {
             let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
-            let last_ts = *last_time_stamp_clone.read().unwrap();
+            let last_ts = *last_time_stamp_clone.read().await;
 
-            github::process_last_15_minutes_part_1(Arc::clone(&pool), "zig".to_string(), false, last_ts)
-                .await;
+            github::process_last_15_minutes_part_1(
+                Arc::clone(&pool),
+                "zig".to_string(),
+                false,
+                last_ts,
+            )
+            .await;
             github::process_last_15_minutes_part_1(
                 Arc::clone(&pool),
                 "zig-package".to_string(),
@@ -55,7 +54,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
             )
             .await;
 
-            *last_time_stamp_clone.write().unwrap() = current_time;
+            *last_time_stamp_clone.write().await = current_time;
 
             tokio::time::sleep(std::time::Duration::from_secs(900)).await;
         }
