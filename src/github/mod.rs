@@ -12,6 +12,7 @@ use keyword_extraction::rake::{Rake, RakeParams};
 use libsql::{Connection, Transaction, params};
 use std::error::Error;
 use std::sync::Arc;
+use std::time::Duration;
 
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
@@ -55,13 +56,13 @@ pub fn has_zig_in_top_languages(repository: &Node) -> bool {
         .unwrap_or(false)
 }
 
-pub async fn process_everything(
-    pool: Arc<Connection>,
-    query: String,
-    is_package: bool,
-    time_15_minutes_ago: NaiveDateTime,
-) {
-}
+// pub async fn process_everything(
+//     pool: Arc<Connection>,
+//     query: String,
+//     is_package: bool,
+//     time_15_minutes_ago: NaiveDateTime,
+// ) {
+// }
 
 pub async fn process_last_15_minutes_part_1(
     connection: Arc<Connection>,
@@ -69,8 +70,7 @@ pub async fn process_last_15_minutes_part_1(
     is_package: bool,
     time_15_minutes_ago: NaiveDateTime,
 ) {
-    // 30, so that this is fail safe. And coveres all previous nproblems.
-    let client = Arc::new(reqwest::Client::new());
+    let client = Arc::new(create_optimized_client());
     let mut has_next = true;
     let mut next: Option<String> = None;
 
@@ -101,22 +101,21 @@ pub async fn process_last_15_minutes_part_1(
         next = Option::from(res2.data.search.page_info.end_cursor);
         let process_nodes = res2.data.search.nodes;
 
-        // Increased concurrency to 20 (was 5)
-        // Maybe I can increate it later.
-
-        let transaction = connection.transaction().await.unwrap();
-        stream::iter(process_nodes)
+        // I will process everything first, then commit to database.
+        let repo_data: Vec<RepoData> = stream::iter(process_nodes)
             .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
             .map(|node| {
-                let cli = Arc::clone(&client);
-                async move { get_repo_data(&node, is_package, &cli).await }
+                let client = Arc::clone(&client);
+                async move { get_repo_data(&node, is_package, &client).await }
             })
             .buffer_unordered(50)
-            .for_each(|data| async {
-                persist_repo_data(&transaction, data).await;
-            })
+            .collect()
             .await;
 
+        let transaction = connection.transaction().await.unwrap();
+        for data in repo_data {
+            persist_repo_data(&transaction, data).await;
+        }
         transaction.commit().await.unwrap();
     }
 }
@@ -165,16 +164,15 @@ pub async fn get_repo_data(
         let name = repository.name.clone();
         let tag = release.tag_name.clone();
         let release_clone = release.clone();
-        let cli = client.clone();
 
         async move {
             let (readme_url, _) =
-                match get_readme_url_and_keywords(&owner, &name, &tag, false, &cli).await {
+                match get_readme_url_and_keywords(&owner, &name, &tag, false, client).await {
                     (Some(url), _) => (url, String::new()),
                     _ => ("404 unable to find readme.".to_string(), String::new()),
                 };
 
-            let bzz_results = get_build_zig_zon_data_wrapper(&owner, &name, &tag, &cli).await;
+            let bzz_results = get_build_zig_zon_data_wrapper(&owner, &name, &tag, client).await;
 
             ReleaseData {
                 tag_name: release_clone.tag_name,
@@ -226,8 +224,9 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .await
         .unwrap();
 
-    transaction.execute(
-        r#"
+    transaction
+        .execute(
+            r#"
             INSERT INTO repos
                 (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
                 , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
@@ -251,32 +250,37 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 license = excluded.license,
                 primary_language = excluded.primary_language
         "#,
-        params![
-            data.repo_id.clone(),
-            repository.owner. login.clone(),
-            data.user_id.clone(),
-            "github",
-            repository.description.clone(),
-            repository.issues. total_count,
-            repository.default_branch_ref.clone().unwrap_or_default().name,
-            repository.fork_count,
-            repository.stargazer_count,
-            repository.watchers. total_count,
-            repository. pushed_at.clone(),
-            repository.created_at.clone(),
-            repository.is_archived,
-            repository.is_disabled,
-            repository.is_fork,
-            data.build_zig_zon_version.clone(),
-            repository
-                .license_info
-                .as_ref()
-                .and_then(|l| Some(l.spdx_id.clone()))
-                .unwrap_or_else(|| "-".to_string()),
-            repository.primary_language.clone().unwrap_or_default().name,
-        ],
-    )
-    .await.unwrap();
+            params![
+                data.repo_id.clone(),
+                repository.owner.login.clone(),
+                data.user_id.clone(),
+                "github",
+                repository.description.clone(),
+                repository.issues.total_count,
+                repository
+                    .default_branch_ref
+                    .clone()
+                    .unwrap_or_default()
+                    .name,
+                repository.fork_count,
+                repository.stargazer_count,
+                repository.watchers.total_count,
+                repository.pushed_at.clone(),
+                repository.created_at.clone(),
+                repository.is_archived,
+                repository.is_disabled,
+                repository.is_fork,
+                data.build_zig_zon_version.clone(),
+                repository
+                    .license_info
+                    .as_ref()
+                    .and_then(|l| Some(l.spdx_id.clone()))
+                    .unwrap_or_else(|| "-".to_string()),
+                repository.primary_language.clone().unwrap_or_default().name,
+            ],
+        )
+        .await
+        .unwrap();
 
     transaction
         .execute(
@@ -466,7 +470,7 @@ pub async fn process_query(
     let end = end_date;
     let mut lower = start;
     let mut upper = start.checked_add_days(Days::new(step)).unwrap();
-    let client = Arc::new(reqwest::Client::new());
+    let client = Arc::new(create_optimized_client());
 
     loop {
         let mut nodes = Vec::new();
@@ -504,21 +508,21 @@ pub async fn process_query(
             nodes.append(&mut res2.data.search.nodes);
         }
 
-        // Increased concurrency from 100 to handle the parallel work better
-
-        let transaction = pool.transaction().await.unwrap();
-        stream::iter(nodes)
+        let repo_data: Vec<RepoData> = stream::iter(nodes)
             .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
             .map(|node| {
-                let cli = Arc::clone(&client);
-                async move { get_repo_data(&node, is_package, &cli).await }
+                let client = Arc::clone(&client);
+                async move { get_repo_data(&node, is_package, &client).await }
             })
             .buffer_unordered(ASYNC_LIMIT)
-            .for_each(|data| async {
-                persist_repo_data(&transaction, data).await;
-            })
+            .collect()
             .await;
 
+        // Now do all database operations in a quick transaction
+        let transaction = pool.transaction().await.unwrap();
+        for data in repo_data {
+            persist_repo_data(&transaction, data).await;
+        }
         transaction.commit().await.unwrap();
 
         lower = upper;
@@ -527,7 +531,7 @@ pub async fn process_query(
             break;
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 pub async fn github_main(
@@ -551,6 +555,7 @@ pub async fn github_main(
         .unwrap();
     Ok(())
 }
+
 pub async fn get_readme_url_and_keywords(
     owner_name: &str,
     repo_name: &str,
@@ -561,11 +566,23 @@ pub async fn get_readme_url_and_keywords(
     let base_url =
         format!("https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/");
 
-    for readme_file_name in POSSIBLE_README_FILE_NAMES {
-        let url = base_url.to_string() + readme_file_name;
+    // Try all possible filenames concurrently
+    let head_futures: Vec<_> = POSSIBLE_README_FILE_NAMES
+        .iter()
+        .map(|&filename| {
+            let url = base_url.clone() + filename;
+            async move {
+                let result = client.head(&url).send().await;
+                (url, result)
+            }
+        })
+        .collect();
 
-        match client.head(&url).send().await {
-            Ok(head_res) if head_res.status().is_success() => {
+    let results = futures::future::join_all(head_futures).await;
+
+    for (url, result) in results {
+        if let Ok(head_res) = result {
+            if head_res.status().is_success() {
                 if process_keywords {
                     match client.get(&url).send().await {
                         Ok(res) => match res.text().await {
@@ -598,15 +615,13 @@ pub async fn get_readme_url_and_keywords(
                     return (Some(url), None);
                 }
             }
-            _ => {
-                continue;
-            }
         }
     }
 
     (None, None)
 }
 
+// now, I am checking a head request, and then doing get.
 pub async fn get_build_zig_zon_data(
     owner_name: &str,
     repo_name: &str,
@@ -616,6 +631,12 @@ pub async fn get_build_zig_zon_data(
     let url = format!(
         "https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/build.zig.zon"
     );
+
+    let head_response = client.head(&url).send().await?;
+    if !head_response.status().is_success() {
+        return Err("build.zig.zon not found".into());
+    }
+
     let text = client.get(&url).send().await?.text().await?;
 
     let tokens = tokenize(text.chars())?;
@@ -632,19 +653,27 @@ async fn get_build_zig_zon_data_wrapper(
 ) -> (String, Vec<custom_types::Dependency>) {
     match get_build_zig_zon_data(owner_name, repo_name, branch_or_tag, client).await {
         Ok((minimum_zig_version, dependencies)) => (minimum_zig_version, dependencies),
-        Err(_) => {
-            eprintln!(
-                "Parser wasn't able to parse:  https://github.com/{}/{}",
-                owner_name, repo_name
-            );
-            ("unknown".to_string(), Vec::new())
-        }
+        Err(_) => ("unknown".to_string(), Vec::new()),
     }
+}
+
+/// I have added this new client, which is much more optimized
+/// becuase, initially, I wasn't adding any timeouts.
+fn create_optimized_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .pool_max_idle_per_host(20)
+        .pool_idle_timeout(Duration::from_secs(90))
+        .timeout(Duration::from_secs(30))
+        .connect_timeout(Duration::from_secs(10))
+        .build()
+        .expect("Failed to create HTTP client")
 }
 
 // Helper to reduce code duplication
 async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::Value) -> String {
     let mut retry_count = 0usize;
+    let mut rate_limit_danger_timelimit = 2;
+
     loop {
         if retry_count > 8 {
             panic!("Tried {} times, still problem.", retry_count);
@@ -659,10 +688,17 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
             .await
         {
             Ok(resp) => {
-                if !resp.status().is_success() {
-                    eprintln!("problem:  {}", resp.status());
+                let status = resp.status();
+                if !status.is_success() {
+                    eprintln!("GitHub API error: {status}");
                     retry_count += 1;
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+                    if status == 429 || status == 403 {
+                        rate_limit_danger_timelimit = rate_limit_danger_timelimit * 2;
+                        eprintln!("Rate limited, backing off for {rate_limit_danger_timelimit}s");
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit)).await;
                     continue;
                 }
                 match resp.text().await {
@@ -670,7 +706,7 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
                     Err(e) => {
                         eprintln!("problem: {e}");
                         retry_count += 1;
-                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit)).await;
                         continue;
                     }
                 }
@@ -678,7 +714,7 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
             Err(e) => {
                 eprintln!("GitHub Error: {e}");
                 retry_count += 1;
-                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit.max(10))).await;
                 continue;
             }
         }
