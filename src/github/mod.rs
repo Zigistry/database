@@ -61,7 +61,6 @@ pub async fn process_everything(
     is_package: bool,
     time_15_minutes_ago: NaiveDateTime,
 ) {
-    
 }
 
 pub async fn process_last_15_minutes_part_1(
@@ -119,7 +118,6 @@ pub async fn process_last_15_minutes_part_1(
             .await;
 
         transaction.commit().await.unwrap();
-
     }
 }
 
@@ -553,7 +551,6 @@ pub async fn github_main(
         .unwrap();
     Ok(())
 }
-
 pub async fn get_readme_url_and_keywords(
     owner_name: &str,
     repo_name: &str,
@@ -561,18 +558,17 @@ pub async fn get_readme_url_and_keywords(
     process_keywords: bool,
     client: &reqwest::Client,
 ) -> (Option<String>, Option<String>) {
-    let name =
+    let base_url =
         format!("https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/");
 
     for readme_file_name in POSSIBLE_README_FILE_NAMES {
-        let url = name.to_string() + readme_file_name;
+        let url = base_url.to_string() + readme_file_name;
 
-        // Try GET directly instead of HEAD first - fewer requests
-        match client.get(&url).send().await {
-            Ok(res) => {
-                if res.status().is_success() {
-                    if process_keywords {
-                        match res.text().await {
+        match client.head(&url).send().await {
+            Ok(head_res) if head_res.status().is_success() => {
+                if process_keywords {
+                    match client.get(&url).send().await {
+                        Ok(res) => match res.text().await {
                             Ok(content) => {
                                 let rake = Rake::new(RakeParams::WithDefaults(
                                     &content,
@@ -588,18 +584,26 @@ pub async fn get_readme_url_and_keywords(
                                 eprintln!(
                                     "Failed to read README body for {owner_name}/{repo_name}: {e}"
                                 );
-                                continue;
+                                return (Some(url), None);
                             }
+                        },
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to fetch README after successful head for {owner_name}/{repo_name}: {e}"
+                            );
+                            return (Some(url), None);
                         }
                     }
+                } else {
                     return (Some(url), None);
                 }
             }
-            Err(_) => {
+            _ => {
                 continue;
             }
         }
     }
+
     (None, None)
 }
 
