@@ -45,9 +45,9 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
             let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
             let last_ts = *last_time_stamp_clone.read().unwrap();
 
-            github::process_last_15_minutes(Arc::clone(&pool), "zig".to_string(), false, last_ts)
+            github::process_everything(Arc::clone(&pool), "zig".to_string(), false, last_ts)
                 .await;
-            github::process_last_15_minutes(
+            github::process_everything(
                 Arc::clone(&pool),
                 "zig-package".to_string(),
                 true,

@@ -1,7 +1,7 @@
 pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
-use crate::constants::{GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
+use crate::constants::{ASYNC_LIMIT, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
 use crate::github::github_data::{ReleaseData, RepoData};
 use crate::github::types::Node;
 use crate::{GITHUB_KEY, custom_types};
@@ -55,7 +55,16 @@ pub fn has_zig_in_top_languages(repository: &Node) -> bool {
         .unwrap_or(false)
 }
 
-pub async fn process_last_15_minutes(
+pub async fn process_everything(
+    pool: Arc<Connection>,
+    query: String,
+    is_package: bool,
+    time_15_minutes_ago: NaiveDateTime,
+) {
+    
+}
+
+pub async fn process_last_15_minutes_part_1(
     connection: Arc<Connection>,
     query: String,
     is_package: bool,
@@ -70,7 +79,7 @@ pub async fn process_last_15_minutes(
         let query_to_send = serde_json::json!({
             "query": GH_GRAPH_QL_QUERY,
             "variables":  {
-                "query": format!("topic:{query} pushed:>{}", time_15_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
+                "query": format!("topic:{query} stars:>20 pushed:>{}", time_15_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
                 "next_value": next
             }
         });
@@ -103,7 +112,7 @@ pub async fn process_last_15_minutes(
                 let cli = Arc::clone(&client);
                 async move { get_repo_data(&node, is_package, &cli).await }
             })
-            .buffer_unordered(5)
+            .buffer_unordered(50)
             .for_each(|data| async {
                 persist_repo_data(&transaction, data).await;
             })
@@ -506,7 +515,7 @@ pub async fn process_query(
                 let cli = Arc::clone(&client);
                 async move { get_repo_data(&node, is_package, &cli).await }
             })
-            .buffer_unordered(50)
+            .buffer_unordered(ASYNC_LIMIT)
             .for_each(|data| async {
                 persist_repo_data(&transaction, data).await;
             })
