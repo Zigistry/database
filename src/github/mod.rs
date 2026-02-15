@@ -63,7 +63,6 @@ pub fn has_zig_in_top_languages(repository: &Node) -> bool {
 //     time_15_minutes_ago: NaiveDateTime,
 // ) {
 // }
-
 pub async fn process_last_15_minutes_part_1(
     connection: Arc<Connection>,
     query: String,
@@ -108,7 +107,7 @@ pub async fn process_last_15_minutes_part_1(
                 let client = Arc::clone(&client);
                 async move { get_repo_data(&node, is_package, &client).await }
             })
-            .buffer_unordered(50)
+            .buffer_unordered(25)
             .collect()
             .await;
 
@@ -203,34 +202,29 @@ pub async fn get_repo_data(
 pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     let repository = data.repository;
 
-    transaction
-        .execute(
+    let _ = tokio::join!(
+        transaction.execute(
             r#"
-            INSERT INTO users
-                (id, platform, avatar_id, bio)
+            INSERT INTO users (id, platform, avatar_id, bio)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 platform = excluded.platform,
                 avatar_id = excluded.avatar_id,
                 bio = excluded.bio
-        "#,
+            "#,
             params![
                 data.user_id.clone(),
                 "github",
                 repository.owner.login.clone(),
                 repository.owner.bio.clone()
             ],
-        )
-        .await
-        .unwrap();
-
-    transaction
-        .execute(
+        ),
+        transaction.execute(
             r#"
             INSERT INTO repos
-                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count
-                , stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                is_fork, minimum_zig_version, license, primary_language)
+                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count,
+                 stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                 is_fork, minimum_zig_version, license, primary_language)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 avatar_id = excluded.avatar_id,
@@ -249,7 +243,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 is_fork = excluded.is_fork,
                 license = excluded.license,
                 primary_language = excluded.primary_language
-        "#,
+            "#,
             params![
                 data.repo_id.clone(),
                 repository.owner.login.clone(),
@@ -257,11 +251,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 "github",
                 repository.description.clone(),
                 repository.issues.total_count,
-                repository
-                    .default_branch_ref
-                    .clone()
-                    .unwrap_or_default()
-                    .name,
+                repository.default_branch_ref.clone().unwrap_or_default().name,
                 repository.fork_count,
                 repository.stargazer_count,
                 repository.watchers.total_count,
@@ -278,25 +268,13 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                     .unwrap_or_else(|| "-".to_string()),
                 repository.primary_language.clone().unwrap_or_default().name,
             ],
-        )
-        .await
-        .unwrap();
-
-    transaction
-        .execute(
-            r#"
-                INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
-            "#,
+        ),
+        transaction.execute(
+            r#"INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
             params![data.repo_id.clone(), data.readme_keywords],
-        )
-        .await
-        .unwrap();
-
-    transaction
-        .execute(
-            r#"
-                INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
-            "#,
+        ),
+        transaction.execute(
+            r#"INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)"#,
             params![
                 data.repo_id.clone(),
                 repository
@@ -306,24 +284,22 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                     .map(|element| element.node.topic.name.clone())
                     .collect::<Vec<String>>()
                     .join(",")
-                    .clone()
             ],
         )
-        .await
-        .unwrap();
+    );
 
     let mut rows = transaction
         .query(
             r#"
-                INSERT INTO releases
-                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                VALUES(?, ?, ?, ?, ?, ?)
-                ON CONFLICT(repo_id, version) DO UPDATE SET
-                    is_prerelease = excluded.is_prerelease,
-                    published_at = excluded.published_at,
-                    minimum_zig_version = excluded.minimum_zig_version,
-                    readme_url = excluded.readme_url
-                RETURNING id
+            INSERT INTO releases
+                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+            VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, version) DO UPDATE SET
+                is_prerelease = excluded.is_prerelease,
+                published_at = excluded.published_at,
+                minimum_zig_version = excluded.minimum_zig_version,
+                readme_url = excluded.readme_url
+            RETURNING id
             "#,
             params![
                 data.repo_id.clone(),
@@ -340,7 +316,6 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     let default_branch_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
     drop(rows);
 
-    // Clear old dependencies before inserting new ones to ensure they are up to date
     transaction
         .execute(
             "DELETE FROM release_dependencies WHERE release_id = ?",
@@ -349,41 +324,45 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .await
         .unwrap();
 
-    for dependency in data.build_zig_zon_dependencies {
-        transaction
-            .execute(
-                r#"
-                        INSERT INTO release_dependencies
-                            (release_id, name, hash, lazy, url, path)
-                        VALUES(?, ?, ?, ?, ?, ?)
-                    "#,
-                params![
-                    default_branch_release_id,
-                    dependency.name,
-                    dependency.hash,
-                    dependency.lazy,
-                    dependency.url,
-                    dependency.path,
-                ],
-            )
-            .await
-            .unwrap();
+    if !data.build_zig_zon_dependencies.is_empty() {
+        let placeholders = data
+            .build_zig_zon_dependencies
+            .iter()
+            .map(|_| "(?, ?, ?, ?, ?, ?)")
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let sql = format!(
+            "INSERT INTO release_dependencies (release_id, name, hash, lazy, url, path) VALUES {}",
+            placeholders
+        );
+
+        let mut params_vec: Vec<libsql::Value> = Vec::new();
+        for dependency in &data.build_zig_zon_dependencies {
+            params_vec.push(default_branch_release_id.into());
+            params_vec.push(dependency.name.clone().into());
+            params_vec.push(dependency.hash.clone().into());
+            params_vec.push(dependency.lazy.clone().into());
+            params_vec.push(dependency.url.clone().into());
+            params_vec.push(dependency.path.clone().into());
+        }
+
+        transaction.execute(&sql, params_vec).await.unwrap();
     }
 
-    // Just sending processed data to the transaction.
     for release_data in data.releases {
         let mut rows = transaction
             .query(
                 r#"
-                    INSERT INTO releases
-                        (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                    VALUES(?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(repo_id, version) DO UPDATE SET
-                        is_prerelease = excluded.is_prerelease,
-                        published_at = excluded.published_at,
-                        minimum_zig_version = excluded.minimum_zig_version,
-                        readme_url = excluded.readme_url
-                    RETURNING id
+                INSERT INTO releases
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
+                VALUES(?, ?, ?, ?, ?, ?)
+                ON CONFLICT(repo_id, version) DO UPDATE SET
+                    is_prerelease = excluded.is_prerelease,
+                    published_at = excluded.published_at,
+                    minimum_zig_version = excluded.minimum_zig_version,
+                    readme_url = excluded.readme_url
+                RETURNING id
                 "#,
                 params![
                     data.repo_id.clone(),
@@ -400,7 +379,6 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         let this_specific_release_id: i64 = rows.next().await.unwrap().unwrap().get(0).unwrap();
         drop(rows);
 
-        // Clear old dependencies before inserting new ones to ensure they are up to date
         transaction
             .execute(
                 "DELETE FROM release_dependencies WHERE release_id = ?",
@@ -409,36 +387,37 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
             .await
             .unwrap();
 
-        for dependency in release_data.dependencies {
-            transaction
-                .execute(
-                    r#"
-                        INSERT INTO release_dependencies
-                            (release_id, name, hash, lazy, url, path)
-                        VALUES(?, ?, ?, ?, ?, ?)
-                    "#,
-                    params![
-                        this_specific_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
-                    ],
-                )
-                .await
-                .unwrap();
+        if !release_data.dependencies.is_empty() {
+            let placeholders = release_data
+                .dependencies
+                .iter()
+                .map(|_| "(?, ?, ?, ?, ?, ?)")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let sql = format!(
+                "INSERT INTO release_dependencies (release_id, name, hash, lazy, url, path) VALUES {}",
+                placeholders
+            );
+
+            let mut params_vec: Vec<libsql::Value> = Vec::new();
+            for dependency in &release_data.dependencies {
+                params_vec.push(this_specific_release_id.into());
+                params_vec.push(dependency.name.clone().into());
+                params_vec.push(dependency.hash.clone().into());
+                params_vec.push(dependency.lazy.clone().into());
+                params_vec.push(dependency.url.clone().into());
+                params_vec.push(dependency.path.clone().into());
+            }
+
+            transaction.execute(&sql, params_vec).await.unwrap();
         }
     }
 
     if data.is_package {
         transaction
             .execute(
-                r#"
-                 INSERT OR IGNORE INTO packages
-                    (repo_id)
-                VALUES(?)
-            "#,
+                r#"INSERT OR IGNORE INTO packages (repo_id) VALUES(?)"#,
                 params![data.repo_id],
             )
             .await
@@ -446,11 +425,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     } else {
         transaction
             .execute(
-                r#"
-                 INSERT OR IGNORE INTO programs
-                    (repo_id)
-                VALUES(?)
-            "#,
+                r#"INSERT OR IGNORE INTO programs (repo_id) VALUES(?)"#,
                 params![data.repo_id],
             )
             .await
