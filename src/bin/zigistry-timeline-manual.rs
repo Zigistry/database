@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         (Utc::now() - timer_start).num_minutes()
     );
 
-    github::github_main(Arc::clone(&pool), start_date, end_date, step)
+    github::github_main_0_9(Arc::clone(&pool), start_date, end_date, step)
         .await
         .unwrap();
     eprintln!(
