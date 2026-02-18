@@ -37,9 +37,17 @@ jobs:
       - name: Build static binary
         env:
           RUSTFLAGS: -C target-feature=+crt-static
-        run: cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions
+        run: |
+          cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions-codeberg
+          cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions-github-part-1
+          cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions-github-part-2
+          cargo build --release --target x86_64-unknown-linux-musl --bin zigistry-cron-automatic-additions-github-part-3
 
       - name: Upload binary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions --clobber
+        run: |
+          gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions-codeberg --clobber
+          gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions-github-part-1 --clobber
+          gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions-github-part-2 --clobber
+          gh release upload database target/x86_64-unknown-linux-musl/release/zigistry-cron-automatic-additions-github-part-3 --clobber
