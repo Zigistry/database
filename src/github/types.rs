@@ -25,7 +25,7 @@ pub struct Search {
 #[serde(rename_all = "camelCase")]
 pub struct PageInfo {
     pub has_next_page: bool,
-    pub end_cursor: String,
+    pub end_cursor: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -87,6 +87,7 @@ pub struct LicenseInfo {
 pub struct Owner {
     pub login: String,
     pub bio: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -104,6 +105,9 @@ pub struct Following {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RepositoryTopics {
+    #[serde(default)]
+    pub nodes: Vec<Node2>,
+    #[serde(default)]
     pub edges: Vec<Edge>,
 }
 

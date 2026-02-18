@@ -1,6 +1,6 @@
 use crate::custom_types::Dependency;
 use crate::github::types::Node;
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReleaseData {

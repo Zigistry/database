@@ -13,6 +13,16 @@ struct Config {
     manual_additions: ManualAdditions,
 }
 
+#[derive(Debug, Deserialize)]
+struct SingleRepoResponse {
+    data: SingleRepoData,
+}
+
+#[derive(Debug, Deserialize)]
+struct SingleRepoData {
+    repository: Option<Node>,
+}
+
 const MY_GQL_QUERY: &str = include_str!("../../GitHub_GQL_API_Files/single_repo.gql");
 
 async fn process_repo_from_string(
@@ -44,12 +54,15 @@ async fn process_repo_from_string(
 
     println!("Got this: {}", response_body);
 
-    let resbody = response_body
-        .strip_prefix("{\"data\":{\"repository\":")
-        .unwrap()
-        .strip_suffix("}}")
-        .unwrap();
-    let response_json: Node = serde_json::from_str(&resbody).unwrap();
+    let response_json: SingleRepoResponse = serde_json::from_str(&response_body).unwrap();
+    let response_json = match response_json.data.repository {
+        Some(repo) => repo,
+        None => {
+            eprintln!("HMM!!! no repos body for {repo} in responce.");
+            return;
+        }
+    };
+
     if !zigistry::github::has_zig_in_top_languages(&response_json) {
         eprintln!(
             "Skipping {} - Zig is not in the top 10 languages.",
