@@ -1,18 +1,12 @@
 use super::types;
-use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
 use crate::codeberg::codeberg_data::ReleaseData;
+use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
 
-pub async fn fetch_releases(
-    owner_name: &str,
-    repo_name: &str,
-) -> Vec<ReleaseData> {
+pub async fn fetch_releases(owner_name: &str, repo_name: &str) -> Vec<ReleaseData> {
     let release_url =
         format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/releases");
 
-    let client_res = reqwest::Client::new()
-        .get(&release_url)
-        .send()
-        .await;
+    let client_res = reqwest::Client::new().get(&release_url).send().await;
 
     let client = match client_res {
         Ok(c) => c,
@@ -33,8 +27,7 @@ pub async fn fetch_releases(
         let owner = owner_name.to_string();
         let repo = repo_name.to_string();
         async move {
-            let details = match get_build_zig_zon_data(&owner, &repo, &i.tag_name, true).await
-            {
+            let details = match get_build_zig_zon_data(&owner, &repo, &i.tag_name, true).await {
                 Ok(r) => r,
                 Err(_) => (String::new(), Vec::new()),
             };
@@ -51,6 +44,6 @@ pub async fn fetch_releases(
             }
         }
     });
-    
+
     futures::future::join_all(futures).await
 }

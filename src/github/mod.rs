@@ -82,7 +82,16 @@ pub async fn process_last_15_minutes_part_1(
             }
         });
 
-        let text = fetch_with_retry(&client, query_to_send).await;
+        let text = match fetch_with_retry(&client, query_to_send).await {
+            Some(text) => text,
+            None => {
+                eprintln!(
+                    "STOPING THIS CYCLE! This process_last_15_minutes_part_1 cycle has failed.",
+                );
+                has_next = false;
+                continue;
+            }
+        };
 
         if text == EMPTY_REPLY {
             has_next = false;
@@ -92,12 +101,14 @@ pub async fn process_last_15_minutes_part_1(
         let res2: types::Root = match serde_json::from_str(&text) {
             Ok(t) => t,
             Err(t) => {
-                panic!("Got this problem: {t}");
+                eprintln!("Responce was in unexpected format process_last_15_minutes_part_1: {t}");
+                has_next = false;
+                continue;
             }
         };
 
         has_next = res2.data.search.page_info.has_next_page;
-        next = Option::from(res2.data.search.page_info.end_cursor);
+        next = res2.data.search.page_info.end_cursor;
         let process_nodes = res2.data.search.nodes;
 
         // I will process everything first, then commit to database.
@@ -278,13 +289,13 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
             params![
                 data.repo_id.clone(),
                 repository
-                    .repository_topics
+                .repository_topics
                     .edges
                     .iter()
                     .map(|element| element.node.topic.name.clone())
                     .collect::<Vec<String>>()
                     .join(",")
-            ],
+                ],
         )
     );
 
@@ -444,14 +455,21 @@ pub async fn process_query_0_9_range(
     let start = start_date;
     let end = end_date;
     let mut lower = start;
-    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
+    let base_step = step.max(1); // Again, I am doing this to make sure the minimum step is 1 day.
+    let mut dynamic_step = base_step;
     let client = Arc::new(create_optimized_client());
 
     loop {
+        if lower > end {
+            break;
+        }
+
+        let upper = lower.checked_add_days(Days::new(dynamic_step)).unwrap();
         let mut nodes = Vec::new();
         eprintln!("Now processing:{lower}..{upper}");
         let mut has_next = true;
         let mut next: Option<String> = None;
+        let mut window_failed = false;
 
         while has_next {
             let query_to_send = serde_json::json!({
@@ -462,7 +480,14 @@ pub async fn process_query_0_9_range(
                 }
             });
 
-            let text = fetch_with_retry(&client, query_to_send).await;
+            let text = match fetch_with_retry(&client, query_to_send).await {
+                Some(text) => text,
+                None => {
+                    eprintln!("Window failed for: {lower}..{upper}. step was {dynamic_step}");
+                    window_failed = true;
+                    break;
+                }
+            };
 
             if text == EMPTY_REPLY {
                 has_next = false;
@@ -473,20 +498,36 @@ pub async fn process_query_0_9_range(
                 Ok(t) => t,
                 Err(t) => {
                     eprintln!("Got this response:  {text}");
-                    panic!("Got this problem: {t}");
+                    eprintln!("parsing failed: {t}");
+                    has_next = false;
+                    continue;
                 }
             };
 
             eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
-            next = Option::from(res2.data.search.page_info.end_cursor);
+            next = res2.data.search.page_info.end_cursor;
             nodes.append(&mut res2.data.search.nodes);
+        }
+
+        if window_failed {
+            if dynamic_step > 1 {
+                let new_step = (dynamic_step / 2).max(1); // Maybe window is too big, hence, also I am doing max (1) to make sure, the minimum step is 1.
+                eprintln!("Reducing {dynamic_step} to {new_step}");
+                dynamic_step = new_step;
+            } else {
+                eprintln!("WARNING! SKIPPING {lower}..{upper}.");
+                lower = upper;
+                dynamic_step = base_step;
+            }
+            continue;
         }
 
         let repo_data: Vec<RepoData> = stream::iter(nodes)
             .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
             .map(|node| {
                 let client = Arc::clone(&client);
+                println!("Processing repo: {}/{}", node.owner.login, node.name);
                 async move { get_repo_data(&node, is_package, &client).await }
             })
             .buffer_unordered(ASYNC_LIMIT)
@@ -501,10 +542,7 @@ pub async fn process_query_0_9_range(
         transaction.commit().await.unwrap();
 
         lower = upper;
-        upper = lower.checked_add_days(Days::new(step)).unwrap();
-        if lower > end {
-            break;
-        }
+        dynamic_step = base_step;
     }
     Ok(())
 }
@@ -520,14 +558,21 @@ pub async fn process_query_10_20_range(
     let start = start_date;
     let end = end_date;
     let mut lower = start;
-    let mut upper = start.checked_add_days(Days::new(step)).unwrap();
+    let base_step = step.max(1);
+    let mut dynamic_step = base_step;
     let client = Arc::new(create_optimized_client());
 
     loop {
+        if lower > end {
+            break;
+        }
+
+        let upper = lower.checked_add_days(Days::new(dynamic_step)).unwrap();
         let mut nodes = Vec::new();
         eprintln!("Now processing:{lower}..{upper}");
         let mut has_next = true;
         let mut next: Option<String> = None;
+        let mut window_failed = false;
 
         while has_next {
             let query_to_send = serde_json::json!({
@@ -540,7 +585,14 @@ pub async fn process_query_10_20_range(
                 }
             });
 
-            let text = fetch_with_retry(&client, query_to_send).await;
+            let text = match fetch_with_retry(&client, query_to_send).await {
+                Some(text) => text,
+                None => {
+                    eprintln!("Window failed for: {lower}..{upper}. step was {dynamic_step}");
+                    window_failed = true;
+                    break;
+                }
+            };
 
             if text == EMPTY_REPLY {
                 has_next = false;
@@ -551,14 +603,29 @@ pub async fn process_query_10_20_range(
                 Ok(t) => t,
                 Err(t) => {
                     eprintln!("Got this response:  {text}");
-                    panic!("Got this problem: {t}");
+                    eprintln!("Parsing failure: {t}");
+                    has_next = false;
+                    continue;
                 }
             };
 
             eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
             has_next = res2.data.search.page_info.has_next_page;
-            next = Option::from(res2.data.search.page_info.end_cursor);
+            next = res2.data.search.page_info.end_cursor;
             nodes.append(&mut res2.data.search.nodes);
+        }
+
+        if window_failed {
+            if dynamic_step > 1 {
+                let new_step = (dynamic_step / 2).max(1); // Maybe window is too big, hence, also I am doing max (1) to make sure, the minimum step is 1.
+                eprintln!("Reducing {dynamic_step} to {new_step}");
+                dynamic_step = new_step;
+            } else {
+                eprintln!("WARNING! SKIPPING {lower}..{upper}.");
+                lower = upper;
+                dynamic_step = base_step;
+            }
+            continue;
         }
 
         let repo_data: Vec<RepoData> = stream::iter(nodes)
@@ -579,10 +646,7 @@ pub async fn process_query_10_20_range(
         transaction.commit().await.unwrap();
 
         lower = upper;
-        upper = lower.checked_add_days(Days::new(step)).unwrap();
-        if lower > end {
-            break;
-        }
+        dynamic_step = base_step;
     }
     Ok(())
 }
@@ -736,7 +800,7 @@ async fn get_build_zig_zon_data_wrapper(
 /// becuase, initially, I wasn't adding any timeouts.
 fn create_optimized_client() -> reqwest::Client {
     reqwest::Client::builder()
-        .pool_max_idle_per_host(20)
+        .pool_max_idle_per_host(90)
         .pool_idle_timeout(Duration::from_secs(90))
         .timeout(Duration::from_secs(30))
         .connect_timeout(Duration::from_secs(10))
@@ -744,14 +808,23 @@ fn create_optimized_client() -> reqwest::Client {
         .expect("Failed to create HTTP client")
 }
 
+const MAX_RETRIES: usize = 4;
+const INITIAL_WAITING_TIME: u64 = 2;
+const MAX_WAITING_TIME: u64 = 16;
+
 // Helper to reduce code duplication
-async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::Value) -> String {
+async fn fetch_with_retry(
+    client: &reqwest::Client,
+    query_to_send: serde_json::Value,
+) -> Option<String> {
     let mut retry_count = 0usize;
-    let mut rate_limit_danger_timelimit = 2;
+    let mut waiting_time = INITIAL_WAITING_TIME;
+    let mut client = client.clone(); // allow replacement
 
     loop {
-        if retry_count > 8 {
-            panic!("Tried {} times, still problem.", retry_count);
+        if retry_count >= MAX_RETRIES {
+            eprintln!("Tried {retry_count} times, still problem. Returning failure.");
+            return None;
         }
 
         match client
@@ -768,20 +841,35 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
                     eprintln!("GitHub API error: {status}");
                     retry_count += 1;
 
-                    if status == 429 || status == 403 {
-                        rate_limit_danger_timelimit = rate_limit_danger_timelimit * 2;
-                        eprintln!("Rate limited, backing off for {rate_limit_danger_timelimit}s");
+                    if status == 502 {
+                        eprintln!("502 Bad Gateway — recreating client");
+                        client = create_optimized_client();
                     }
 
-                    tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit)).await;
+                    if status == 429 || status == 403 || status == 502 {
+                        waiting_time = (waiting_time * 2).min(MAX_WAITING_TIME);
+                        eprintln!("Backing off for {waiting_time}s before retry");
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(waiting_time)).await;
                     continue;
                 }
+
                 match resp.text().await {
-                    Ok(body) => return body,
+                    Ok(body) if body.is_empty() => {
+                        eprintln!(
+                            "GitHub returned empty body (attempt {retry_count}), retrying..."
+                        );
+                        retry_count += 1;
+                        tokio::time::sleep(Duration::from_secs(waiting_time)).await;
+                        continue;
+                    }
+                    Ok(body) => return Some(body),
                     Err(e) => {
                         eprintln!("problem: {e}");
                         retry_count += 1;
-                        tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit)).await;
+                        waiting_time = (waiting_time * 2).min(MAX_WAITING_TIME);
+                        tokio::time::sleep(Duration::from_secs(waiting_time)).await;
                         continue;
                     }
                 }
@@ -789,7 +877,8 @@ async fn fetch_with_retry(client: &reqwest::Client, query_to_send: serde_json::V
             Err(e) => {
                 eprintln!("GitHub Error: {e}");
                 retry_count += 1;
-                tokio::time::sleep(Duration::from_secs(rate_limit_danger_timelimit.max(10))).await;
+                waiting_time = (waiting_time * 2).min(MAX_WAITING_TIME);
+                tokio::time::sleep(Duration::from_secs(waiting_time.max(10))).await;
                 continue;
             }
         }
