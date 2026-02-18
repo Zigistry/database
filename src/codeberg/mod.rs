@@ -2,7 +2,6 @@ mod codeberg_data;
 mod codeberg_process_release;
 mod helper_functions;
 pub mod types;
-use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
 use crate::codeberg::codeberg_data::RepoData;
@@ -10,7 +9,6 @@ use crate::codeberg::helper_functions::get_build_zig_zon_data;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
-use chrono::NaiveDateTime;
 use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
 use libsql::{Connection, Transaction, params};
@@ -313,7 +311,7 @@ pub async fn fetch_all_codeberg_repos(
         eprintln!("Processing: {}", url);
 
         let mut responce = Option::None;
-        for _ in 0..5 {
+        for attempt_count in 0..5 {
             match client
                 .get(&url)
                 .header("Authorization", &*CODEBERG_KEY)
@@ -323,7 +321,17 @@ pub async fn fetch_all_codeberg_repos(
                 Ok(resp) => {
                     if !resp.status().is_success() {
                         eprintln!("Codeberg status: {}", resp.status());
-                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        let wait_secs = if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                            resp.headers()
+                                .get("Retry-After")
+                                .and_then(|v| v.to_str().ok())
+                                .and_then(|s| s.parse::<u64>().ok())
+                                .unwrap_or(60)
+                        } else {
+                            2u64.pow(attempt_count)
+                        };
+                        eprintln!("Waiting {} seconds before retry...", wait_secs);
+                        tokio::time::sleep(std::time::Duration::from_secs(wait_secs)).await;
                         continue;
                     }
 
@@ -337,18 +345,25 @@ pub async fn fetch_all_codeberg_repos(
                                 let snippet: String = body.chars().take(300).collect();
                                 eprintln!("Failed to parse JSON: {}", e);
                                 eprintln!("Codeberg body (truncated): {}", snippet);
-                                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                                tokio::time::sleep(std::time::Duration::from_secs(
+                                    2u64.pow(attempt_count),
+                                ))
+                                .await;
                             }
                         },
                         Err(e) => {
                             eprintln!("Failed to read response body: {}", e);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            tokio::time::sleep(std::time::Duration::from_secs(
+                                2u64.pow(attempt_count),
+                            ))
+                            .await;
                         }
                     }
                 }
                 Err(e) => {
                     eprintln!("Failed to send request: {}", e);
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(attempt_count)))
+                        .await;
                 }
             }
         }
@@ -375,6 +390,7 @@ pub async fn fetch_all_codeberg_repos(
 
         transaction.commit().await.unwrap();
         page += 1;
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
     }
 
     Ok(())
