@@ -444,23 +444,22 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     }
 }
 
-pub async fn process_query_0_9_range(
+pub async fn process_query_range(
     query: &str,
     is_package: bool,
     pool: Arc<Connection>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
     step: u64,
+    stars_filter: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let start = start_date;
-    let end = end_date;
-    let mut lower = start;
+    let mut lower = start_date;
     let base_step = step.max(1); // Again, I am doing this to make sure the minimum step is 1 day.
     let mut dynamic_step = base_step;
     let client = Arc::new(create_optimized_client());
 
     loop {
-        if lower > end {
+        if lower > end_date {
             break;
         }
 
@@ -475,7 +474,9 @@ pub async fn process_query_0_9_range(
             let query_to_send = serde_json::json!({
                 "query": GH_GRAPH_QL_QUERY,
                 "variables":  {
-                    "query": format!("topic:{query} stars:0..9 created:{}..{}", lower.format("%Y-%m-%dT%H:%M:%SZ"), upper.format("%Y-%m-%dT%H:%M:%SZ")),
+                    // I know this could be done in a single function.
+                    // but specifically for testing, I am doing this.
+                    "query": format!("topic:{query} {stars_filter} created:{}..{}", lower.format("%Y-%m-%dT%H:%M:%SZ"), upper.format("%Y-%m-%dT%H:%M:%SZ")),
                     "next_value": next
                 }
             });
@@ -547,127 +548,24 @@ pub async fn process_query_0_9_range(
     Ok(())
 }
 
-pub async fn process_query_10_20_range(
-    query: &str,
-    is_package: bool,
-    pool: Arc<Connection>,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
-    step: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let start = start_date;
-    let end = end_date;
-    let mut lower = start;
-    let base_step = step.max(1);
-    let mut dynamic_step = base_step;
-    let client = Arc::new(create_optimized_client());
-
-    loop {
-        if lower > end {
-            break;
-        }
-
-        let upper = lower.checked_add_days(Days::new(dynamic_step)).unwrap();
-        let mut nodes = Vec::new();
-        eprintln!("Now processing:{lower}..{upper}");
-        let mut has_next = true;
-        let mut next: Option<String> = None;
-        let mut window_failed = false;
-
-        while has_next {
-            let query_to_send = serde_json::json!({
-                "query": GH_GRAPH_QL_QUERY,
-                "variables":  {
-                    // I know this could be done in a single function.
-                    // but specifically for testing, I am doing this.
-                    "query": format!("topic:{query} stars:10..20 created:{}..{}", lower.format("%Y-%m-%dT%H:%M:%SZ"), upper.format("%Y-%m-%dT%H:%M:%SZ")),
-                    "next_value": next
-                }
-            });
-
-            let text = match fetch_with_retry(&client, query_to_send).await {
-                Some(text) => text,
-                None => {
-                    eprintln!("Window failed for: {lower}..{upper}. step was {dynamic_step}");
-                    window_failed = true;
-                    break;
-                }
-            };
-
-            if text == EMPTY_REPLY {
-                has_next = false;
-                continue;
-            }
-
-            let mut res2: types::Root = match serde_json::from_str(&text) {
-                Ok(t) => t,
-                Err(t) => {
-                    eprintln!("Got this response:  {text}");
-                    eprintln!("Parsing failure: {t}");
-                    has_next = false;
-                    continue;
-                }
-            };
-
-            eprintln!("{:#?}", res2.data.search.page_info.has_next_page);
-            has_next = res2.data.search.page_info.has_next_page;
-            next = res2.data.search.page_info.end_cursor;
-            nodes.append(&mut res2.data.search.nodes);
-        }
-
-        if window_failed {
-            if dynamic_step > 1 {
-                let new_step = (dynamic_step / 2).max(1); // Maybe window is too big, hence, also I am doing max (1) to make sure, the minimum step is 1.
-                eprintln!("Reducing {dynamic_step} to {new_step}");
-                dynamic_step = new_step;
-            } else {
-                eprintln!("WARNING! SKIPPING {lower}..{upper}.");
-                lower = upper;
-                dynamic_step = base_step;
-            }
-            continue;
-        }
-
-        let repo_data: Vec<RepoData> = stream::iter(nodes)
-            .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
-            .map(|node| {
-                let client = Arc::clone(&client);
-                async move { get_repo_data(&node, is_package, &client).await }
-            })
-            .buffer_unordered(ASYNC_LIMIT)
-            .collect()
-            .await;
-
-        // Now do all database operations in a quick transaction
-        let transaction = pool.transaction().await.unwrap();
-        for data in repo_data {
-            persist_repo_data(&transaction, data).await;
-        }
-        transaction.commit().await.unwrap();
-
-        lower = upper;
-        dynamic_step = base_step;
-    }
-    Ok(())
-}
-
 pub async fn github_main_0_9(
     pool: Arc<Connection>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
     step: u64,
 ) -> Result<(), Box<dyn Error>> {
-    process_query_0_9_range(
+    process_query_range(
         "zig-package",
         true,
         Arc::clone(&pool),
         start_date,
         end_date,
         step,
+        "stars:0..9",
     )
     .await
     .unwrap();
-    process_query_0_9_range("zig", false, pool, start_date, end_date, step)
+    process_query_range("zig", false, pool, start_date, end_date, step, "stars:0..9")
         .await
         .unwrap();
     Ok(())
@@ -679,19 +577,28 @@ pub async fn github_main_10_20(
     end_date: NaiveDateTime,
     step: u64,
 ) -> Result<(), Box<dyn Error>> {
-    process_query_10_20_range(
+    process_query_range(
         "zig-package",
         true,
         Arc::clone(&pool),
         start_date,
         end_date,
         step,
+        "stars:10..20",
     )
     .await
     .unwrap();
-    process_query_10_20_range("zig", false, pool, start_date, end_date, step)
-        .await
-        .unwrap();
+    process_query_range(
+        "zig",
+        false,
+        pool,
+        start_date,
+        end_date,
+        step,
+        "stars:10..20",
+    )
+    .await
+    .unwrap();
     Ok(())
 }
 
