@@ -1,9 +1,3 @@
--- Also, I have added avatar_id
--- to both repos and userm even though they are the same
--- Just for normalization
--- I don't want, sql to process 2 queries on every request,
--- too much latency. To cut down on latency, avatar_id will
--- be duplicated for both repos and users.
 CREATE TABLE users (
   id VARCHAR(45) PRIMARY KEY,
   avatar_id VARCHAR(65) NOT NULL,
@@ -15,8 +9,6 @@ CREATE TABLE repos (
   -- The username is 40 characters at max, repo name is 100 and the key and slashes is 5
   -- Hence, I can keep this at 150.
   id VARCHAR(150) PRIMARY KEY,
-  -- for github its the username itself, for codeberg its 64 bits, hence, I'll keep it at 65
-  avatar_id VARCHAR(65) NOT NULL,
   -- 40 + the key and the slash i.e 3, so I think best is 45 for htis.
   owner VARCHAR(45) NOT NULL,
   -- GITHUB CODEBERG like, 8 characters, so 10
@@ -36,8 +28,8 @@ CREATE TABLE repos (
   is_archived BOOLEAN NOT NULL CHECK (is_archived IN (0, 1)),
   is_disabled BOOLEAN NOT NULL CHECK (is_disabled IN (0, 1)),
   is_fork BOOLEAN NOT NULL CHECK (is_fork IN (0, 1)),
-  minimum_zig_version TEXT NOT NULL, -- Again, this I have added a join to make sure
-  -- I don't have to read the default branch information just to get this info.
+  -- Making this only 30 characters limit, it shouldn't be more than that.
+
   -- Simple google tells, its just 36 characters, so, ok?
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
@@ -78,7 +70,8 @@ CREATE TABLE releases (
   version VARCHAR(255),
   is_prerelease BOOLEAN NOT NULL,
   published_at TIMESTAMP NOT NULL,
-  minimum_zig_version TEXT NOT NULL,
+  -- Making this only 30 characters limit, it shouldn't be more than that.
+  minimum_zig_version VARCHAR(30) NOT NULL,
   readme_url TEXT NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id) ON DELETE CASCADE,
   UNIQUE (repo_id, version)
@@ -131,8 +124,25 @@ CREATE TABLE banned_user_list (
   id VARCHAR(45) PRIMARY KEY
 );
 
+-- This is for making it easier to fetch
+-- details of these repositories
+-- to improve the accuracy of the algorithm
+-- which detects such repos.
+CREATE TABLE banned_repo_list (
+  id VARCHAR(150) PRIMARY KEY
+);
+
+-- Needs update
+CREATE TABLE needs_updates (
+  id VARCHAR(150) PRIMARY KEY, -- All the repos that need updates.
+  type_of_repo VARCHAR(10) NOT NULL -- This is like, package or program.
+);
+
 -- I do search for "All repos where username is username"
 CREATE INDEX repo_owner_index ON repos (owner);
+
+-- These are for quickly finding banned users.
+CREATE INDEX banned_user_list_index ON banned_user_list (id);
 
 -- Again, I do this, specially for the top 10 latest repos
 CREATE INDEX repo_created_at_index ON repos (created_at);
@@ -153,9 +163,3 @@ CREATE INDEX repo_topics_repo_id_index ON repo_topics (repo_id);
 
 -- Ok, on every package I also need number of repo dependents.
 CREATE INDEX repo_dependents_repo_id_index ON repo_dependents (repo_id);
-
--- I do search for "All packages where username is username", and also
--- for  "All programs where username is username"
-CREATE INDEX packages_repo_id_index ON packages (repo_id);
-
-CREATE INDEX programs_repo_id_index ON programs (repo_id);
