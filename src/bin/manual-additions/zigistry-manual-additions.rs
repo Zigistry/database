@@ -1,6 +1,12 @@
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc};
-use zigistry::{GITHUB_KEY, database::connect_to_database, github::types::Node};
+use zigistry::{
+    GITHUB_KEY,
+    database::{
+        INDEX_SECTION_NAME_MAX_LEN, REPO_ID_MAX_LEN, connect_to_database, truncate_to_char_limit,
+    },
+    github::types::Node,
+};
 
 #[derive(Debug, Deserialize)]
 struct ManualAdditions {
@@ -91,10 +97,13 @@ pub async fn main() {
     for (section, repos) in config.manual_additions.sections {
         for repo in repos {
             process_repo_from_string(&repo, &client, connection.clone()).await;
+            let section_name =
+                truncate_to_char_limit(&section.to_lowercase(), INDEX_SECTION_NAME_MAX_LEN);
+            let repo_id = truncate_to_char_limit(&repo.to_lowercase(), REPO_ID_MAX_LEN);
             connection
                 .execute(
                     "INSERT OR REPLACE INTO index_sections (section_name, repo_id) VALUES (?, ?)",
-                    (section.clone().to_lowercase(), repo.clone().to_lowercase()),
+                    (section_name, repo_id),
                 )
                 .await
                 .expect(&format!("FAILED ON: {repo}"));

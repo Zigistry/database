@@ -1,19 +1,6 @@
-query ($query: String!, $next_value: String) {
-  #  rateLimit {
-  #    cost
-  #    remaining
-  #    resetAt
-  #  }
-  search(query: $query, type: REPOSITORY, first: 100, after: $next_value) {
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    nodes {
-      ... on Repository {
-        ...RepoFields
-      }
-    }
+query ($owner_name: String!, $repo_name: String!) {
+  repository(owner: $owner_name, name: $repo_name) {
+    ...RepoFields
   }
 }
 
@@ -35,6 +22,11 @@ fragment RepoFields on Repository {
   }
   defaultBranchRef {
     name
+    target {
+      ... on Commit {
+        oid
+      }
+    }
   }
   licenseInfo {
     spdxId

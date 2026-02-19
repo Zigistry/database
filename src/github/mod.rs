@@ -1,7 +1,11 @@
 pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
+use crate::constants::limits;
 use crate::constants::{ASYNC_LIMIT, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
+use crate::database::{
+    parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
+};
 use crate::github::github_data::{ReleaseData, RepoData};
 use crate::github::types::Node;
 use crate::{GITHUB_KEY, custom_types};
@@ -211,9 +215,66 @@ pub async fn get_repo_data(
 }
 
 pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
-    let repository = data.repository;
+    let RepoData {
+        repository,
+        is_package,
+        user_id,
+        repo_id,
+        readme_url,
+        readme_keywords,
+        build_zig_zon_version,
+        build_zig_zon_dependencies,
+        releases,
+    } = data;
 
-    let _ = tokio::join!(
+    let repo_id = truncate_to_char_limit(&repo_id, limits::REPO_ID_MAX_LEN);
+    let user_id = truncate_to_char_limit(&user_id, limits::USER_ID_MAX_LEN);
+    let platform = truncate_to_char_limit("github", limits::PLATFORM_MAX_LEN);
+    let avatar_id = truncate_to_char_limit(&repository.owner.login, limits::USER_AVATAR_ID_MAX_LEN);
+    let owner_id = truncate_to_char_limit(&user_id, limits::REPO_OWNER_MAX_LEN);
+    let user_bio =
+        truncate_option_to_char_limit(repository.owner.bio.as_deref(), limits::USER_BIO_MAX_LEN)
+            .or_else(|| {
+                truncate_option_to_char_limit(
+                    repository.owner.description.as_deref(),
+                    limits::USER_BIO_MAX_LEN,
+                )
+            });
+    let description = truncate_option_to_char_limit(
+        repository.description.as_deref(),
+        limits::REPO_DESCRIPTION_MAX_LEN,
+    );
+    let default_branch_ref = repository.default_branch_ref.clone().unwrap_or_default();
+    let default_branch_name = truncate_to_char_limit(
+        &default_branch_ref.name,
+        limits::REPO_DEFAULT_BRANCH_MAX_LEN,
+    );
+    let latest_commit_hash = default_branch_ref
+        .target
+        .as_ref()
+        .map(|target| target.oid.as_str())
+        .map(|oid| truncate_to_char_limit(oid, limits::REPO_COMMIT_HASH_MAX_LEN))
+        .filter(|oid| !oid.is_empty())
+        .unwrap_or_else(|| "unknown".to_string());
+    let license = truncate_to_char_limit(
+        repository
+            .license_info
+            .as_ref()
+            .map(|l| l.spdx_id.as_str())
+            .unwrap_or("-"),
+        limits::REPO_LICENSE_MAX_LEN,
+    );
+    let primary_language = truncate_to_char_limit(
+        repository
+            .primary_language
+            .as_ref()
+            .map(|lang| lang.name.as_str())
+            .unwrap_or("-"),
+        limits::REPO_PRIMARY_LANGUAGE_MAX_LEN,
+    );
+    let database_updated_at = utc_now_timestamp();
+
+    let (user_insert_result, repo_insert_result, repo_search_insert_result) = tokio::join!(
         transaction.execute(
             r#"
             INSERT INTO users (id, platform, avatar_id, bio)
@@ -223,22 +284,16 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 avatar_id = excluded.avatar_id,
                 bio = excluded.bio
             "#,
-            params![
-                data.user_id.clone(),
-                "github",
-                repository.owner.login.clone(),
-                repository.owner.bio.clone()
-            ],
+            params![user_id.clone(), platform.clone(), avatar_id, user_bio],
         ),
         transaction.execute(
             r#"
             INSERT INTO repos
-                (id, avatar_id, owner, platform, description, issues_count, default_branch_name, fork_count,
+                (id, owner, platform, description, issues_count, default_branch_name, fork_count,
                  stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
-                 is_fork, minimum_zig_version, license, primary_language)
+                 is_fork, license, primary_language, latest_commit_hash, last_updated_in_this_database)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
-                avatar_id = excluded.avatar_id,
                 owner = excluded.owner,
                 platform = excluded.platform,
                 description = excluded.description,
@@ -253,16 +308,17 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 is_disabled = excluded.is_disabled,
                 is_fork = excluded.is_fork,
                 license = excluded.license,
-                primary_language = excluded.primary_language
+                primary_language = excluded.primary_language,
+                latest_commit_hash = excluded.latest_commit_hash,
+                last_updated_in_this_database = excluded.last_updated_in_this_database
             "#,
             params![
-                data.repo_id.clone(),
-                repository.owner.login.clone(),
-                data.user_id.clone(),
-                "github",
-                repository.description.clone(),
+                repo_id.clone(),
+                owner_id,
+                platform,
+                description,
                 repository.issues.total_count,
-                repository.default_branch_ref.clone().unwrap_or_default().name,
+                default_branch_name,
                 repository.fork_count,
                 repository.stargazer_count,
                 repository.watchers.total_count,
@@ -271,33 +327,57 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 repository.is_archived,
                 repository.is_disabled,
                 repository.is_fork,
-                data.build_zig_zon_version.clone(),
-                repository
-                    .license_info
-                    .as_ref()
-                    .and_then(|l| Some(l.spdx_id.clone()))
-                    .unwrap_or_else(|| "-".to_string()),
-                repository.primary_language.clone().unwrap_or_default().name,
+                license,
+                primary_language,
+                latest_commit_hash,
+                database_updated_at,
             ],
         ),
         transaction.execute(
             r#"INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![data.repo_id.clone(), data.readme_keywords],
+            params![repo_id.clone(), readme_keywords],
         ),
-        transaction.execute(
-            r#"INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)"#,
-            params![
-                data.repo_id.clone(),
-                repository
-                .repository_topics
-                    .edges
-                    .iter()
-                    .map(|element| element.node.topic.name.clone())
-                    .collect::<Vec<String>>()
-                    .join(",")
-                ],
-        )
     );
+    user_insert_result.unwrap();
+    repo_insert_result.unwrap();
+    repo_search_insert_result.unwrap();
+
+    transaction
+        .execute(
+            "DELETE FROM repo_topics WHERE repo_id = ?",
+            params![repo_id.clone()],
+        )
+        .await
+        .unwrap();
+
+    let mut topics: Vec<String> = repository
+        .repository_topics
+        .nodes
+        .iter()
+        .map(|element| truncate_to_char_limit(&element.topic.name, limits::TOPIC_MAX_LEN))
+        .filter(|topic| !topic.is_empty())
+        .collect();
+    topics.extend(
+        repository
+            .repository_topics
+            .edges
+            .iter()
+            .map(|element| truncate_to_char_limit(&element.node.topic.name, limits::TOPIC_MAX_LEN))
+            .filter(|topic| !topic.is_empty()),
+    );
+
+    let mut seen = std::collections::HashSet::new();
+    topics.retain(|topic| seen.insert(topic.clone()));
+
+    for topic in topics {
+        transaction
+            .execute(
+                r#"INSERT OR IGNORE INTO repo_topics (repo_id, topic) VALUES (?, ?)"#,
+                params![repo_id.clone(), topic],
+            )
+            .await
+            .unwrap();
+    }
 
     let mut rows = transaction
         .query(
@@ -313,12 +393,18 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
             RETURNING id
             "#,
             params![
-                data.repo_id.clone(),
-                "__ZIGISTRY__DEFAULT__BRANCH__",
+                repo_id.clone(),
+                truncate_to_char_limit(
+                    "__ZIGISTRY__DEFAULT__BRANCH__",
+                    limits::RELEASE_VERSION_MAX_LEN
+                ),
                 false,
                 repository.created_at.clone(),
-                data.build_zig_zon_version.clone(),
-                data.readme_url.clone(),
+                truncate_to_char_limit(
+                    &build_zig_zon_version,
+                    limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
+                ),
+                readme_url.clone(),
             ],
         )
         .await
@@ -335,33 +421,44 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .await
         .unwrap();
 
-    if !data.build_zig_zon_dependencies.is_empty() {
-        let placeholders = data
-            .build_zig_zon_dependencies
+    if !build_zig_zon_dependencies.is_empty() {
+        let placeholders = build_zig_zon_dependencies
             .iter()
             .map(|_| "(?, ?, ?, ?, ?, ?)")
             .collect::<Vec<_>>()
             .join(", ");
 
         let sql = format!(
-            "INSERT INTO release_dependencies (release_id, name, hash, lazy, url, path) VALUES {}",
+            "INSERT INTO release_dependencies (release_id, name, hash, is_lazy, url, path) VALUES {}",
             placeholders
         );
 
         let mut params_vec: Vec<libsql::Value> = Vec::new();
-        for dependency in &data.build_zig_zon_dependencies {
+        for dependency in &build_zig_zon_dependencies {
             params_vec.push(default_branch_release_id.into());
-            params_vec.push(dependency.name.clone().into());
-            params_vec.push(dependency.hash.clone().into());
-            params_vec.push(dependency.lazy.clone().into());
-            params_vec.push(dependency.url.clone().into());
-            params_vec.push(dependency.path.clone().into());
+            params_vec.push(
+                truncate_to_char_limit(&dependency.name, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN)
+                    .into(),
+            );
+            params_vec.push(
+                truncate_to_char_limit(&dependency.hash, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN)
+                    .into(),
+            );
+            params_vec.push(i64::from(parse_lazy_flag(&dependency.lazy)).into());
+            params_vec.push(
+                truncate_to_char_limit(&dependency.url, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN)
+                    .into(),
+            );
+            params_vec.push(
+                truncate_to_char_limit(&dependency.path, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN)
+                    .into(),
+            );
         }
 
         transaction.execute(&sql, params_vec).await.unwrap();
     }
 
-    for release_data in data.releases {
+    for release_data in releases {
         let mut rows = transaction
             .query(
                 r#"
@@ -376,11 +473,14 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 RETURNING id
                 "#,
                 params![
-                    data.repo_id.clone(),
-                    release_data.tag_name,
+                    repo_id.clone(),
+                    truncate_to_char_limit(&release_data.tag_name, limits::RELEASE_VERSION_MAX_LEN),
                     release_data.is_prerelease,
                     release_data.published_at,
-                    release_data.minimum_zig_version,
+                    truncate_to_char_limit(
+                        &release_data.minimum_zig_version,
+                        limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
+                    ),
                     release_data.readme_url,
                 ],
             )
@@ -407,29 +507,53 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 .join(", ");
 
             let sql = format!(
-                "INSERT INTO release_dependencies (release_id, name, hash, lazy, url, path) VALUES {}",
+                "INSERT INTO release_dependencies (release_id, name, hash, is_lazy, url, path) VALUES {}",
                 placeholders
             );
 
             let mut params_vec: Vec<libsql::Value> = Vec::new();
             for dependency in &release_data.dependencies {
                 params_vec.push(this_specific_release_id.into());
-                params_vec.push(dependency.name.clone().into());
-                params_vec.push(dependency.hash.clone().into());
-                params_vec.push(dependency.lazy.clone().into());
-                params_vec.push(dependency.url.clone().into());
-                params_vec.push(dependency.path.clone().into());
+                params_vec.push(
+                    truncate_to_char_limit(
+                        &dependency.name,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN,
+                    )
+                    .into(),
+                );
+                params_vec.push(
+                    truncate_to_char_limit(
+                        &dependency.hash,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN,
+                    )
+                    .into(),
+                );
+                params_vec.push(i64::from(parse_lazy_flag(&dependency.lazy)).into());
+                params_vec.push(
+                    truncate_to_char_limit(
+                        &dependency.url,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN,
+                    )
+                    .into(),
+                );
+                params_vec.push(
+                    truncate_to_char_limit(
+                        &dependency.path,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN,
+                    )
+                    .into(),
+                );
             }
 
             transaction.execute(&sql, params_vec).await.unwrap();
         }
     }
 
-    if data.is_package {
+    if is_package {
         transaction
             .execute(
                 r#"INSERT OR IGNORE INTO packages (repo_id) VALUES(?)"#,
-                params![data.repo_id],
+                params![repo_id],
             )
             .await
             .unwrap();
@@ -437,7 +561,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         transaction
             .execute(
                 r#"INSERT OR IGNORE INTO programs (repo_id) VALUES(?)"#,
-                params![data.repo_id],
+                params![repo_id],
             )
             .await
             .unwrap();

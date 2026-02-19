@@ -62,6 +62,13 @@ pub struct Issues {
 #[serde(rename_all = "camelCase")]
 pub struct DefaultBranchRef {
     pub name: String,
+    pub target: Option<DefaultBranchTarget>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DefaultBranchTarget {
+    pub oid: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

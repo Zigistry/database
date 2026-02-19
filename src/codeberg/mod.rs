@@ -8,6 +8,10 @@ use crate::codeberg::codeberg_data::RepoData;
 use crate::codeberg::helper_functions::get_build_zig_zon_data;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
+use crate::constants::limits;
+use crate::database::{
+ parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp,
+};
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
 use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
@@ -52,48 +56,68 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
 }
 
 pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoData) {
-    let repository = data.repository;
+    let RepoData {
+        repository,
+        user_id,
+        repo_id,
+        readme_url,
+        readme_keywords,
+        build_zig_zon_version,
+        build_zig_zon_dependencies,
+        releases,
+    } = data;
 
-    transaction
-        .execute(
+    let repo_id = truncate_to_char_limit(&repo_id, limits::REPO_ID_MAX_LEN);
+    let user_id = truncate_to_char_limit(&user_id, limits::USER_ID_MAX_LEN);
+    let platform = truncate_to_char_limit("codeberg", limits::PLATFORM_MAX_LEN);
+    let avatar_id = truncate_to_char_limit(
+        repository
+            .owner
+            .avatar_url
+            .rsplit('/')
+            .next()
+            .unwrap_or(repository.owner.login.as_str()),
+        limits::USER_AVATAR_ID_MAX_LEN,
+    );
+    let owner_id = truncate_to_char_limit(&user_id, limits::REPO_OWNER_MAX_LEN);
+    let user_bio = Some(truncate_to_char_limit(
+        &repository.owner.description,
+        limits::USER_BIO_MAX_LEN,
+    ));
+    let description = Some(truncate_to_char_limit(
+        &repository.description,
+        limits::REPO_DESCRIPTION_MAX_LEN,
+    ));
+    let default_branch_name =
+        truncate_to_char_limit(&repository.default_branch, limits::REPO_DEFAULT_BRANCH_MAX_LEN);
+    let latest_commit_hash = truncate_to_char_limit("unknown", limits::REPO_COMMIT_HASH_MAX_LEN);
+    let license = truncate_to_char_limit("-", limits::REPO_LICENSE_MAX_LEN);
+    let primary_language =
+        truncate_to_char_limit(&repository.language, limits::REPO_PRIMARY_LANGUAGE_MAX_LEN);
+    let database_updated_at = utc_now_timestamp();
+    let is_package = repository.topics.iter().any(|topic| topic == "zig-package");
+
+    let (user_insert_result, repo_insert_result, repo_search_insert_result) = tokio::join!(
+        transaction.execute(
             r#"
-                        INSERT INTO users
-                            (id, platform, avatar_id, bio)
-                        VALUES (?, ?, ?, ?)
-                        ON CONFLICT(id) DO UPDATE SET
-                            platform = excluded.platform,
-                            avatar_id = excluded.avatar_id,
-                            bio = excluded.bio
-                "#,
-            params![
-                data.user_id.clone(),
-                "codeberg",
-                // I am using owner login name
-                // for the avatar id because
-                // it works and uses very low storage
-                // as compaired to storing the entire
-                // avatar url.
-                repository
-                    .owner
-                    .avatar_url
-                    .rsplit('/')
-                    .next()
-                    .unwrap()
-                    .to_string(),
-                repository.owner.description.clone()
-            ],
-        )
-        .await
-        .unwrap();
-
-    transaction.execute(
-        r#"
-            INSERT INTO repos (id, avatar_id, owner, platform, description, issues_count,
-                default_branch_name, fork_count, stargazer_count, watchers_count, pushed_at, created_at,
-                is_archived, is_disabled, is_fork, minimum_zig_version, license, primary_language)
+            INSERT INTO users
+                (id, platform, avatar_id, bio)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                platform = excluded.platform,
+                avatar_id = excluded.avatar_id,
+                bio = excluded.bio
+            "#,
+            params![user_id.clone(), platform.clone(), avatar_id, user_bio],
+        ),
+        transaction.execute(
+            r#"
+            INSERT INTO repos
+                (id, owner, platform, description, issues_count, default_branch_name, fork_count,
+                 stargazer_count, watchers_count, pushed_at, created_at, is_archived, is_disabled,
+                 is_fork, license, primary_language, latest_commit_hash, last_updated_in_this_database)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
-                avatar_id = excluded.avatar_id,
                 owner = excluded.owner,
                 platform = excluded.platform,
                 description = excluded.description,
@@ -107,53 +131,68 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 is_archived = excluded.is_archived,
                 is_disabled = excluded.is_disabled,
                 is_fork = excluded.is_fork,
-                minimum_zig_version = excluded.minimum_zig_version,
                 license = excluded.license,
-                primary_language = excluded.primary_language;
-        "#,
-        params![
-            data.repo_id.clone(),
-            repository.owner.avatar_url.rsplit("/").next().unwrap().to_string(),
-            data.user_id,
-            "codeberg",
-            repository.description.to_string(),
-            repository.open_issues_count,
-            repository.default_branch.clone(),
-            repository.forks_count,
-            repository.stars_count,
-            repository.watchers_count,
-            repository.updated_at.clone(),
-            repository.created_at.clone(),
-            repository.archived,
-            repository.archived,
-            repository.fork,
-            data.build_zig_zon_version.clone(),
-            "-",
-            repository.language.clone(),
-        ]
-    )
-    .await
-    .unwrap();
+                primary_language = excluded.primary_language,
+                latest_commit_hash = excluded.latest_commit_hash,
+                last_updated_in_this_database = excluded.last_updated_in_this_database
+            "#,
+            params![
+                repo_id.clone(),
+                owner_id,
+                platform,
+                description,
+                repository.open_issues_count,
+                default_branch_name,
+                repository.forks_count,
+                repository.stars_count,
+                repository.watchers_count,
+                repository.updated_at.clone(),
+                repository.created_at.clone(),
+                repository.archived,
+                repository.archived,
+                repository.fork,
+                license,
+                primary_language,
+                latest_commit_hash,
+                database_updated_at,
+            ]
+        ),
+        transaction.execute(
+            r#"INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
+            params![repo_id.clone(), readme_keywords],
+        )
+    );
+    user_insert_result.unwrap();
+    repo_insert_result.unwrap();
+    repo_search_insert_result.unwrap();
 
     transaction
         .execute(
-            r#"
-                INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)
-            "#,
-            params![data.repo_id.clone(), data.readme_keywords],
+            "DELETE FROM repo_topics WHERE repo_id = ?",
+            params![repo_id.clone()],
         )
         .await
         .unwrap();
 
-    transaction
-        .execute(
-            r#"
-                INSERT OR REPLACE INTO repo_topics (repo_id, topic) VALUES (?, ?)
-            "#,
-            params![data.repo_id.clone(), repository.topics.join(",").clone()],
-        )
-        .await
-        .unwrap();
+    let mut topics: Vec<String> = repository
+        .topics
+        .iter()
+        .map(|topic| truncate_to_char_limit(topic, limits::TOPIC_MAX_LEN))
+        .filter(|topic| !topic.is_empty())
+        .collect();
+
+    let mut seen = std::collections::HashSet::new();
+    topics.retain(|topic| seen.insert(topic.clone()));
+
+    for topic in topics {
+        transaction
+            .execute(
+                r#"INSERT OR IGNORE INTO repo_topics (repo_id, topic) VALUES (?, ?)"#,
+                params![repo_id.clone(), topic],
+            )
+            .await
+            .unwrap();
+    }
 
     let mut rows = transaction
         .query(
@@ -169,12 +208,12 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 RETURNING id
             "#,
             params![
-                data.repo_id.clone(),
-                "__ZIGISTRY__DEFAULT__BRANCH__",
+                repo_id.clone(),
+                truncate_to_char_limit("__ZIGISTRY__DEFAULT__BRANCH__", limits::RELEASE_VERSION_MAX_LEN),
                 false,
                 repository.created_at.clone(),
-                data.build_zig_zon_version.clone(),
-                data.readme_url
+                truncate_to_char_limit(&build_zig_zon_version, limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN),
+                readme_url
             ],
         )
         .await
@@ -190,21 +229,21 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         .await
         .unwrap();
 
-    for dependency in data.build_zig_zon_dependencies {
+    for dependency in build_zig_zon_dependencies {
         transaction
             .execute(
                 r#"
                     INSERT INTO release_dependencies
-                        (release_id, name, hash, lazy, url, path)
+                        (release_id, name, hash, is_lazy, url, path)
                     VALUES(?, ?, ?, ?, ?, ?)
                 "#,
                 params![
                     default_branch_release_id,
-                    dependency.name,
-                    dependency.hash,
-                    dependency.lazy,
-                    dependency.url,
-                    dependency.path
+                    truncate_to_char_limit(&dependency.name, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                    truncate_to_char_limit(&dependency.hash, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                    i64::from(parse_lazy_flag(&dependency.lazy)),
+                    truncate_to_char_limit(&dependency.url, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                    truncate_to_char_limit(&dependency.path, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
                 ],
             )
             .await
@@ -212,7 +251,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
     }
 
     // Perist releases
-    for r in data.releases {
+    for r in releases {
         let mut rows = transaction
             .query(
                 r#"
@@ -227,11 +266,11 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 RETURNING id
             "#,
                 params![
-                    data.repo_id.clone(),
-                    r.tag_name,
+                    repo_id.clone(),
+                    truncate_to_char_limit(&r.tag_name, limits::RELEASE_VERSION_MAX_LEN),
                     r.is_prerelease,
                     r.published_at,
-                    r.minimum_zig_version,
+                    truncate_to_char_limit(&r.minimum_zig_version, limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN),
                     r.readme_url,
                 ],
             )
@@ -253,16 +292,16 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 .execute(
                     r#"
                         INSERT INTO release_dependencies
-                            (release_id, name, hash, lazy, url, path)
+                            (release_id, name, hash, is_lazy, url, path)
                         VALUES(?, ?, ?, ?, ?, ?)
                     "#,
                     params![
                         this_specific_release_id,
-                        dependency.name,
-                        dependency.hash,
-                        dependency.lazy,
-                        dependency.url,
-                        dependency.path,
+                        truncate_to_char_limit(&dependency.name, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                        truncate_to_char_limit(&dependency.hash, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                        i64::from(parse_lazy_flag(&dependency.lazy)),
+                        truncate_to_char_limit(&dependency.url, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                        truncate_to_char_limit(&dependency.path, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
                     ],
                 )
                 .await
@@ -270,7 +309,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         }
     }
 
-    if repository.topics.contains(&"zig-package".to_string()) {
+    if is_package {
         transaction
             .execute(
                 r#"
@@ -278,7 +317,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                         (repo_id)
                     VALUES(?)
                 "#,
-                params![data.repo_id.clone()],
+                params![repo_id.clone()],
             )
             .await
             .unwrap();
@@ -290,7 +329,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                         (repo_id)
                     VALUES(?)
                 "#,
-                params![data.repo_id.clone()],
+                params![repo_id.clone()],
             )
             .await
             .unwrap();
