@@ -59,7 +59,7 @@ CREATE TABLE repo_topics (
 
 CREATE TABLE repo_dependents (
   repo_id VARCHAR(150) NOT NULL,
-  dependent TEXT NOT NULL,
+  dependent VARCHAR(260) NOT NULL,
   FOREIGN KEY (repo_id) REFERENCES repos (id) ON DELETE CASCADE,
   UNIQUE (repo_id, dependent)
 );
@@ -79,11 +79,11 @@ CREATE TABLE releases (
 
 CREATE TABLE release_dependencies (
   release_id INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  hash TEXT NOT NULL,
-  lazy TEXT NOT NULL,
-  url TEXT NOT NULL,
-  path TEXT NOT NULL,
+  name VARCHAR(260) NOT NULL,
+  hash VARCHAR(260) NOT NULL,
+  lazy VARCHAR(260) NOT NULL,
+  url VARCHAR(260) NOT NULL,
+  path VARCHAR(260) NOT NULL,
   FOREIGN KEY (release_id) REFERENCES releases (id) ON DELETE CASCADE,
   UNIQUE (release_id, name)
 );
