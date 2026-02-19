@@ -42,6 +42,8 @@ CREATE TABLE repos (
   license VARCHAR(40) NOT NULL,
   -- Maybe 50 is perfect here
   primary_language VARCHAR(50) NOT NULL,
+  latest_commit_hash VARCHAR(40) NOT NULL,
+  last_updated_in_this_database TIMESTAMP NOT NULL,
   FOREIGN KEY (owner) REFERENCES users (id) ON DELETE CASCADE
 );
 
@@ -108,6 +110,25 @@ CREATE TABLE packages (
 CREATE TABLE programs (
   repo_id VARCHAR(150) NOT NULL PRIMARY KEY,
   FOREIGN KEY (repo_id) REFERENCES repos (id) ON DELETE CASCADE
+);
+
+CREATE TABLE index_new_repo (
+  id VARCHAR(150) PRIMARY KEY,
+  type_of_repo VARCHAR(10) NOT NULL -- This is like, package or program.
+);
+
+-- For this specifically, I will create a AI model, I will train it to detect
+-- all the scam repos, if my AI algorithm flags a repo
+-- to review it will be added to this table, if no problem, it will continue.
+CREATE TABLE quarantined_repos (
+  id VARCHAR(150) PRIMARY KEY,
+  type_of_repo VARCHAR(10) NOT NULL
+);
+
+-- These are only the users who are either spamming or
+-- shipping malware.
+CREATE TABLE banned_user_list (
+  id VARCHAR(45) PRIMARY KEY
 );
 
 -- I do search for "All repos where username is username"
