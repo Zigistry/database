@@ -2,9 +2,8 @@ use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc};
 use zigistry::{
     GITHUB_KEY,
-    database::{
-        INDEX_SECTION_NAME_MAX_LEN, REPO_ID_MAX_LEN, connect_to_database, truncate_to_char_limit,
-    },
+    constants::limits::{INDEX_SECTION_NAME_MAX_LEN, REPO_ID_MAX_LEN},
+    database::{connect_to_database, truncate_to_char_limit},
     github::types::Node,
 };
 
@@ -29,7 +28,7 @@ struct SingleRepoData {
     repository: Option<Node>,
 }
 
-const MY_GQL_QUERY: &str = include_str!("../../GitHub_GQL_API_Files/single_repo.gql");
+const MY_GQL_QUERY: &str = include_str!("../../GitHub_GQL_API_Files/fetch-single-repo.gql");
 
 async fn process_repo_from_string(
     repo: &str,

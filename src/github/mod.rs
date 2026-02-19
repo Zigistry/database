@@ -67,72 +67,72 @@ pub fn has_zig_in_top_languages(repository: &Node) -> bool {
 //     time_15_minutes_ago: NaiveDateTime,
 // ) {
 // }
-pub async fn process_last_15_minutes_part_1(
-    connection: Arc<Connection>,
-    query: String,
-    is_package: bool,
-    time_15_minutes_ago: NaiveDateTime,
-) {
-    let client = Arc::new(create_optimized_client());
-    let mut has_next = true;
-    let mut next: Option<String> = None;
+// pub async fn process_last_15_minutes_part_1(
+//     connection: Arc<Connection>,
+//     query: String,
+//     is_package: bool,
+//     time_15_minutes_ago: NaiveDateTime,
+// ) {
+//     let client = Arc::new(create_optimized_client());
+//     let mut has_next = true;
+//     let mut next: Option<String> = None;
 
-    while has_next {
-        let query_to_send = serde_json::json!({
-            "query": GH_GRAPH_QL_QUERY,
-            "variables":  {
-                "query": format!("topic:{query} stars:>20 pushed:>{}", time_15_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
-                "next_value": next
-            }
-        });
+//     while has_next {
+//         let query_to_send = serde_json::json!({
+//             "query": GH_GRAPH_QL_QUERY,
+//             "variables":  {
+//                 "query": format!("topic:{query} stars:>20 pushed:>{}", time_15_minutes_ago.format("%Y-%m-%dT%H:%M:%SZ")),
+//                 "next_value": next
+//             }
+//         });
 
-        let text = match fetch_with_retry(&client, query_to_send).await {
-            Some(text) => text,
-            None => {
-                eprintln!(
-                    "STOPING THIS CYCLE! This process_last_15_minutes_part_1 cycle has failed.",
-                );
-                has_next = false;
-                continue;
-            }
-        };
+//         let text = match fetch_with_retry(&client, query_to_send).await {
+//             Some(text) => text,
+//             None => {
+//                 eprintln!(
+//                     "STOPING THIS CYCLE! This process_last_15_minutes_part_1 cycle has failed.",
+//                 );
+//                 has_next = false;
+//                 continue;
+//             }
+//         };
 
-        if text == EMPTY_REPLY {
-            has_next = false;
-            continue;
-        }
+//         if text == EMPTY_REPLY {
+//             has_next = false;
+//             continue;
+//         }
 
-        let res2: types::Root = match serde_json::from_str(&text) {
-            Ok(t) => t,
-            Err(t) => {
-                eprintln!("Responce was in unexpected format process_last_15_minutes_part_1: {t}");
-                has_next = false;
-                continue;
-            }
-        };
+//         let res2: types::Root = match serde_json::from_str(&text) {
+//             Ok(t) => t,
+//             Err(t) => {
+//                 eprintln!("Responce was in unexpected format process_last_15_minutes_part_1: {t}");
+//                 has_next = false;
+//                 continue;
+//             }
+//         };
 
-        has_next = res2.data.search.page_info.has_next_page;
-        next = res2.data.search.page_info.end_cursor;
-        let process_nodes = res2.data.search.nodes;
+//         has_next = res2.data.search.page_info.has_next_page;
+//         next = res2.data.search.page_info.end_cursor;
+//         let process_nodes = res2.data.search.nodes;
 
-        // I will process everything first, then commit to database.
-        let repo_data: Vec<RepoData> = stream::iter(process_nodes)
-            .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
-            .map(|node| {
-                let client = Arc::clone(&client);
-                async move { get_repo_data(&node, is_package, &client).await }
-            })
-            .buffer_unordered(25)
-            .collect()
-            .await;
+//         // I will process everything first, then commit to database.
+//         let repo_data: Vec<RepoData> = stream::iter(process_nodes)
+//             .filter(|node| futures::future::ready(has_zig_in_top_languages(node)))
+//             .map(|node| {
+//                 let client = Arc::clone(&client);
+//                 async move { get_repo_data(&node, is_package, &client).await }
+//             })
+//             .buffer_unordered(25)
+//             .collect()
+//             .await;
 
-        let transaction = connection.transaction().await.unwrap();
-        for data in repo_data {
-            persist_repo_data(&transaction, data).await;
-        }
-        transaction.commit().await.unwrap();
-    }
-}
+//         let transaction = connection.transaction().await.unwrap();
+//         for data in repo_data {
+//             persist_repo_data(&transaction, data).await;
+//         }
+//         transaction.commit().await.unwrap();
+//     }
+// }
 
 pub async fn get_repo_data(
     repository: &Node,
@@ -672,11 +672,12 @@ pub async fn process_query_range(
     Ok(())
 }
 
-pub async fn github_main_0_9(
+pub async fn github_main(
     pool: Arc<Connection>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
     step: u64,
+    stars_filter: &str,
 ) -> Result<(), Box<dyn Error>> {
     process_query_range(
         "zig-package",
@@ -685,44 +686,10 @@ pub async fn github_main_0_9(
         start_date,
         end_date,
         step,
-        "stars:0..9",
+        stars_filter,
     )
-    .await
-    .unwrap();
-    process_query_range("zig", false, pool, start_date, end_date, step, "stars:0..9")
-        .await
-        .unwrap();
-    Ok(())
-}
-
-pub async fn github_main_10_20(
-    pool: Arc<Connection>,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
-    step: u64,
-) -> Result<(), Box<dyn Error>> {
-    process_query_range(
-        "zig-package",
-        true,
-        Arc::clone(&pool),
-        start_date,
-        end_date,
-        step,
-        "stars:10..20",
-    )
-    .await
-    .unwrap();
-    process_query_range(
-        "zig",
-        false,
-        pool,
-        start_date,
-        end_date,
-        step,
-        "stars:10..20",
-    )
-    .await
-    .unwrap();
+    .await?;
+    process_query_range("zig", false, pool, start_date, end_date, step, stars_filter).await?;
     Ok(())
 }
 
