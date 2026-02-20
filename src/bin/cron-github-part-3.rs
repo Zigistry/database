@@ -34,23 +34,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         loop {
             let timer_start = Utc::now();
 
-            github::github_main(
-                Arc::clone(&pool),
-                Utc::now().naive_utc() - chrono::Duration::minutes(15),
-                Utc::now().naive_utc(),
-                50,
-                "stars:0..9",
-            )
-            .await
-            .unwrap();
-
-            github::github_main(
+            github::github_main_cron(
                 Arc::clone(&pool),
                 NaiveDateTime::parse_from_str("2016-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ")
                     .unwrap(),
                 Utc::now().naive_utc(),
                 50,
-                "stars:0..9",
+                "stars:>20",
             )
             .await
             .unwrap();

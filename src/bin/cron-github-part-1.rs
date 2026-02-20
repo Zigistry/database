@@ -18,12 +18,10 @@ current_utc_time = "{}""#,
 }
 
 #[tokio::main]
-pub async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let pool = Arc::new(database::connect_to_database().await.unwrap());
 
-    let last_time_stamp = Arc::new(RwLock::new(
-        Utc::now().naive_utc() - chrono::Duration::minutes(30),
-    ));
+    let last_time_stamp = Arc::new(RwLock::new(Utc::now().naive_utc()));
     let last_time_stamp_clone = Arc::clone(&last_time_stamp);
 
     let orig_hook = std::panic::take_hook();
@@ -33,30 +31,28 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     }));
 
     tokio::spawn(async move {
-        // I am doing  - chrono::Duration::minutes(15) to make sure
-        // If the api takes some time to update, that is still covered.
         loop {
-            let current_time = Utc::now().naive_utc() - chrono::Duration::minutes(15);
-            let last_ts = *last_time_stamp_clone.read().await;
+            let timer_start = Utc::now();
 
-            github::process_last_15_minutes_part_1(
+            github::github_main_cron(
                 Arc::clone(&pool),
-                "zig".to_string(),
-                false,
-                last_ts,
+                Utc::now().naive_utc() - chrono::Duration::days(3 * 365),
+                Utc::now().naive_utc(),
+                50,
+                "stars:0..9",
             )
-            .await;
-            github::process_last_15_minutes_part_1(
-                Arc::clone(&pool),
-                "zig-package".to_string(),
-                true,
-                last_ts,
-            )
-            .await;
+            .await
+            .unwrap();
 
+            let current_time = Utc::now().naive_utc();
             *last_time_stamp_clone.write().await = current_time;
 
-            tokio::time::sleep(std::time::Duration::from_secs(900)).await;
+            eprintln!(
+                "github completed successfully in {} minutes.",
+                (Utc::now() - timer_start).num_minutes(),
+            );
+
+            tokio::time::sleep(std::time::Duration::from_hours(24)).await;
         }
     });
 
