@@ -276,7 +276,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     );
     let database_updated_at = utc_now_timestamp();
 
-    let (user_insert_result, repo_insert_result, repo_search_insert_result) = tokio::join!(
+    let (user_insert_result, repo_insert_result) = tokio::join!(
         transaction.execute(
             r#"
             INSERT INTO users (id, platform, avatar_id, bio)
@@ -335,14 +335,23 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                 database_updated_at,
             ],
         ),
-        transaction.execute(
-            r#"INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), readme_keywords],
-        ),
     );
     user_insert_result.unwrap();
     repo_insert_result.unwrap();
-    repo_search_insert_result.unwrap();
+    transaction
+        .execute(
+            r#"DELETE FROM repo_search WHERE repo_id = ?"#,
+            params![repo_id.clone()],
+        )
+        .await
+        .unwrap();
+    transaction
+        .execute(
+            r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
+            params![repo_id.clone(), readme_keywords],
+        )
+        .await
+        .unwrap();
 
     transaction
         .execute(

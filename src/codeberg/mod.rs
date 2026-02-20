@@ -97,7 +97,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
     let database_updated_at = utc_now_timestamp();
     let is_package = repository.topics.iter().any(|topic| topic == "zig-package");
 
-    let (user_insert_result, repo_insert_result, repo_search_insert_result) = tokio::join!(
+    let (user_insert_result, repo_insert_result) = tokio::join!(
         transaction.execute(
             r#"
             INSERT INTO users
@@ -157,14 +157,23 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 database_updated_at,
             ]
         ),
-        transaction.execute(
-            r#"INSERT OR REPLACE INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), readme_keywords],
-        )
     );
     user_insert_result.unwrap();
     repo_insert_result.unwrap();
-    repo_search_insert_result.unwrap();
+    transaction
+        .execute(
+            r#"DELETE FROM repo_search WHERE repo_id = ?"#,
+            params![repo_id.clone()],
+        )
+        .await
+        .unwrap();
+    transaction
+        .execute(
+            r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
+            params![repo_id.clone(), readme_keywords],
+        )
+        .await
+        .unwrap();
 
     transaction
         .execute(
