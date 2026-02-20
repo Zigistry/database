@@ -3,6 +3,8 @@ pub const POSSIBLE_README_FILE_NAMES: &[&str] = &["README.md", "README", "readme
 pub const ASYNC_LIMIT: usize = 500;
 pub const GH_GRAPH_QL_QUERY: &str =
     include_str!("../GitHub_GQL_API_Files/fetch-search-query-everything.gql");
+pub const GH_GRAPH_QL_PARTIAL_QUERY: &str =
+    include_str!("../GitHub_GQL_API_Files/fetch-search-query-partial.gql");
 
 // These are the amount of characters allowed
 // for every feild in the database, I am adding

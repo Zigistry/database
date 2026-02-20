@@ -9,9 +9,7 @@ use crate::codeberg::helper_functions::get_build_zig_zon_data;
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::constants::limits;
-use crate::database::{
- parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp,
-};
+use crate::database::{parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp};
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
 use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
@@ -88,8 +86,10 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         &repository.description,
         limits::REPO_DESCRIPTION_MAX_LEN,
     ));
-    let default_branch_name =
-        truncate_to_char_limit(&repository.default_branch, limits::REPO_DEFAULT_BRANCH_MAX_LEN);
+    let default_branch_name = truncate_to_char_limit(
+        &repository.default_branch,
+        limits::REPO_DEFAULT_BRANCH_MAX_LEN,
+    );
     let latest_commit_hash = truncate_to_char_limit("unknown", limits::REPO_COMMIT_HASH_MAX_LEN);
     let license = truncate_to_char_limit("-", limits::REPO_LICENSE_MAX_LEN);
     let primary_language =
@@ -209,10 +209,16 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
             "#,
             params![
                 repo_id.clone(),
-                truncate_to_char_limit("__ZIGISTRY__DEFAULT__BRANCH__", limits::RELEASE_VERSION_MAX_LEN),
+                truncate_to_char_limit(
+                    "__ZIGISTRY__DEFAULT__BRANCH__",
+                    limits::RELEASE_VERSION_MAX_LEN
+                ),
                 false,
                 repository.created_at.clone(),
-                truncate_to_char_limit(&build_zig_zon_version, limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN),
+                truncate_to_char_limit(
+                    &build_zig_zon_version,
+                    limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
+                ),
                 readme_url
             ],
         )
@@ -239,11 +245,23 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                 "#,
                 params![
                     default_branch_release_id,
-                    truncate_to_char_limit(&dependency.name, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
-                    truncate_to_char_limit(&dependency.hash, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                    truncate_to_char_limit(
+                        &dependency.name,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                    ),
+                    truncate_to_char_limit(
+                        &dependency.hash,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                    ),
                     i64::from(parse_lazy_flag(&dependency.lazy)),
-                    truncate_to_char_limit(&dependency.url, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
-                    truncate_to_char_limit(&dependency.path, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                    truncate_to_char_limit(
+                        &dependency.url,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                    ),
+                    truncate_to_char_limit(
+                        &dependency.path,
+                        limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                    ),
                 ],
             )
             .await
@@ -270,7 +288,10 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                     truncate_to_char_limit(&r.tag_name, limits::RELEASE_VERSION_MAX_LEN),
                     r.is_prerelease,
                     r.published_at,
-                    truncate_to_char_limit(&r.minimum_zig_version, limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN),
+                    truncate_to_char_limit(
+                        &r.minimum_zig_version,
+                        limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
+                    ),
                     r.readme_url,
                 ],
             )
@@ -297,11 +318,23 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                     "#,
                     params![
                         this_specific_release_id,
-                        truncate_to_char_limit(&dependency.name, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
-                        truncate_to_char_limit(&dependency.hash, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                        truncate_to_char_limit(
+                            &dependency.name,
+                            limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                        ),
+                        truncate_to_char_limit(
+                            &dependency.hash,
+                            limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                        ),
                         i64::from(parse_lazy_flag(&dependency.lazy)),
-                        truncate_to_char_limit(&dependency.url, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
-                        truncate_to_char_limit(&dependency.path, limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN),
+                        truncate_to_char_limit(
+                            &dependency.url,
+                            limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                        ),
+                        truncate_to_char_limit(
+                            &dependency.path,
+                            limits::RELEASE_DEPENDENCY_FIELD_MAX_LEN
+                        ),
                     ],
                 )
                 .await

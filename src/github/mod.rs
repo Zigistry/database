@@ -2,7 +2,9 @@ pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::limits;
-use crate::constants::{ASYNC_LIMIT, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES};
+use crate::constants::{
+    ASYNC_LIMIT, GH_GRAPH_QL_PARTIAL_QUERY, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES,
+};
 use crate::database::{
     parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
 };
@@ -568,7 +570,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     }
 }
 
-pub async fn process_query_range(
+pub async fn process_query_range_complete_repo_query(
     query: &str,
     is_package: bool,
     pool: Arc<Connection>,
@@ -679,7 +681,7 @@ pub async fn github_main(
     step: u64,
     stars_filter: &str,
 ) -> Result<(), Box<dyn Error>> {
-    process_query_range(
+    process_query_range_complete_repo_query(
         "zig-package",
         true,
         Arc::clone(&pool),
@@ -689,7 +691,235 @@ pub async fn github_main(
         stars_filter,
     )
     .await?;
-    process_query_range("zig", false, pool, start_date, end_date, step, stars_filter).await?;
+    process_query_range_complete_repo_query(
+        "zig",
+        false,
+        pool,
+        start_date,
+        end_date,
+        step,
+        stars_filter,
+    )
+    .await?;
+    Ok(())
+}
+
+#[derive(Debug)]
+struct PartialRepoNode {
+    owner_login: String,
+    owner_id: String,
+    repo_id: String,
+    latest_commit_hash: String,
+}
+
+fn parse_partial_repo_node(node: &serde_json::Value) -> Option<PartialRepoNode> {
+    let name_with_owner = node.get("nameWithOwner")?.as_str()?.trim().to_lowercase();
+    let mut split = name_with_owner.splitn(2, '/');
+    let owner_login = split.next()?.trim().to_string();
+    let repo_name = split.next()?.trim().to_string();
+
+    if owner_login.is_empty() || repo_name.is_empty() {
+        return None;
+    }
+
+    let latest_commit_hash = node
+        .get("defaultBranchRef")
+        .and_then(|branch| branch.get("target"))
+        .and_then(|target| target.get("oid"))
+        .and_then(|oid| oid.as_str())
+        .map(|oid| truncate_to_char_limit(oid, limits::REPO_COMMIT_HASH_MAX_LEN))
+        .filter(|oid| !oid.is_empty())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    Some(PartialRepoNode {
+        owner_id: format!("gh/{owner_login}"),
+        repo_id: format!("gh/{owner_login}/{repo_name}"),
+        owner_login,
+        latest_commit_hash,
+    })
+}
+
+pub async fn process_query_range_partial_repo_query(
+    query: &str,
+    is_package: bool,
+    pool: Arc<Connection>,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+    step: u64,
+    stars_filter: &str,
+) -> Result<(), Box<dyn Error>> {
+    let mut lower = start_date;
+    let base_step = step.max(1); // Again, I am doing this to make sure the minimum step is 1 day.
+    let mut dynamic_step = base_step;
+    let client = Arc::new(create_optimized_client());
+
+    loop {
+        if lower > end_date {
+            break;
+        }
+
+        let upper = lower.checked_add_days(Days::new(dynamic_step)).unwrap();
+        let mut nodes = Vec::new();
+        eprintln!("Now processing:{lower}..{upper}");
+        let mut has_next = true;
+        let mut next: Option<String> = None;
+        let mut window_failed = false;
+
+        while has_next {
+            let query_to_send = serde_json::json!({
+                "query": GH_GRAPH_QL_PARTIAL_QUERY,
+                "variables":  {
+                    "query": format!("topic:{query} {stars_filter} created:{}..{}", lower.format("%Y-%m-%dT%H:%M:%SZ"), upper.format("%Y-%m-%dT%H:%M:%SZ")),
+                    "next_value": next
+                }
+            });
+
+            let text = match fetch_with_retry(&client, query_to_send).await {
+                Some(text) => text,
+                None => {
+                    eprintln!("Window failed for: {lower}..{upper}. step was {dynamic_step}");
+                    window_failed = true;
+                    break;
+                }
+            };
+
+            if text == EMPTY_REPLY {
+                has_next = false;
+                continue;
+            }
+
+            let response_json: serde_json::Value = match serde_json::from_str(&text) {
+                Ok(t) => t,
+                Err(t) => {
+                    eprintln!("Got this response:  {text}");
+                    eprintln!("parsing failed: {t}");
+                    has_next = false;
+                    continue;
+                }
+            };
+
+            has_next = response_json
+                .get("data")
+                .and_then(|data| data.get("search"))
+                .and_then(|search| search.get("pageInfo"))
+                .and_then(|page| page.get("hasNextPage"))
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
+
+            next = response_json
+                .get("data")
+                .and_then(|data| data.get("search"))
+                .and_then(|search| search.get("pageInfo"))
+                .and_then(|page| page.get("endCursor"))
+                .and_then(|value| value.as_str())
+                .map(str::to_string);
+
+            if let Some(page_nodes) = response_json
+                .get("data")
+                .and_then(|data| data.get("search"))
+                .and_then(|search| search.get("nodes"))
+                .and_then(|value| value.as_array())
+            {
+                for node in page_nodes {
+                    nodes.push(node.clone());
+                }
+            }
+        }
+
+        if window_failed {
+            if dynamic_step > 1 {
+                let new_step = (dynamic_step / 2).max(1); // Maybe window is too big, hence, also I am doing max (1) to make sure, the minimum step is 1.
+                eprintln!("Reducing {dynamic_step} to {new_step}");
+                dynamic_step = new_step;
+            } else {
+                eprintln!("WARNING! SKIPPING {lower}..{upper}.");
+                lower = upper;
+                dynamic_step = base_step;
+            }
+            continue;
+        }
+
+        let repo_type = if is_package { "package" } else { "program" };
+        let transaction = pool.transaction().await?;
+        for node in nodes {
+            let parsed = match parse_partial_repo_node(&node) {
+                Some(parsed) => parsed,
+                None => continue,
+            };
+
+            let mut existing_rows = transaction
+                .query(
+                    "SELECT latest_commit_hash FROM repos WHERE id = ? LIMIT 1",
+                    params![parsed.repo_id.clone()],
+                )
+                .await?;
+
+            if let Some(row) = existing_rows.next().await? {
+                let existing_commit_hash: String = row.get(0)?;
+                if existing_commit_hash != parsed.latest_commit_hash {
+                    transaction
+                        .execute(
+                            "INSERT OR IGNORE INTO needs_updates (id, type_of_repo) VALUES (?, ?)",
+                            params![parsed.repo_id, repo_type],
+                        )
+                        .await?;
+                }
+                continue;
+            }
+
+            let mut banned_rows = transaction
+                .query(
+                    "SELECT 1 FROM banned_user_list WHERE id IN (?, ?) LIMIT 1",
+                    params![parsed.owner_id, parsed.owner_login],
+                )
+                .await?;
+
+            if banned_rows.next().await?.is_some() {
+                continue;
+            }
+
+            transaction
+                .execute(
+                    "INSERT OR IGNORE INTO index_new_repo (id, type_of_repo) VALUES (?, ?)",
+                    params![parsed.repo_id, repo_type],
+                )
+                .await?;
+        }
+        transaction.commit().await?;
+
+        lower = upper;
+        dynamic_step = base_step;
+    }
+    Ok(())
+}
+
+pub async fn github_main_cron(
+    pool: Arc<Connection>,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+    step: u64,
+    stars_filter: &str,
+) -> Result<(), Box<dyn Error>> {
+    process_query_range_partial_repo_query(
+        "zig-package",
+        true,
+        Arc::clone(&pool),
+        start_date,
+        end_date,
+        step,
+        stars_filter,
+    )
+    .await?;
+    process_query_range_partial_repo_query(
+        "zig",
+        false,
+        pool,
+        start_date,
+        end_date,
+        step,
+        stars_filter,
+    )
+    .await?;
     Ok(())
 }
 
