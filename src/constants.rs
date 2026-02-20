@@ -5,7 +5,8 @@ pub const GH_GRAPH_QL_QUERY: &str =
     include_str!("../GitHub_GQL_API_Files/fetch-search-query-everything.gql");
 pub const GH_GRAPH_QL_PARTIAL_QUERY: &str =
     include_str!("../GitHub_GQL_API_Files/fetch-search-query-partial.gql");
-
+pub const GH_GRAPH_QL_100_REPOS_QUERY: &str =
+    include_str!("../GitHub_GQL_API_Files/fetch-100-repos.gql");
 // These are the amount of characters allowed
 // for every feild in the database, I am adding
 // this to make sure that I don't exceed the length
