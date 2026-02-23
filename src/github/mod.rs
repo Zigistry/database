@@ -9,7 +9,7 @@ use crate::database::{
     parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
 };
 use crate::github::github_data::{ReleaseData, RepoData};
-use crate::github::types::Node;
+use crate::github::types::{DefaultBranchRef, Node};
 use crate::{GITHUB_KEY, custom_types};
 use chrono::{Days, NaiveDateTime};
 use futures::stream;
@@ -22,6 +22,40 @@ use std::time::Duration;
 
 const EMPTY_REPLY: &str =
     r#"{"data":{"search":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}"#;
+
+fn makeing_commit_hash_normal(raw_oid: Option<&str>) -> String {
+    raw_oid
+        .map(str::trim)
+        .filter(|oid| !oid.is_empty())
+        .map(|oid| truncate_to_char_limit(oid, limits::REPO_COMMIT_HASH_MAX_LEN))
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+fn get_commit_hash(
+    default_branch_ref: Option<&DefaultBranchRef>,
+) -> String {
+    let raw_oid = default_branch_ref
+        .and_then(|branch| branch.target.as_ref())
+        .and_then(|target| target.oid.as_deref());
+
+    makeing_commit_hash_normal(raw_oid)
+}
+
+fn get_commit_hash_value(node: &serde_json::Value) -> String {
+    let raw_oid = node
+        .pointer("/defaultBranchRef/target/oid")
+        .and_then(|oid| oid.as_str())
+        .or_else(|| {
+            node.pointer("/defaultBranchRef/target/commit/oid")
+                .and_then(|oid| oid.as_str())
+        })
+        .or_else(|| {
+            node.pointer("/default_branch_ref/target/oid")
+                .and_then(|oid| oid.as_str())
+        });
+
+    makeing_commit_hash_normal(raw_oid)
+}
 
 pub fn has_zig_in_top_languages(repository: &Node) -> bool {
     fn contains_zig(value: &serde_json::Value) -> bool {
@@ -246,18 +280,14 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         repository.description.as_deref(),
         limits::REPO_DESCRIPTION_MAX_LEN,
     );
-    let default_branch_ref = repository.default_branch_ref.clone().unwrap_or_default();
+    let default_branch_ref = repository.default_branch_ref.as_ref();
     let default_branch_name = truncate_to_char_limit(
-        &default_branch_ref.name,
+        default_branch_ref
+            .map(|branch| branch.name.as_str())
+            .unwrap_or_default(),
         limits::REPO_DEFAULT_BRANCH_MAX_LEN,
     );
-    let latest_commit_hash = default_branch_ref
-        .target
-        .as_ref()
-        .map(|target| target.oid.as_str())
-        .map(|oid| truncate_to_char_limit(oid, limits::REPO_COMMIT_HASH_MAX_LEN))
-        .filter(|oid| !oid.is_empty())
-        .unwrap_or_else(|| "unknown".to_string());
+    let latest_commit_hash = get_commit_hash(default_branch_ref);
     let license = truncate_to_char_limit(
         repository
             .license_info
@@ -722,23 +752,38 @@ struct PartialRepoNode {
 }
 
 fn parse_partial_repo_node(node: &serde_json::Value) -> Option<PartialRepoNode> {
-    let name_with_owner = node.get("nameWithOwner")?.as_str()?.trim().to_lowercase();
-    let mut split = name_with_owner.splitn(2, '/');
-    let owner_login = split.next()?.trim().to_string();
-    let repo_name = split.next()?.trim().to_string();
+    let (owner_login, repo_name) = if let Some(name_with_owner) = node
+        .get("nameWithOwner")
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        let mut split = name_with_owner.splitn(2, '/');
+        let owner_login = split.next()?.trim().to_lowercase();
+        let repo_name = split.next()?.trim().to_lowercase();
+        (owner_login, repo_name)
+    } else {
+        let owner_login = node
+            .get("owner")
+            .and_then(|owner| owner.get("login"))
+            .and_then(|value| value.as_str())
+            .map(str::trim)?
+            .to_lowercase();
+
+        let repo_name = node
+            .get("name")
+            .and_then(|value| value.as_str())
+            .map(str::trim)?
+            .to_lowercase();
+
+        (owner_login, repo_name)
+    };
 
     if owner_login.is_empty() || repo_name.is_empty() {
         return None;
     }
 
-    let latest_commit_hash = node
-        .get("defaultBranchRef")
-        .and_then(|branch| branch.get("target"))
-        .and_then(|target| target.get("oid"))
-        .and_then(|oid| oid.as_str())
-        .map(|oid| truncate_to_char_limit(oid, limits::REPO_COMMIT_HASH_MAX_LEN))
-        .filter(|oid| !oid.is_empty())
-        .unwrap_or_else(|| "unknown".to_string());
+    let latest_commit_hash = get_commit_hash_value(node);
 
     Some(PartialRepoNode {
         owner_id: format!("gh/{owner_login}"),

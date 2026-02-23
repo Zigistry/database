@@ -38,7 +38,7 @@ CREATE TABLE repos (
   license VARCHAR(40) NOT NULL, 
   -- Maybe 50 is perfect here
   primary_language VARCHAR(50) NOT NULL, 
-  latest_commit_hash VARCHAR(40) NOT NULL, 
+  latest_commit_hash VARCHAR(50) NOT NULL, 
   last_updated_in_this_database TIMESTAMP NOT NULL, 
   FOREIGN KEY (owner) REFERENCES users (id) ON DELETE CASCADE
 );
