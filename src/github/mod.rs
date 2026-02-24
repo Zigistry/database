@@ -31,9 +31,7 @@ fn makeing_commit_hash_normal(raw_oid: Option<&str>) -> String {
         .unwrap_or_else(|| "unknown".to_string())
 }
 
-fn get_commit_hash(
-    default_branch_ref: Option<&DefaultBranchRef>,
-) -> String {
+fn get_commit_hash(default_branch_ref: Option<&DefaultBranchRef>) -> String {
     let raw_oid = default_branch_ref
         .and_then(|branch| branch.target.as_ref())
         .and_then(|target| target.oid.as_deref());

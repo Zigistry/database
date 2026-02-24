@@ -1,8 +1,11 @@
 use keyword_extraction::rake::{Rake, RakeParams};
 
+use crate::CODEBERG_KEY;
 use crate::bzz_stuff;
 use crate::constants::POSSIBLE_README_FILE_NAMES;
+use crate::constants::limits;
 use crate::custom_types;
+use crate::database::truncate_to_char_limit;
 
 pub async fn get_readme_url(
     owner_name: &str,
@@ -75,4 +78,66 @@ pub async fn get_build_zig_zon_data(
     let parsed = bzz_stuff::parse(tokens.into_iter())?;
 
     Ok((parsed.minimum_zig_version, parsed.dependencies))
+}
+
+pub async fn get_latest_commit_hash(owner_name: &str, repo_name: &str) -> String {
+    let url = format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/commits?limit=1");
+
+    let response = match reqwest::Client::new()
+        .get(url)
+        .header("Authorization", &*CODEBERG_KEY)
+        .send()
+        .await
+    {
+        Ok(response) if response.status().is_success() => response,
+        _ => return "unknown".to_string(),
+    };
+
+    let response_json = match response.json::<serde_json::Value>().await {
+        Ok(value) => value,
+        Err(_) => return "unknown".to_string(),
+    };
+
+    response_json
+        .get(0)
+        .and_then(|commit| commit.get("sha"))
+        .and_then(|sha| sha.as_str())
+        .map(str::trim)
+        .filter(|sha| !sha.is_empty())
+        .map(|sha| truncate_to_char_limit(sha, limits::REPO_COMMIT_HASH_MAX_LEN))
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+pub async fn has_zig_in_top_languages(owner_name: &str, repo_name: &str) -> bool {
+    let url = format!("https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/languages");
+
+    let response = match reqwest::Client::new()
+        .get(url)
+        .header("Authorization", &*CODEBERG_KEY)
+        .send()
+        .await
+    {
+        Ok(response) if response.status().is_success() => response,
+        _ => return false,
+    };
+
+    let response_json = match response.json::<serde_json::Value>().await {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    let mut languages: Vec<(&str, u64)> = response_json
+        .as_object()
+        .map(|obj| {
+            obj.iter()
+                .filter_map(|(name, bytes)| bytes.as_u64().map(|size| (name.as_str(), size)))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    languages.sort_by(|a, b| b.1.cmp(&a.1));
+    languages
+        .into_iter()
+        .take(10)
+        .any(|(name, _)| name.eq_ignore_ascii_case("zig"))
 }

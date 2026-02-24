@@ -5,7 +5,9 @@ pub mod types;
 use std::sync::Arc;
 
 use crate::codeberg::codeberg_data::RepoData;
-use crate::codeberg::helper_functions::get_build_zig_zon_data;
+use crate::codeberg::helper_functions::{
+    get_build_zig_zon_data, get_latest_commit_hash, has_zig_in_top_languages,
+};
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::constants::limits;
@@ -18,6 +20,8 @@ use libsql::{Connection, Transaction, params};
 pub async fn get_repo_data(repository: Daum) -> RepoData {
     let user_id = format!("cb/{}", repository.owner.login).to_lowercase();
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
+    let latest_commit_hash =
+        get_latest_commit_hash(&repository.owner.login, &repository.name).await;
     let (readme_url, keywords) = get_readme_url(
         &repository.owner.login,
         repository.name.as_str(),
@@ -45,6 +49,7 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
         repository,
         user_id,
         repo_id,
+        latest_commit_hash,
         readme_url,
         readme_keywords: keywords,
         build_zig_zon_version: build_zig_zon_data.0,
@@ -58,6 +63,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         repository,
         user_id,
         repo_id,
+        latest_commit_hash,
         readme_url,
         readme_keywords,
         build_zig_zon_version,
@@ -90,7 +96,8 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         &repository.default_branch,
         limits::REPO_DEFAULT_BRANCH_MAX_LEN,
     );
-    let latest_commit_hash = truncate_to_char_limit("unknown", limits::REPO_COMMIT_HASH_MAX_LEN);
+    let latest_commit_hash =
+        truncate_to_char_limit(&latest_commit_hash, limits::REPO_COMMIT_HASH_MAX_LEN);
     let license = truncate_to_char_limit("-", limits::REPO_LICENSE_MAX_LEN);
     let primary_language =
         truncate_to_char_limit(&repository.language, limits::REPO_PRIMARY_LANGUAGE_MAX_LEN);
@@ -462,10 +469,17 @@ pub async fn fetch_all_codeberg_repos(
 
         let transaction = pool.transaction().await.unwrap();
         stream::iter(responce.data)
-            .map(|repository| get_repo_data(repository))
+            .map(|repository| async move {
+                if !has_zig_in_top_languages(&repository.owner.login, &repository.name).await {
+                    return None;
+                }
+                Some(get_repo_data(repository).await)
+            })
             .buffer_unordered(ASYNC_LIMIT)
             .for_each(|data| async {
-                send_repo_data_to_database(&transaction, data).await;
+                if let Some(data) = data {
+                    send_repo_data_to_database(&transaction, data).await;
+                }
             })
             .await;
 

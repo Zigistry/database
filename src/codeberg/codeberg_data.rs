@@ -17,6 +17,7 @@ pub struct RepoData {
     pub repository: Daum,
     pub user_id: String,
     pub repo_id: String,
+    pub latest_commit_hash: String,
     pub readme_url: String,
     pub readme_keywords: String,
     pub build_zig_zon_version: String,
