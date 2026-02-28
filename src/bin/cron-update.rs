@@ -1,24 +1,10 @@
-use actix_web::{App, HttpServer, Responder, get, web};
-use chrono::{NaiveDateTime, Utc};
+use chrono::Utc;
 use libsql::{Connection, params};
 use std::error::Error;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use zigistry::{
     GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT, database, github, github::types::Node,
 };
-
-#[get("/")]
-async fn index(last_updated: web::Data<Arc<RwLock<NaiveDateTime>>>) -> impl Responder {
-    format!(
-        r#"[cron_job]
-status = "Active"
-last_updated = "{}"
-current_utc_time = "{}""#,
-        last_updated.read().await,
-        Utc::now().naive_utc()
-    )
-}
 
 #[derive(Clone, Debug)]
 struct NeedsUpdateRow {
@@ -160,55 +146,25 @@ async fn process_chunk(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let pool = Arc::new(database::connect_to_database().await?);
+    let started_at = Utc::now();
+    let client = reqwest::Client::new();
 
-    let last_time_stamp = Arc::new(RwLock::new(Utc::now().naive_utc()));
-    let last_time_stamp_clone = Arc::clone(&last_time_stamp);
-
-    let orig_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |panic_info| {
-        orig_hook(panic_info);
-        std::process::exit(1);
-    }));
-
-    tokio::spawn(async move {
-        let client = reqwest::Client::new();
-        loop {
-            let timer_start = Utc::now();
-
-            match make_update_rows_easy(pool.as_ref()).await {
-                Ok(rows) => {
-                    for chunk in rows.chunks(100) {
-                        if let Err(error) = process_chunk(chunk, Arc::clone(&pool), &client).await {
-                            eprintln!("process_chunk failed: {error}");
-                        }
-                    }
-                }
-                Err(error) => {
-                    eprintln!("failed to read needs_updates: {error}");
+    match make_update_rows_easy(pool.as_ref()).await {
+        Ok(rows) => {
+            for chunk in rows.chunks(100) {
+                if let Err(error) = process_chunk(chunk, Arc::clone(&pool), &client).await {
+                    eprintln!("process_chunk failed: {error}");
                 }
             }
-
-            let current_time = Utc::now().naive_utc();
-            *last_time_stamp_clone.write().await = current_time;
-
-            eprintln!(
-                "github completed successfully in {} minutes.",
-                (Utc::now() - timer_start).num_minutes(),
-            );
-
-            tokio::time::sleep(std::time::Duration::from_hours(24)).await;
         }
-    });
+        Err(error) => {
+            eprintln!("failed to read needs_updates: {error}");
+        }
+    }
 
-    let my_server = HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(Arc::clone(&last_time_stamp)))
-            .service(index)
-    })
-    .bind(("0.0.0.0", 7860))
-    .unwrap();
-
-    println!("Server at: http://0.0.0.0:7860");
-    my_server.run().await.unwrap();
+    eprintln!(
+        "cron-update finished in {} minutes.",
+        (Utc::now() - started_at).num_minutes(),
+    );
     Ok(())
 }
