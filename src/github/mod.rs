@@ -1,3 +1,4 @@
+pub mod cron_update_helper;
 pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
@@ -12,6 +13,7 @@ use crate::github::github_data::{ReleaseData, RepoData};
 use crate::github::types::{DefaultBranchRef, Node};
 use crate::{GITHUB_KEY, custom_types};
 use chrono::{Days, NaiveDateTime};
+pub use cron_update_helper::run_cron_update_once;
 use futures::stream;
 use futures::stream::StreamExt;
 use keyword_extraction::rake::{Rake, RakeParams};

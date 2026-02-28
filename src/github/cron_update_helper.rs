@@ -1,10 +1,9 @@
-use chrono::Utc;
+use super::types::Node;
+use crate::GITHUB_KEY;
+use crate::constants::GH_GRAPH_QL_100_REPOS_FRAGMENT;
 use libsql::{Connection, params};
 use std::error::Error;
 use std::sync::Arc;
-use zigistry::{
-    GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT, database, github, github::types::Node,
-};
 
 #[derive(Clone, Debug)]
 struct NeedsUpdateRow {
@@ -123,7 +122,7 @@ async fn process_chunk(
         };
 
         let is_package = row.type_of_repo.eq_ignore_ascii_case("package");
-        let data = github::get_repo_data(&node, is_package, client).await;
+        let data = super::get_repo_data(&node, is_package, client).await;
         collected.push((row.id.clone(), data));
     }
 
@@ -133,7 +132,7 @@ async fn process_chunk(
 
     let transaction = connection.transaction().await?;
     for (repo_id, data) in collected {
-        github::persist_repo_data(&transaction, data).await;
+        super::persist_repo_data(&transaction, data).await;
         transaction
             .execute("DELETE FROM needs_updates WHERE id = ?", params![repo_id])
             .await?;
@@ -143,10 +142,7 @@ async fn process_chunk(
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let pool = Arc::new(database::connect_to_database().await?);
-    let started_at = Utc::now();
+pub async fn run_cron_update_once(pool: Arc<Connection>) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
 
     match make_update_rows_easy(pool.as_ref()).await {
@@ -162,9 +158,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    eprintln!(
-        "cron-update finished in {} minutes.",
-        (Utc::now() - started_at).num_minutes(),
-    );
     Ok(())
 }
