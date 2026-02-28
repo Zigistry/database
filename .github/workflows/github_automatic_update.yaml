@@ -1,1 +1,27 @@
+name: GitHub Automatic Update
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  run_cron_github:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
+    steps:
+      - name: Download cron-github binary
+        run: wget -O cron-github https://github.com/Zigistry/database/releases/download/executables/cron-github
+
+      - name: Make binary executable
+        run: chmod +x ./cron-github
+
+      - name: Run cron-github
+        run: ./cron-github
