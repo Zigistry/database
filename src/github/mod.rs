@@ -55,41 +55,48 @@ fn get_commit_hash_value(node: &serde_json::Value) -> String {
     makeing_commit_hash_normal(raw_oid)
 }
 
-pub fn has_zig_in_top_languages(repository: &Node) -> bool {
-    fn contains_zig(value: &serde_json::Value) -> bool {
-        match value {
-            serde_json::Value::String(name) => name.eq_ignore_ascii_case("zig"),
-            serde_json::Value::Array(items) => items.iter().any(contains_zig),
-            serde_json::Value::Object(map) => {
-                if let Some(serde_json::Value::String(name)) = map.get("name") {
-                    if name.eq_ignore_ascii_case("zig") {
-                        return true;
-                    }
+fn contains_zig(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::String(name) => name.eq_ignore_ascii_case("zig"),
+        serde_json::Value::Array(items) => items.iter().any(contains_zig),
+        serde_json::Value::Object(map) => {
+            if let Some(serde_json::Value::String(name)) = map.get("name") {
+                if name.eq_ignore_ascii_case("zig") {
+                    return true;
                 }
-                if let Some(node) = map.get("node") {
-                    if contains_zig(node) {
-                        return true;
-                    }
-                }
-                if let Some(edges) = map.get("edges") {
-                    if contains_zig(edges) {
-                        return true;
-                    }
-                }
-                if let Some(nodes) = map.get("nodes") {
-                    if contains_zig(nodes) {
-                        return true;
-                    }
-                }
-                false
             }
-            _ => false,
+            if let Some(node) = map.get("node") {
+                if contains_zig(node) {
+                    return true;
+                }
+            }
+            if let Some(edges) = map.get("edges") {
+                if contains_zig(edges) {
+                    return true;
+                }
+            }
+            if let Some(nodes) = map.get("nodes") {
+                if contains_zig(nodes) {
+                    return true;
+                }
+            }
+            false
         }
+        _ => false,
     }
+}
 
+pub fn has_zig_in_top_languages(repository: &Node) -> bool {
     repository
         .languages
         .as_ref()
+        .map(contains_zig)
+        .unwrap_or(false)
+}
+
+fn has_zig_in_top_languages_value(repository: &serde_json::Value) -> bool {
+    repository
+        .get("languages")
         .map(contains_zig)
         .unwrap_or(false)
 }
@@ -894,6 +901,10 @@ pub async fn process_query_range_partial_repo_query(
         let repo_type = if is_package { "package" } else { "program" };
         let transaction = pool.transaction().await?;
         for node in nodes {
+            if !has_zig_in_top_languages_value(&node) {
+                continue;
+            }
+
             let parsed = match parse_partial_repo_node(&node) {
                 Some(parsed) => parsed,
                 None => continue,
