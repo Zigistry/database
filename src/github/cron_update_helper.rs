@@ -1,6 +1,8 @@
 use super::types::Node;
 use crate::GITHUB_KEY;
-use crate::constants::GH_GRAPH_QL_100_REPOS_FRAGMENT;
+use crate::constants::{
+    GH_GRAPH_QL_100_REPOS_FRAGMENT,
+NEEDS_UPDATE_CHUNK_SIZE};
 use libsql::{Connection, params};
 use std::error::Error;
 use std::sync::Arc;
@@ -147,7 +149,7 @@ pub async fn run_cron_update_once(pool: Arc<Connection>) -> Result<(), Box<dyn E
 
     match make_update_rows_easy(pool.as_ref()).await {
         Ok(rows) => {
-            for chunk in rows.chunks(100) {
+            for chunk in rows.chunks(NEEDS_UPDATE_CHUNK_SIZE) {
                 if let Err(error) = process_chunk(chunk, Arc::clone(&pool), &client).await {
                     eprintln!("process_chunk failed: {error}");
                 }

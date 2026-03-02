@@ -7,6 +7,7 @@ pub const GH_GRAPH_QL_PARTIAL_QUERY: &str =
     include_str!("../GitHub_GQL_API_Files/fetch-search-query-partial.gql");
 pub const GH_GRAPH_QL_100_REPOS_FRAGMENT: &str =
     include_str!("../GitHub_GQL_API_Files/fetch-100-repos.gql");
+pub const NEEDS_UPDATE_CHUNK_SIZE: usize = 50;
 // These are the amount of characters allowed
 // for every feild in the database, I am adding
 // this to make sure that I don't exceed the length
