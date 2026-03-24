@@ -498,3 +498,230 @@ pub async fn codeberg_main(pool: Arc<Connection>) -> Result<(), Box<dyn std::err
     fetch_all_codeberg_repos(pool.clone(), "zig").await.unwrap();
     Ok(())
 }
+
+pub async fn fetch_all_codeberg_repos_cron_updating_part(
+    pool: Arc<Connection>,
+    query: &str,
+    is_package: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut page = 1;
+    let client = reqwest::Client::new();
+    loop {
+        let url = format!(
+            "https://codeberg.org/api/v1/repos/search?q={query}&limit=100&page={page}&topic=true",
+        );
+
+        eprintln!("Processing cron: {}", url);
+
+        let mut responce = Option::None;
+        for number_of_tries_done in 0..5 {
+            match client
+                .get(&url)
+                .header("Authorization", &*crate::CODEBERG_KEY)
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    if !resp.status().is_success() {
+                        eprintln!("cb status: {}", resp.status());
+                        let wait_secs = if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                            resp.headers()
+                                .get("Retry-After")
+                                .and_then(|v| v.to_str().ok())
+                                .and_then(|s| s.parse::<u64>().ok())
+                                .unwrap_or(60)
+                        } else {
+                            2u64.pow(number_of_tries_done)
+                        };
+                        eprintln!("Waiting {} seconds before trying again...", wait_secs);
+                        tokio::time::sleep(std::time::Duration::from_secs(wait_secs)).await;
+                        continue;
+                    }
+
+                    match resp.text().await {
+                        Ok(body) => match serde_json::from_str::<types::types::Root>(&body) {
+                            Ok(val) => {
+                                responce = Some(val);
+                                break;
+                            }
+                            Err(e) => {
+                                let snippet: String = body.chars().take(300).collect();
+                                eprintln!("failed to parse json: {}", e);
+                                eprintln!("cb body small: {}", snippet);
+                                tokio::time::sleep(std::time::Duration::from_secs(
+                                    2u64.pow(number_of_tries_done),
+                                ))
+                                .await;
+                            }
+                        },
+                        Err(e) => {
+                            eprintln!("Failed to read response body: {}", e);
+                            tokio::time::sleep(std::time::Duration::from_secs(
+                                2u64.pow(number_of_tries_done),
+                            ))
+                            .await;
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to send request: {}", e);
+                    tokio::time::sleep(std::time::Duration::from_secs(
+                        2u64.pow(number_of_tries_done),
+                    ))
+                    .await;
+                }
+            }
+        }
+
+        let responce = responce.ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to fetch data from cb after 5 retries",
+            )
+        })?;
+
+        if responce.data.is_empty() {
+            break;
+        }
+
+        let repo_type = if is_package { "package" } else { "program" };
+        let transaction = pool.transaction().await.unwrap();
+
+        stream::iter(responce.data)
+            .map(|repository| async move {
+                if !crate::codeberg::helper_functions::has_zig_in_top_languages(&repository.owner.login, &repository.name).await {
+                    return None;
+                }
+
+                let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
+                let latest_commit_hash = crate::codeberg::helper_functions::get_latest_commit_hash(&repository.owner.login, &repository.name).await;
+                Some((repository, repo_id, latest_commit_hash))
+            })
+            .buffer_unordered(crate::constants::ASYNC_LIMIT)
+            .for_each(|data| async {
+                if let Some((repository, repo_id, latest_commit_hash)) = data {
+                    let mut existing_rows = transaction
+                        .query(
+                            "SELECT latest_commit_hash FROM repos WHERE id = ? LIMIT 1",
+                            params![repo_id.clone()],
+                        )
+                        .await.unwrap();
+
+                    if let Some(row) = existing_rows.next().await.unwrap() {
+                        let existing_commit_hash: String = row.get(0).unwrap();
+                        if existing_commit_hash != latest_commit_hash {
+                            transaction
+                                .execute(
+                                    "INSERT OR IGNORE INTO needs_updates (id, type_of_repo) VALUES (?, ?)",
+                                    params![repo_id, repo_type],
+                                )
+                                .await.unwrap();
+                        }
+                        return;
+                    }
+
+                    let mut banned_repos = transaction
+                        .query(
+                            "SELECT 1 FROM banned_user_list WHERE id IN (?, ?) LIMIT 1",
+                            params![format!("cb/{}", repository.owner.login).to_lowercase(), repository.owner.login.to_lowercase()],
+                        )
+                        .await.unwrap();
+
+                    if banned_repos.next().await.unwrap().is_some() {
+                        return;
+                    }
+
+                    transaction
+                        .execute(
+                            "INSERT OR IGNORE INTO index_new_repo (id, type_of_repo) VALUES (?, ?)",
+                            params![repo_id, repo_type],
+                        )
+                        .await.unwrap();
+                }
+            }).await;
+
+        transaction.commit().await.unwrap();
+        page += 1;
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    }
+
+    Ok(())
+}
+
+pub async fn codeberg_main_cron(pool: Arc<Connection>) -> Result<(), Box<dyn std::error::Error>> {
+    fetch_all_codeberg_repos_cron_updating_part(pool.clone(), "zig-package", true).await?;
+    fetch_all_codeberg_repos_cron_updating_part(pool.clone(), "zig", false).await?;
+    Ok(())
+}
+
+pub async fn run_cron_update_once(pool: Arc<Connection>) -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let mut rows = pool
+        .query(
+            "SELECT id FROM needs_updates WHERE id LIKE 'cb/%'",
+            params![],
+        )
+        .await
+        .unwrap();
+    let mut repos_that_need_update = Vec::new();
+    while let Some(row) = rows.next().await.unwrap() {
+        let id: String = row.get(0).unwrap();
+        repos_that_need_update.push(id);
+    }
+
+    if repos_that_need_update.is_empty() {
+        return Ok(());
+    }
+
+    for id in repos_that_need_update {
+        let parts: Vec<&str> = id.split('/').collect();
+        if parts.len() != 3 {
+            continue;
+        }
+        let owner = parts[1];
+        let repo = parts[2];
+
+        let url = format!("https://codeberg.org/api/v1/repos/{owner}/{repo}");
+        let mut optional_response = None;
+        for attempt_count in 0..5 {
+            match client
+                .get(&url)
+                .header("Authorization", &*crate::CODEBERG_KEY)
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        optional_response = Some(resp);
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(attempt_count)))
+                        .await;
+                }
+                Err(_) => {
+                    tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(attempt_count)))
+                        .await;
+                }
+            }
+        }
+
+        if let Some(resp) = optional_response {
+            if let Ok(json_body) = resp.text().await {
+                if let Ok(daum) = serde_json::from_str::<types::types::Daum>(&json_body) {
+                    let repo_data = get_repo_data(daum).await;
+                    let transaction = pool.transaction().await.unwrap();
+                    send_repo_data_to_database(&transaction, repo_data).await;
+                    transaction
+                        .execute("DELETE FROM needs_updates WHERE id = ?", params![id])
+                        .await
+                        .unwrap();
+                    transaction.commit().await.unwrap();
+                } else {
+                    eprintln!("failed to parse cb json for {id}");
+                }
+            }
+        }
+    }
+
+    Ok(())
+}

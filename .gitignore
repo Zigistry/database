@@ -6,3 +6,4 @@ search_preparer
 .DS_Store
 .env
 *.db*
+*.out
