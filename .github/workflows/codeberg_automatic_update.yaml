@@ -1,1 +1,27 @@
-# currently working on this.
+name: Codeberg Automatic Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  run_cron_codeberg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CB_API_KEY: ${{ secrets.CODEBERG_TOKEN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
+    steps:
+      - name: Download cron-codeberg binary
+        run: wget -O cron-codeberg https://github.com/Zigistry/database/releases/download/executables/cron-codeberg
+
+      - name: Make binary executable
+        run: chmod +x ./cron-codeberg
+
+      - name: Run cron-codeberg
+        run: ./cron-codeberg
