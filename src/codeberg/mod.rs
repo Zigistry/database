@@ -585,7 +585,15 @@ pub async fn fetch_all_codeberg_repos_cron_updating_part(
         }
 
         let repo_type = if is_package { "package" } else { "program" };
-        let transaction = pool.transaction().await.unwrap();
+        let transaction = loop {
+            match pool.transaction().await {
+                Ok(t) => break t,
+                Err(e) => {
+                    eprintln!("transaction error, trying again. {}", e);
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            }
+        };
 
         stream::iter(responce.data)
             .map(|repository| async move {
@@ -600,43 +608,66 @@ pub async fn fetch_all_codeberg_repos_cron_updating_part(
             .buffer_unordered(crate::constants::ASYNC_LIMIT)
             .for_each(|data| async {
                 if let Some((repository, repo_id, latest_commit_hash)) = data {
-                    let mut existing_rows = transaction
+                    let existing_rows = transaction
                         .query(
                             "SELECT latest_commit_hash FROM repos WHERE id = ? LIMIT 1",
                             params![repo_id.clone()],
                         )
-                        .await.unwrap();
+                        .await;
 
-                    if let Some(row) = existing_rows.next().await.unwrap() {
-                        let existing_commit_hash: String = row.get(0).unwrap();
-                        if existing_commit_hash != latest_commit_hash {
-                            transaction
-                                .execute(
-                                    "INSERT OR IGNORE INTO needs_updates (id, type_of_repo) VALUES (?, ?)",
-                                    params![repo_id, repo_type],
-                                )
-                                .await.unwrap();
+                    let mut existing_rows = match existing_rows {
+                        Ok(rows) => rows,
+                        Err(e) => {
+                            eprintln!("db problem: {}", e);
+                            return;
+                        }
+                    };
+
+                    if let Ok(Some(row)) = existing_rows.next().await {
+                        if let Ok(existing_commit_hash) = row.get::<String>(0) {
+                            if existing_commit_hash != latest_commit_hash {
+                                if let Err(e) = transaction
+                                    .execute(
+                                        "INSERT OR IGNORE INTO needs_updates (id, type_of_repo) VALUES (?, ?)",
+                                        params![repo_id.clone(), repo_type],
+                                    )
+                                    .await
+                                {
+                                    eprintln!("db problem: {}", e);
+                                }
+                            }
                         }
                         return;
                     }
 
-                    let mut banned_repos = transaction
+                    let banned_repos = transaction
                         .query(
                             "SELECT 1 FROM banned_user_list WHERE id IN (?, ?) LIMIT 1",
                             params![format!("cb/{}", repository.owner.login).to_lowercase(), repository.owner.login.to_lowercase()],
                         )
-                        .await.unwrap();
+                        .await;
 
-                    if banned_repos.next().await.unwrap().is_some() {
+                    let mut banned_repos = match banned_repos {
+                        Ok(rows) => rows,
+                        Err(e) => {
+                            eprintln!("db problem: {}", e);
+                            return;
+                        }
+                    };
+
+                    if let Ok(Some(_)) = banned_repos.next().await {
                         return;
                     }
 
-                    transaction
+                    if let Err(e) = transaction
                         .execute(
                             "INSERT OR IGNORE INTO index_new_repo (id, type_of_repo) VALUES (?, ?)",
-                            params![repo_id, repo_type],
+                            params![repo_id.clone(), repo_type],
                         )
-                        .await.unwrap();
+                        .await
+                    {
+                        eprintln!("db problem: {}", e);
+                    }
                 }
             }).await;
 
