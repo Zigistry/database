@@ -102,7 +102,12 @@ CREATE TABLE programs (
 CREATE TABLE index_new_repo (
   id VARCHAR(150) PRIMARY KEY, 
   type_of_repo VARCHAR(10) NOT NULL -- This is like, package or program.
-  );
+);
+
+CREATE TABLE safe_to_index_new_repo (
+  id VARCHAR(150) PRIMARY KEY, 
+  type_of_repo VARCHAR(10) NOT NULL -- This is like, package or program.
+);
 -- For this specifically, I will create a AI model, I will train it to detect
 -- all the scam repos, if my AI algorithm flags a repo
 -- to review it will be added to this table, if no problem, it will continue.
