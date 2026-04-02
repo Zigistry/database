@@ -1,10 +1,35 @@
-use libsql::{Connection, params};
+use libsql::params;
 use zigistry::{
-    CODEBERG_KEY, GITHUB_KEY,
-    constants::GH_GRAPH_QL_100_REPOS_FRAGMENT,
-    constants::limits::{INDEX_SECTION_NAME_MAX_LEN, REPO_ID_MAX_LEN},
-    database::{connect_to_database, truncate_to_char_limit},
+    CODEBERG_KEY, GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT,
+    database::connect_to_database,
 };
+
+fn make_repo_query(owner_name: &str, repo_name: &str) -> String {
+    format!(
+        "query {{\n  repository(owner: \"{}\", name: \"{}\") {{ ...RepoFields }}\n}}\n{}",
+        owner_name.replace('\\', "\\\\").replace('"', "\\\""),
+        repo_name.replace('\\', "\\\\").replace('"', "\\\""),
+        GH_GRAPH_QL_100_REPOS_FRAGMENT // Actually, this is a fragment I can use for 1 repo as well.
+    )
+}
+
+async fn process_github_repo(owner_name: &str, repo_name: &str) {
+    let query = make_repo_query(owner_name, repo_name);
+    let res = client
+        .post("https://api.github.com/graphql")
+        .header("User-Agent", "zigistry")
+        .header("Authorization", &*GITHUB_KEY)
+        .json(&serde_json::json!({ "query": query }))
+        .send()
+        .await
+        .unwrap();
+
+    if !res.status().is_success() {
+        return;
+    }
+
+    let json_text = res.text().await.unwrap();
+}
 
 #[tokio::main]
 async fn main() {
@@ -13,29 +38,34 @@ async fn main() {
 
     loop {
         let mut rows_to_process = connection
-            // I am doing order by, because when I will delete these, it will not delete something else,
-            // when queries from database again.
-            .query(
-                "SELECT id FROM safe_to_index_new_repo ORDER BY id ASC LIMIT 50;",
-                params![],
-            )
+            .query("SELECT id FROM safe_to_index_new_repo", params![])
             .await
             .unwrap();
 
         {
             while let Some(repo_row) = rows_to_process.next().await.unwrap() {
-                let id: String = row.get(0).unwrap();
-                let type_of_repo: String = row.get(1).unwrap();
+                let id: String = repo_row.get(0).unwrap();
+                let type_of_repo: String = repo_row.get(1).unwrap();
 
-                id.split('/')
+                let mut parts = id.split('/');
 
-                if id
+                let platform = parts.next().unwrap();
+                let owner_name = parts.next().unwrap();
+                let repo_name = parts.next().unwrap();
+
+                if platform == "gh" {
+                    process_github_repo(owner_name, repo_name);
+                } else if platform == "cb" {
+                    process_codeberg_repo(owner_name, repo_name);
+                } else {
+                    panic!("got an unknown platform. {}", id)
+                }
             }
         }
         let rows_to_process = connection
             .query(
                 "DELETE FROM safe_to_index_new_repo
-         WHERE id IN (SELECT id FROM safe_to_index_new_repo ORDER BY id ASC LIMIT 50)
+         WHERE id IN (SELECT id FROM safe_to_index_new_repo)
          RETURNING id, type_of_repo",
                 params![],
             )
