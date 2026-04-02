@@ -13,13 +13,27 @@ fn make_repo_query(owner_name: &str, repo_name: &str) -> String {
     )
 }
 
-async fn process_github_repo(owner_name: &str, repo_name: &str) {
+async fn process_codeberg_repo(
+    owner_name: &str,
+    repo_name: &str,
+    type_of_repo: &str,
+    client: &reqwest::Client,
+) {
+    todo!();
+}
+async fn process_github_repo(
+    owner_name: &str,
+    repo_name: &str,
+    type_of_repo: &str,
+    client: &reqwest::Client,
+) {
     let query = make_repo_query(owner_name, repo_name);
+    let body_content = serde_json::json!({ "query": query });
     let res = client
         .post("https://api.github.com/graphql")
         .header("User-Agent", "zigistry")
         .header("Authorization", &*GITHUB_KEY)
-        .json(&serde_json::json!({ "query": query }))
+        .json(&body_content)
         .send()
         .await
         .unwrap();
@@ -29,6 +43,8 @@ async fn process_github_repo(owner_name: &str, repo_name: &str) {
     }
 
     let json_text = res.text().await.unwrap();
+
+    println!("{json_text}");
 }
 
 #[tokio::main]
@@ -38,7 +54,10 @@ async fn main() {
 
     loop {
         let mut rows_to_process = connection
-            .query("SELECT id FROM safe_to_index_new_repo", params![])
+            .query(
+                "SELECT id, type_of_repo FROM safe_to_index_new_repo",
+                params![],
+            )
             .await
             .unwrap();
 
@@ -54,9 +73,9 @@ async fn main() {
                 let repo_name = parts.next().unwrap();
 
                 if platform == "gh" {
-                    process_github_repo(owner_name, repo_name);
+                    process_github_repo(owner_name, repo_name, &type_of_repo, &client).await;
                 } else if platform == "cb" {
-                    process_codeberg_repo(owner_name, repo_name);
+                    process_codeberg_repo(owner_name, repo_name, &type_of_repo, &client).await;
                 } else {
                     panic!("got an unknown platform. {}", id)
                 }
