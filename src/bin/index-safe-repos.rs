@@ -45,8 +45,18 @@ async fn process_github_repo(
     let json_text = res.text().await.unwrap();
 
     println!("{json_text}");
-}
 
+    let json: serde_json::Value = serde_json::from_str(&json_text).unwrap();
+    let data = json.get("data").and_then(|v| v.as_object()).unwrap();
+
+    let val = &data["repository"];
+
+    // let repo_node: zigistry::github::types::Node =
+    //     serde_json::from_value(data.get_key_value(key)).unwrap();
+    let repo_node: zigistry::github::types::Node = serde_json::from_value(val.clone()).unwrap();
+
+    println!("{:?}", repo_node);
+}
 #[tokio::main]
 async fn main() {
     let client = reqwest::Client::new();
