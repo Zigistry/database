@@ -1,6 +1,6 @@
 mod codeberg_data;
 mod codeberg_process_release;
-mod helper_functions;
+pub mod helper_functions;
 pub mod types;
 use std::sync::Arc;
 

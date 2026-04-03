@@ -1,4 +1,4 @@
-use libsql::{Connection, params};
+use libsql::params;
 use zigistry::{
     CODEBERG_KEY, GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT,
     database::connect_to_database,
@@ -16,10 +16,33 @@ fn make_repo_query(owner_name: &str, repo_name: &str) -> String {
 async fn process_codeberg_repo(
     owner_name: &str,
     repo_name: &str,
-    type_of_repo: &str,
     client: &reqwest::Client,
     transaction: &libsql::Transaction,
 ) {
+    let res = client
+        .get(format!(
+            "https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}"
+        ))
+        .header("Authorization", &*CODEBERG_KEY)
+        .header("User-Agent", "zigistry")
+        .send()
+        .await
+        .unwrap();
+    if !res.status().is_success() {
+        panic!("cb responce problem.");
+    }
+
+    let repo: zigistry::codeberg::types::types::Daum = res.json().await.unwrap();
+
+    if !zigistry::codeberg::helper_functions::has_zig_in_top_languages(owner_name, repo_name).await
+    {
+        return;
+    }
+
+    let data = zigistry::codeberg::get_repo_data(repo).await;
+
+    zigistry::codeberg::send_repo_data_to_database(&transaction, data).await;
+    println!("processed {owner_name}/{repo_name}");
 }
 
 async fn process_github_repo(
@@ -94,7 +117,7 @@ async fn main() {
         if platform == "gh" {
             process_github_repo(owner_name, repo_name, &type_of_repo, &client, &transaction).await;
         } else if platform == "cb" {
-            process_codeberg_repo(owner_name, repo_name, &type_of_repo, &client).await;
+            process_codeberg_repo(owner_name, repo_name, &client, &transaction).await;
         } else {
             panic!("got an unknown platform. {}", id)
         }
