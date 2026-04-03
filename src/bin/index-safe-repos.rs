@@ -18,8 +18,8 @@ async fn process_codeberg_repo(
     repo_name: &str,
     type_of_repo: &str,
     client: &reqwest::Client,
+    transaction: &libsql::Transaction,
 ) {
-    todo!();
 }
 
 async fn process_github_repo(
@@ -27,8 +27,7 @@ async fn process_github_repo(
     repo_name: &str,
     type_of_repo: &str,
     client: &reqwest::Client,
-    connection: &libsql::Connection,
-    repo_id: &str,
+    transaction: &libsql::Transaction,
 ) {
     let query = make_repo_query(owner_name, repo_name);
     let body_content = serde_json::json!({ "query": query });
@@ -57,33 +56,16 @@ async fn process_github_repo(
     let repo_node: zigistry::github::types::Node = serde_json::from_value(val.clone()).unwrap();
 
     if !zigistry::github::has_zig_in_top_languages(&repo_node) {
-        connection
-            .execute(
-                "DELETE FROM safe_to_index_new_repo WHERE id = ?",
-                params![repo_id],
-            )
-            .await
-            .unwrap();
+        return;
     }
     let repo_data =
         zigistry::github::get_repo_data(&repo_node, type_of_repo == "package", client).await;
 
-    let transaction = connection.transaction().await.unwrap();
-
     zigistry::github::persist_repo_data(&transaction, repo_data).await;
-
-    transaction
-        .execute(
-            "DELETE FROM safe_to_index_new_repo WHERE id = ?",
-            params![*repo_id],
-        )
-        .await
-        .unwrap();
-
-    transaction.commit().await.unwrap();
 
     println!("{:?}", repo_node);
 }
+
 #[tokio::main]
 async fn main() {
     let client = reqwest::Client::new();
@@ -91,51 +73,41 @@ async fn main() {
 
     let transaction = connection.transaction().await.unwrap();
 
-    loop {
-        let mut rows_to_process = transaction
-            .query(
-                "SELECT id, type_of_repo FROM safe_to_index_new_repo",
-                params![],
-            )
-            .await
-            .unwrap();
+    let mut rows_to_process = transaction
+        .query(
+            "SELECT id, type_of_repo FROM safe_to_index_new_repo",
+            params![],
+        )
+        .await
+        .unwrap();
 
-        {
-            while let Some(repo_row) = rows_to_process.next().await.unwrap() {
-                let id: String = repo_row.get(0).unwrap();
-                let type_of_repo: String = repo_row.get(1).unwrap();
+    while let Some(repo_row) = rows_to_process.next().await.unwrap() {
+        let id: String = repo_row.get(0).unwrap();
+        let type_of_repo: String = repo_row.get(1).unwrap();
 
-                let mut parts = id.split('/');
+        let mut parts = id.split('/');
 
-                let platform = parts.next().unwrap();
-                let owner_name = parts.next().unwrap();
-                let repo_name = parts.next().unwrap();
+        let platform = parts.next().unwrap();
+        let owner_name = parts.next().unwrap();
+        let repo_name = parts.next().unwrap();
 
-                if platform == "gh" {
-                    process_github_repo(
-                        owner_name,
-                        repo_name,
-                        &type_of_repo,
-                        &client,
-                        &connection,
-                        &id,
-                    )
-                    .await;
-                } else if platform == "cb" {
-                    process_codeberg_repo(owner_name, repo_name, &type_of_repo, &client).await;
-                } else {
-                    panic!("got an unknown platform. {}", id)
-                }
-            }
+        if platform == "gh" {
+            process_github_repo(owner_name, repo_name, &type_of_repo, &client, &transaction).await;
+        } else if platform == "cb" {
+            process_codeberg_repo(owner_name, repo_name, &type_of_repo, &client).await;
+        } else {
+            panic!("got an unknown platform. {}", id)
         }
-        transaction
-            .query(
-                "DELETE FROM safe_to_index_new_repo
+    }
+    transaction
+        .query(
+            "DELETE FROM safe_to_index_new_repo
          WHERE id IN (SELECT id FROM safe_to_index_new_repo)
          RETURNING id, type_of_repo",
-                params![],
-            )
-            .await
-            .unwrap();
-    }
+            params![],
+        )
+        .await
+        .unwrap();
+
+    transaction.commit().await.unwrap();
 }
