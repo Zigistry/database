@@ -1,4 +1,4 @@
-use libsql::params;
+use libsql::{Connection, params};
 use zigistry::{
     CODEBERG_KEY, GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT,
     database::connect_to_database,
@@ -21,11 +21,14 @@ async fn process_codeberg_repo(
 ) {
     todo!();
 }
+
 async fn process_github_repo(
     owner_name: &str,
     repo_name: &str,
     type_of_repo: &str,
     client: &reqwest::Client,
+    connection: &libsql::Connection,
+    repo_id: &str,
 ) {
     let query = make_repo_query(owner_name, repo_name);
     let body_content = serde_json::json!({ "query": query });
@@ -51,9 +54,33 @@ async fn process_github_repo(
 
     let val = &data["repository"];
 
-    // let repo_node: zigistry::github::types::Node =
-    //     serde_json::from_value(data.get_key_value(key)).unwrap();
     let repo_node: zigistry::github::types::Node = serde_json::from_value(val.clone()).unwrap();
+
+    if !zigistry::github::has_zig_in_top_languages(&repo_node) {
+        connection
+            .execute(
+                "DELETE FROM safe_to_index_new_repo WHERE id = ?",
+                params![repo_id],
+            )
+            .await
+            .unwrap();
+    }
+    let repo_data =
+        zigistry::github::get_repo_data(&repo_node, type_of_repo == "package", client).await;
+
+    let transaction = connection.transaction().await.unwrap();
+
+    zigistry::github::persist_repo_data(&transaction, repo_data).await;
+
+    transaction
+        .execute(
+            "DELETE FROM safe_to_index_new_repo WHERE id = ?",
+            params![*repo_id],
+        )
+        .await
+        .unwrap();
+
+    transaction.commit().await.unwrap();
 
     println!("{:?}", repo_node);
 }
@@ -62,8 +89,10 @@ async fn main() {
     let client = reqwest::Client::new();
     let connection = connect_to_database().await.unwrap();
 
+    let transaction = connection.transaction().await.unwrap();
+
     loop {
-        let mut rows_to_process = connection
+        let mut rows_to_process = transaction
             .query(
                 "SELECT id, type_of_repo FROM safe_to_index_new_repo",
                 params![],
@@ -83,7 +112,15 @@ async fn main() {
                 let repo_name = parts.next().unwrap();
 
                 if platform == "gh" {
-                    process_github_repo(owner_name, repo_name, &type_of_repo, &client).await;
+                    process_github_repo(
+                        owner_name,
+                        repo_name,
+                        &type_of_repo,
+                        &client,
+                        &connection,
+                        &id,
+                    )
+                    .await;
                 } else if platform == "cb" {
                     process_codeberg_repo(owner_name, repo_name, &type_of_repo, &client).await;
                 } else {
@@ -91,7 +128,7 @@ async fn main() {
                 }
             }
         }
-        let rows_to_process = connection
+        transaction
             .query(
                 "DELETE FROM safe_to_index_new_repo
          WHERE id IN (SELECT id FROM safe_to_index_new_repo)
