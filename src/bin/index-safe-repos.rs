@@ -76,6 +76,14 @@ async fn process_github_repo(
 
     let val = &data["repository"];
 
+    if val.is_null() {
+        println!(
+            "Repository {}/{} not found or has been deleted, skipping",
+            owner_name, repo_name
+        );
+        return;
+    }
+
     let repo_node: zigistry::github::types::Node = serde_json::from_value(val.clone()).unwrap();
 
     if !zigistry::github::has_zig_in_top_languages(&repo_node) {
@@ -104,9 +112,20 @@ async fn main() {
         .await
         .unwrap();
 
+    let mut my_vec = Vec::new();
+
     while let Some(repo_row) = rows_to_process.next().await.unwrap() {
-        let id: String = repo_row.get(0).unwrap();
-        let type_of_repo: String = repo_row.get(1).unwrap();
+        let repo_id: String = repo_row.get(0).unwrap();
+        let repo_type: String = repo_row.get(1).unwrap();
+        my_vec.push((repo_id, repo_type));
+    }
+
+    transaction.commit().await.unwrap();
+
+    for repo_row in my_vec {
+        let transaction = connection.transaction().await.unwrap();
+        let id: String = repo_row.0;
+        let type_of_repo: String = repo_row.1;
 
         let mut parts = id.split('/');
 
@@ -121,16 +140,14 @@ async fn main() {
         } else {
             panic!("got an unknown platform. {}", id)
         }
-    }
-    transaction
-        .query(
-            "DELETE FROM safe_to_index_new_repo
-         WHERE id IN (SELECT id FROM safe_to_index_new_repo)
-         RETURNING id, type_of_repo",
-            params![],
-        )
-        .await
-        .unwrap();
 
-    transaction.commit().await.unwrap();
+        transaction
+            .execute(
+                "DELETE FROM safe_to_index_new_repo where id = ?",
+                params![id.clone()],
+            )
+            .await
+            .unwrap();
+        transaction.commit().await.unwrap();
+    }
 }
