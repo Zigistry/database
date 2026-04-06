@@ -1,6 +1,7 @@
 use dotenv::dotenv;
+use keyword_extraction::rake::{Rake, RakeParams};
 use libsql::{Builder, Connection};
-use std::{env, time::Duration};
+use std::env;
 
 const START_FROM_SCRATCH: bool = false;
 
@@ -23,6 +24,42 @@ pub fn parse_lazy_flag(value: &str) -> bool {
 
 pub fn utc_now_timestamp() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+pub fn extract_keywords_from_text_and_return_as_string(text: &str, max_keywords: usize) -> String {
+    let trimmed_text = text.trim();
+    if trimmed_text.is_empty() {
+        return String::new();
+    }
+
+    let rake = Rake::new(RakeParams::WithDefaults(
+        trimmed_text,
+        &crate::stop_words_in_eng,
+    ));
+    rake.get_ranked_keyword(max_keywords).join(" ")
+}
+
+pub fn merge_search_keywords(readme_keywords: &str, description: Option<&str>) -> String {
+    let description_keywords = description
+        .map(|text| extract_keywords_from_text_and_return_as_string(text, 50))
+        .unwrap_or_default();
+
+    let readme_trimmed = readme_keywords.trim();
+    let description_keywords_trimmed = description_keywords.trim();
+
+    if readme_trimmed == "" && description_keywords_trimmed == "" {
+        return String::new();
+    }
+
+    if readme_trimmed == "" {
+        return description_keywords_trimmed.to_string();
+    }
+
+    if description_keywords_trimmed == "" {
+        return readme_trimmed.to_string();
+    }
+
+    format!("{readme_trimmed} {description_keywords_trimmed}")
 }
 
 pub async fn connect_to_database() -> Result<Connection, Box<dyn std::error::Error>> {

@@ -11,7 +11,9 @@ use crate::codeberg::helper_functions::{
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::constants::limits;
-use crate::database::{parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp};
+use crate::database::{
+    merge_search_keywords, parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp,
+};
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
 use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
@@ -88,6 +90,8 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         &repository.owner.description,
         limits::USER_BIO_MAX_LEN,
     ));
+    let search_keywords =
+        merge_search_keywords(&readme_keywords, Some(repository.description.as_str()));
     let description = Some(truncate_to_char_limit(
         &repository.description,
         limits::REPO_DESCRIPTION_MAX_LEN,
@@ -177,7 +181,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
     transaction
         .execute(
             r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), readme_keywords],
+            params![repo_id.clone(), search_keywords],
         )
         .await
         .unwrap();

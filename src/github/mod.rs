@@ -7,7 +7,8 @@ use crate::constants::{
     ASYNC_LIMIT, GH_GRAPH_QL_PARTIAL_QUERY, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES,
 };
 use crate::database::{
-    parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
+    merge_search_keywords, parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit,
+    utc_now_timestamp,
 };
 use crate::github::github_data::{ReleaseData, RepoData};
 use crate::github::types::{DefaultBranchRef, Node};
@@ -287,6 +288,8 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         repository.description.as_deref(),
         limits::REPO_DESCRIPTION_MAX_LEN,
     );
+    let search_keywords =
+        merge_search_keywords(&readme_keywords, repository.description.as_deref());
     let default_branch_ref = repository.default_branch_ref.as_ref();
     let default_branch_name = truncate_to_char_limit(
         default_branch_ref
@@ -385,7 +388,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
     transaction
         .execute(
             r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), readme_keywords],
+            params![repo_id.clone(), search_keywords],
         )
         .await
         .unwrap();

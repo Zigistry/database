@@ -40,6 +40,7 @@ jobs:
         run: |
           cargo build --release --target x86_64-unknown-linux-musl --bin cron-codeberg
           cargo build --release --target x86_64-unknown-linux-musl --bin cron-github
+          cargo build --release --target x86_64-unknown-linux-musl --bin index-safe-repos
 
       - name: Upload binary
         env:
@@ -47,3 +48,4 @@ jobs:
         run: |
           gh release upload executables target/x86_64-unknown-linux-musl/release/cron-codeberg --clobber
           gh release upload executables target/x86_64-unknown-linux-musl/release/cron-github --clobber
+          gh release upload executables target/x86_64-unknown-linux-musl/release/index-safe-repos --clobber
