@@ -3,7 +3,7 @@ name: index safe repos workflow
 on:
   workflow_dispatch:
   schedule:
-    - cron: "40 16 * * *"
+    - cron: "0 0 * * *"
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ permissions:
 jobs:
   run_index_safe_repos:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
       CB_API_KEY: ${{ secrets.CODEBERG_TOKEN }}
