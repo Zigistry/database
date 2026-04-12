@@ -3,7 +3,7 @@ name: GitHub Automatic Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "30 1 * * *"
 
 permissions:
   contents: read

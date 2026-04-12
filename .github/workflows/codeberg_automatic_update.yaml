@@ -3,8 +3,7 @@ name: Codeberg Automatic Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
-
+    - cron: "30 22 * * *"
 permissions:
   contents: read
 
