@@ -1,4 +1,5 @@
 use libsql::params;
+use reqwest::StatusCode;
 use zigistry::{
     CODEBERG_KEY, GITHUB_KEY, constants::GH_GRAPH_QL_100_REPOS_FRAGMENT,
     database::connect_to_database,
@@ -28,6 +29,9 @@ async fn process_codeberg_repo(
         .send()
         .await
         .unwrap();
+    if res.status() == StatusCode::NOT_FOUND {
+        return;
+    }
     if !res.status().is_success() {
         panic!("cb responce problem.");
     }
