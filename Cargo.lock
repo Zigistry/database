@@ -1374,16 +1374,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyword_extraction"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bab83c382982b79063036f88b9e722b899c23e750f1318ceead83ccd7413f874"
-dependencies = [
- "regex",
- "unicode-segmentation",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2486,15 +2476,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
-name = "stop-words"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "645a3d441ccf4bf47f2e4b7681461986681a6eeea9937d4c3bc9febd61d17c71"
-dependencies = [
- "serde_json",
-]
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2972,12 +2953,6 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
-
-[[package]]
-name = "unicode-segmentation"
-version = "1.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9629274872b2bfaf8d66f5f15725007f635594914870f65218920345aa11aa8c"
 
 [[package]]
 name = "unicode-xid"
@@ -3772,7 +3747,6 @@ dependencies = [
  "dotenv",
  "env_logger",
  "futures",
- "keyword_extraction",
  "lazy_static",
  "libsql",
  "reqwest",
@@ -3780,7 +3754,6 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serde_with",
- "stop-words",
  "tokio",
  "toml",
 ]

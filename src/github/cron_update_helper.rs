@@ -1,8 +1,6 @@
 use super::types::Node;
 use crate::GITHUB_KEY;
-use crate::constants::{
-    GH_GRAPH_QL_100_REPOS_FRAGMENT,
-NEEDS_UPDATE_CHUNK_SIZE};
+use crate::constants::{GH_GRAPH_QL_100_REPOS_FRAGMENT, NEEDS_UPDATE_CHUNK_SIZE};
 use libsql::{Connection, params};
 use std::error::Error;
 use std::sync::Arc;

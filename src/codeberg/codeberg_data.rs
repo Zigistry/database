@@ -19,7 +19,7 @@ pub struct RepoData {
     pub repo_id: String,
     pub latest_commit_hash: String,
     pub readme_url: String,
-    pub readme_keywords: String,
+    pub readme_content: String,
     pub build_zig_zon_version: String,
     pub build_zig_zon_dependencies: Vec<Dependency>,
     pub releases: Vec<ReleaseData>,

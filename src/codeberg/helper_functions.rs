@@ -1,5 +1,3 @@
-use keyword_extraction::rake::{Rake, RakeParams};
-
 use crate::CODEBERG_KEY;
 use crate::bzz_stuff;
 use crate::constants::POSSIBLE_README_FILE_NAMES;
@@ -12,7 +10,7 @@ pub async fn get_readme_url(
     repo_name: &str,
     branch_or_tag: &str,
     is_tag: bool,
-    process_keywords: bool,
+    fetch_content: bool,
 ) -> (String, String) {
     let branch_or_tag_value = if is_tag { "tag" } else { "branch" };
     let url = format!(
@@ -32,7 +30,7 @@ pub async fn get_readme_url(
             }
         };
         if responce.status().is_success() {
-            if process_keywords {
+            if fetch_content {
                 let res = match client.get(&readme_possible_url).send().await {
                     Ok(t) => t,
                     Err(_) => {
@@ -41,16 +39,14 @@ pub async fn get_readme_url(
                     }
                 };
                 if res.status().is_success() {
-                    let rake = Rake::new(RakeParams::WithDefaults(
-                        &res.text().await.unwrap(),
-                        &crate::stop_words_in_eng,
-                    ));
-                    // Afaik, 200 keywords is overkill.
-                    let mut keywords = rake.get_ranked_keyword(200);
-                    keywords.push(owner_name.to_string());
-                    keywords.push(repo_name.to_string());
-                    let keyword_string = keywords.join(" ");
-                    return (readme_possible_url, keyword_string);
+                    match res.text().await {
+                        Ok(content) => return (readme_possible_url, content),
+                        Err(err) => {
+                            eprintln!(
+                                "Failed to read README body for {owner_name}/{repo_name}: {err}"
+                            );
+                        }
+                    }
                 }
             }
             return (readme_possible_url, String::new());

@@ -11,9 +11,7 @@ use crate::codeberg::helper_functions::{
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
 use crate::constants::limits;
-use crate::database::{
-    merge_search_keywords, parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp,
-};
+use crate::database::{parse_lazy_flag, truncate_to_char_limit, utc_now_timestamp};
 use crate::{CODEBERG_KEY, codeberg::helper_functions::get_readme_url};
 use codeberg_process_release::fetch_releases;
 use futures::{stream, stream::StreamExt};
@@ -24,7 +22,7 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
     let latest_commit_hash =
         get_latest_commit_hash(&repository.owner.login, &repository.name).await;
-    let (readme_url, keywords) = get_readme_url(
+    let (readme_url, readme_content) = get_readme_url(
         &repository.owner.login,
         repository.name.as_str(),
         &repository.default_branch,
@@ -53,7 +51,7 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
         repo_id,
         latest_commit_hash,
         readme_url,
-        readme_keywords: keywords,
+        readme_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
         releases,
@@ -67,7 +65,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         repo_id,
         latest_commit_hash,
         readme_url,
-        readme_keywords,
+        readme_content,
         build_zig_zon_version,
         build_zig_zon_dependencies,
         releases,
@@ -90,8 +88,6 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         &repository.owner.description,
         limits::USER_BIO_MAX_LEN,
     ));
-    let search_keywords =
-        merge_search_keywords(&readme_keywords, Some(repository.description.as_str()));
     let description = Some(truncate_to_char_limit(
         &repository.description,
         limits::REPO_DESCRIPTION_MAX_LEN,
@@ -181,7 +177,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
     transaction
         .execute(
             r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), search_keywords],
+            params![repo_id.clone(), readme_content],
         )
         .await
         .unwrap();

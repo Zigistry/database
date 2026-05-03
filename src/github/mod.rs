@@ -7,8 +7,7 @@ use crate::constants::{
     ASYNC_LIMIT, GH_GRAPH_QL_PARTIAL_QUERY, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES,
 };
 use crate::database::{
-    merge_search_keywords, parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit,
-    utc_now_timestamp,
+    parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
 };
 use crate::github::github_data::{ReleaseData, RepoData};
 use crate::github::types::{DefaultBranchRef, Node};
@@ -17,7 +16,6 @@ use chrono::{Days, NaiveDateTime};
 pub use cron_update_helper::run_cron_update_once;
 use futures::stream;
 use futures::stream::StreamExt;
-use keyword_extraction::rake::{Rake, RakeParams};
 use libsql::{Connection, Transaction, params};
 use std::error::Error;
 use std::sync::Arc;
@@ -199,9 +197,9 @@ pub async fn get_repo_data(
         default_branch_name.as_ref()
     };
 
-    let (build_zig_zon_data, (readme_url, readme_keywords)) = tokio::join!(
+    let (build_zig_zon_data, (readme_url, readme_content)) = tokio::join!(
         get_build_zig_zon_data_wrapper(&repository.owner.login, &repository.name, branch, client),
-        get_readme_url_and_keywords(
+        get_readme_url_and_content(
             &repository.owner.login,
             &repository.name,
             branch,
@@ -210,8 +208,8 @@ pub async fn get_repo_data(
         )
     );
 
-    let (readme_url, readme_keywords) = match (readme_url, readme_keywords) {
-        (Some(url), Some(kw)) => (url, kw),
+    let (readme_url, readme_content) = match (readme_url, readme_content) {
+        (Some(url), Some(content)) => (url, content),
         (Some(url), None) => (url, String::new()),
         _ => ("404 unable to find readme. ".to_string(), String::new()),
     };
@@ -225,7 +223,7 @@ pub async fn get_repo_data(
 
         async move {
             let (readme_url, _) =
-                match get_readme_url_and_keywords(&owner, &name, &tag, false, client).await {
+                match get_readme_url_and_content(&owner, &name, &tag, false, client).await {
                     (Some(url), _) => (url, String::new()),
                     _ => ("404 unable to find readme.".to_string(), String::new()),
                 };
@@ -251,7 +249,7 @@ pub async fn get_repo_data(
         user_id,
         repo_id,
         readme_url,
-        readme_keywords,
+        readme_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
         releases,
@@ -265,7 +263,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         user_id,
         repo_id,
         readme_url,
-        readme_keywords,
+        readme_content,
         build_zig_zon_version,
         build_zig_zon_dependencies,
         releases,
@@ -288,8 +286,6 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         repository.description.as_deref(),
         limits::REPO_DESCRIPTION_MAX_LEN,
     );
-    let search_keywords =
-        merge_search_keywords(&readme_keywords, repository.description.as_deref());
     let default_branch_ref = repository.default_branch_ref.as_ref();
     let default_branch_name = truncate_to_char_limit(
         default_branch_ref
@@ -387,8 +383,8 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .unwrap();
     transaction
         .execute(
-            r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
-            params![repo_id.clone(), search_keywords],
+            r#"INSERT INTO repo_search (repo_id, readme_content) VALUES (?, ?)"#,
+            params![repo_id.clone(), readme_content],
         )
         .await
         .unwrap();
@@ -991,11 +987,11 @@ pub async fn github_main_cron(
     Ok(())
 }
 
-pub async fn get_readme_url_and_keywords(
+pub async fn get_readme_url_and_content(
     owner_name: &str,
     repo_name: &str,
     branch_or_tag: &str,
-    process_keywords: bool,
+    fetch_content: bool,
     client: &reqwest::Client,
 ) -> (Option<String>, Option<String>) {
     let base_url =
@@ -1018,19 +1014,11 @@ pub async fn get_readme_url_and_keywords(
     for (url, result) in results {
         if let Ok(head_res) = result {
             if head_res.status().is_success() {
-                if process_keywords {
+                if fetch_content {
                     match client.get(&url).send().await {
                         Ok(res) => match res.text().await {
                             Ok(content) => {
-                                let rake = Rake::new(RakeParams::WithDefaults(
-                                    &content,
-                                    &crate::stop_words_in_eng,
-                                ));
-                                let mut keywords = rake.get_ranked_keyword(200);
-                                keywords.push(owner_name.to_string());
-                                keywords.push(repo_name.to_string());
-                                let keyword_string = keywords.join(" ");
-                                return (Some(url), Some(keyword_string));
+                                return (Some(url), Some(content));
                             }
                             Err(e) => {
                                 eprintln!(
