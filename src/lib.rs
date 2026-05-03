@@ -33,3 +33,21 @@ lazy_static! {
     pub static ref CODEBERG_KEY: String =
         "token ".to_string() + &env::var("CB_API_KEY").expect("CB_API_KEY not set");
 }
+
+pub fn keyword_extraction(
+    readme_content: &str,
+    description: &str,
+    owner_name: &str,
+    repo_name: &str,
+) {
+    let output = std::process::Command::new("python3")
+        .arg("-c")
+        .arg(include_str!("./readme_extraction/extraction.py"))
+        .env("DOC", format!("{readme_content} {description}"))
+        .output()
+        .unwrap();
+
+    let text = String::from_utf8_lossy(&output.stdout);
+
+    println!("{text}");
+}
