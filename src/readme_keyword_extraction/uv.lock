@@ -1019,6 +1019,7 @@ dependencies = [
     { name = "fastapi", extra = ["standard"] },
     { name = "keybert" },
     { name = "nltk" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -1026,6 +1027,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.136.1" },
     { name = "keybert", specifier = ">=0.9.0" },
     { name = "nltk", specifier = ">=3.9.4" },
+    { name = "uvicorn", specifier = ">=0.46.0" },
 ]
 
 [[package]]

@@ -162,19 +162,21 @@ class ReadmeContent(BaseModel):
     text: str
 
 
-@app.get("/extract_keywords")
+@app.post("/extract_keywords")
 async def index(payload: ReadmeContent):
-    readme_content = payload.text.trim()
+    readme_content = payload.text.strip()
     number_of_words = len(readme_content.split())
 
-    if number_of_words == 0:
-        return {"keywords": ""}
 
     # Only 15% i.e, if readme has 100 words, 15
     # most important words would be selected.
     number_of_words_to_choose = int(number_of_words * (15 / 100))
 
-    keywords = kw_model.extract_words(
+    
+    if number_of_words == 0 or number_of_words_to_choose == 0:
+        return {"keywords": ""}
+
+    keywords = kw_model.extract_keywords(
         readme_content,
         keyphrase_ngram_range=(1, 1),
         stop_words=stop_words,
