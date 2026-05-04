@@ -1,0 +1,10 @@
+[project]
+name = "readme-keyword-extraction"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "keybert>=0.9.0",
+    "nltk>=3.9.4",
+]
