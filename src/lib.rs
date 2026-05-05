@@ -26,6 +26,7 @@ pub mod database;
 pub mod github;
 
 use lazy_static::lazy_static;
+use serde::Deserialize;
 use serde_json::json;
 use std::env;
 
@@ -34,6 +35,11 @@ lazy_static! {
         "Bearer ".to_string() + &env::var("GH_API_KEY").expect("GH_API_KEY not set");
     pub static ref CODEBERG_KEY: String =
         "token ".to_string() + &env::var("CB_API_KEY").expect("CB_API_KEY not set");
+}
+
+#[derive(Deserialize)]
+struct ReadmeKeywords {
+    keywords: String,
 }
 
 pub async fn keyword_extraction(
@@ -50,6 +56,6 @@ pub async fn keyword_extraction(
         }))
         .send()
         .await?;
-    let keywords = res.text().await?;
-    Ok(format!("{repo_name} {owner_name} {keywords}"))
+    let keywords = res.json::<ReadmeKeywords>().await?;
+    Ok(format!("{repo_name} {owner_name} {}", keywords.keywords))
 }
