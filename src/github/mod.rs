@@ -242,14 +242,22 @@ pub async fn get_repo_data(
     });
 
     let releases = futures::future::join_all(releases_futures).await;
-
+    let desc = repository.description.clone().unwrap_or(String::new());
+    let readme_processed_content = crate::keyword_extraction(
+        readme_content.as_str(),
+        desc.as_str(),
+        &repository.name.to_string(),
+        &repository.owner.login.to_string(),
+    )
+    .await
+    .unwrap();
     RepoData {
         repository: repository.clone(),
         is_package,
         user_id,
         repo_id,
         readme_url,
-        readme_content,
+        readme_content: readme_processed_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
         releases,
@@ -383,7 +391,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .unwrap();
     transaction
         .execute(
-            r#"INSERT INTO repo_search (repo_id, readme_content) VALUES (?, ?)"#,
+            r#"INSERT INTO repo_search (repo_id, keywords) VALUES (?, ?)"#,
             params![repo_id.clone(), readme_content],
         )
         .await

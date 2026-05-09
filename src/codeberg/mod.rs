@@ -44,14 +44,22 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
     };
 
     let releases = fetch_releases(&repository.owner.login, &repository.name).await;
-
+    let desc = repository.description.clone();
+    let readme_processed_content = crate::keyword_extraction(
+        readme_content.as_str(),
+        desc.as_str(),
+        &repository.name.to_string(),
+        &repository.owner.login.to_string(),
+    )
+    .await
+    .unwrap();
     RepoData {
         repository,
         user_id,
         repo_id,
         latest_commit_hash,
         readme_url,
-        readme_content,
+        readme_content: readme_processed_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
         releases,
