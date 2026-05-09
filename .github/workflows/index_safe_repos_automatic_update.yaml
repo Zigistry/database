@@ -18,6 +18,22 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       API_KEY: ${{ secrets.API_KEY }}
     steps:
+      - name: Install uv
+        run: astral-sh/setup-uv@v5
+
+      - name: uv sync and install important things
+        run: |
+           cd ./src/readme_keyword_extraction
+
+           uv sync
+
+           uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
+
+      - name: wait for 20 seconds before starting, for server to start
+        run: |
+          sleep 20
+          curl http://127.0.0.1:8000/extract_keywords
+
       - name: Download index-safe-repos binary
         run: wget -O index-safe-repos https://github.com/Zigistry/database/releases/download/executables/index-safe-repos
 
