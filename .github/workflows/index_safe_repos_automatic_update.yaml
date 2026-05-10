@@ -18,8 +18,10 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       API_KEY: ${{ secrets.API_KEY }}
     steps:
+      - name: repo
+        uses: actions/checkout
       - name: Install uv
-        run: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv
 
       - name: uv sync and install important things
         run: |
