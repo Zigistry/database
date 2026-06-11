@@ -27,11 +27,7 @@ pub fn utc_now_timestamp() -> String {
 
 pub async fn connect_to_database() -> Result<Connection, Box<dyn std::error::Error>> {
     dotenv().ok();
-    let db = Builder::new_remote_replica(
-        "./zigistry.db",
-        env::var("DATABASE_URL").expect("DATABASE_URL not found"),
-        env::var("API_KEY").expect("API_KEY not found"),
-    );
+    let db = Builder::new_local("./zigistry.db");
     let client = db.build().await.unwrap();
     let pool = client.connect().unwrap();
     if START_FROM_SCRATCH {
