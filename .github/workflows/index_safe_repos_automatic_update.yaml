@@ -17,6 +17,7 @@ jobs:
       CB_API_KEY: ${{ secrets.CODEBERG_TOKEN }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       API_KEY: ${{ secrets.API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: repo
         uses: actions/checkout@v6
@@ -36,11 +37,22 @@ jobs:
           sleep 20
           curl http://127.0.0.1:8000/extract_keywords
 
+      - name: install hf
+        run: curl -LsSf https://hf.co/cli/install.sh | bash
+
+
       - name: Download index-safe-repos binary
         run: wget -O index-safe-repos https://github.com/Zigistry/database/releases/download/executables/index-safe-repos
+
+      - name: Download database
+        run: wget -O ./zigistry.db https://huggingface.co/buckets/Zigistry/Zigistry/resolve/zigistry.db?download=true
 
       - name: Make binary executable
         run: chmod +x ./index-safe-repos
 
       - name: Run index-safe-repos
         run: ./index-safe-repos
+
+      - name: push updated database
+        run: hf cp ./zigistry.db hf://buckets/Zigistry/Zigistry/zigistry.db
+
