@@ -17,6 +17,7 @@ pub use cron_update_helper::run_cron_update_once;
 use futures::stream;
 use futures::stream::StreamExt;
 use libsql::{Connection, Transaction, params};
+use reqwest::Client;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -1002,54 +1003,39 @@ pub async fn get_readme_url_and_content(
     fetch_content: bool,
     client: &reqwest::Client,
 ) -> (Option<String>, Option<String>) {
-    let base_url =
-        format!("https://raw.githubusercontent.com/{owner_name}/{repo_name}/{branch_or_tag}/");
+    let url =
+        format!("https://api.github.com/repos/{owner_name}/{repo_name}/readme?ref={branch_or_tag}");
 
-    // Try all possible filenames concurrently
-    let head_futures: Vec<_> = POSSIBLE_README_FILE_NAMES
-        .iter()
-        .map(|&filename| {
-            let url = base_url.clone() + filename;
-            async move {
-                let result = client.head(&url).send().await;
-                (url, result)
-            }
-        })
-        .collect();
+    match client
+        .head(&url)
+        .header("Authorization", GITHUB_KEY.to_string())
+        .header("User-Agent", "zigistry")
+        .send()
+        .await
+    {
+        Ok(resp) if resp.status().is_success() => resp,
+        _ => return (None, None),
+    };
 
-    let results = futures::future::join_all(head_futures).await;
+    if fetch_content {
+        let resp = match client
+            .get(&url)
+            .header("Accept", "application/vnd.github.v3.raw")
+            .header("User-Agent", "zigistry")
+            .send()
+            .await
+        {
+            Ok(resp) if resp.status().is_success() => resp,
+            _ => return (Some(url), None),
+        };
 
-    for (url, result) in results {
-        if let Ok(head_res) = result {
-            if head_res.status().is_success() {
-                if fetch_content {
-                    match client.get(&url).send().await {
-                        Ok(res) => match res.text().await {
-                            Ok(content) => {
-                                return (Some(url), Some(content));
-                            }
-                            Err(e) => {
-                                eprintln!(
-                                    "Failed to read README body for {owner_name}/{repo_name}: {e}"
-                                );
-                                return (Some(url), None);
-                            }
-                        },
-                        Err(e) => {
-                            eprintln!(
-                                "Failed to fetch README after successful head for {owner_name}/{repo_name}: {e}"
-                            );
-                            return (Some(url), None);
-                        }
-                    }
-                } else {
-                    return (Some(url), None);
-                }
-            }
+        match resp.text().await {
+            Ok(content) => (Some(url), Some(content)),
+            Err(_) => (Some(url), None),
         }
+    } else {
+        (Some(url), None)
     }
-
-    (None, None)
 }
 
 // now, I am checking a head request, and then doing get.
@@ -1175,4 +1161,16 @@ async fn fetch_with_retry(
             }
         }
     }
+}
+
+#[tokio::test]
+async fn test() {
+    let client = Client::new();
+    let res = get_readme_url_and_content("zigistry", "zigistry", "main", true, &client).await;
+    let url = res.0.unwrap();
+
+    let content = res.1.unwrap();
+
+    println!("content: {content}");
+    println!("url: {url}");
 }

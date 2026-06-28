@@ -16,7 +16,7 @@ async fn fetch_root_folder_directory_files(
     client: &reqwest::Client,
     user_name: String,
     repo_name: String,
-) -> Vec<(String, String)> {
+) -> String {
     // "https://api.github.com/repos/zigistry/zigistry/contents"
     let response = client
         .get(format!(
@@ -27,7 +27,6 @@ async fn fetch_root_folder_directory_files(
         .send()
         .await
         .unwrap();
-    let result = Vec::new();
     let response_json: Vec<serde_json::Value> = response.json().await.unwrap();
     let mut directories = Vec::new();
     let mut files = Vec::new();
@@ -42,7 +41,10 @@ async fn fetch_root_folder_directory_files(
             _ => {}
         }
     }
-    result
+    let dirs_string = directories.join("\n");
+    let files_string = files.join("\n");
+    let join_both_strings = dirs_string + "\n\n" + &files_string;
+    join_both_strings
 }
 
 fn parse_github_repo_id(repo_id: &str) -> Option<(String, String)> {
