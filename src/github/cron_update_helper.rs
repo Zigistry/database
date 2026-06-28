@@ -2,6 +2,7 @@ use super::types::Node;
 use crate::GITHUB_KEY;
 use crate::constants::{GH_GRAPH_QL_100_REPOS_FRAGMENT, NEEDS_UPDATE_CHUNK_SIZE};
 use libsql::{Connection, params};
+use reqwest::Client;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -9,6 +10,39 @@ use std::sync::Arc;
 struct NeedsUpdateRow {
     id: String,
     type_of_repo: String,
+}
+
+async fn fetch_root_folder_directory_files(
+    client: &reqwest::Client,
+    user_name: String,
+    repo_name: String,
+) -> Vec<(String, String)> {
+    // "https://api.github.com/repos/zigistry/zigistry/contents"
+    let response = client
+        .get(format!(
+            "https://api.github.com/repos/{user_name}/{repo_name}/contents"
+        ))
+        .header("User-Agent", "zigistry")
+        .header("Authorization", &*GITHUB_KEY)
+        .send()
+        .await
+        .unwrap();
+    let result = Vec::new();
+    let response_json: Vec<serde_json::Value> = response.json().await.unwrap();
+    let mut directories = Vec::new();
+    let mut files = Vec::new();
+
+    for thing in response_json {
+        let name = thing["name"].as_str().unwrap();
+        let kind = thing["type"].as_str().unwrap();
+
+        match kind {
+            "dir" => directories.push(name.to_string()),
+            "file" => files.push(name.to_string()),
+            _ => {}
+        }
+    }
+    result
 }
 
 fn parse_github_repo_id(repo_id: &str) -> Option<(String, String)> {
