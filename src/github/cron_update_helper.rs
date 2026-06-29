@@ -12,39 +12,48 @@ struct NeedsUpdateRow {
     type_of_repo: String,
 }
 
-async fn fetch_root_folder_directory_files(
+pub async fn fetch_root_folder_directory_files(
     client: &reqwest::Client,
     user_name: String,
     repo_name: String,
-) -> String {
-    // "https://api.github.com/repos/zigistry/zigistry/contents"
+    branch_or_tag: String,
+) -> Result<String, Box<dyn Error + Send + Sync>> {
+    let url = format!(
+        "https://api.github.com/repos/{user_name}/{repo_name}/contents?ref={branch_or_tag}"
+    );
     let response = client
-        .get(format!(
-            "https://api.github.com/repos/{user_name}/{repo_name}/contents"
-        ))
+        .get(&url)
         .header("User-Agent", "zigistry")
         .header("Authorization", &*GITHUB_KEY)
         .send()
-        .await
-        .unwrap();
-    let response_json: Vec<serde_json::Value> = response.json().await.unwrap();
+        .await?;
+    if !response.status().is_success() {
+        return Err(format!("GitHub API returned {}", response.status()).into());
+    }
+    let response_json: Vec<serde_json::Value> = response.json().await?;
     let mut directories = Vec::new();
     let mut files = Vec::new();
 
     for thing in response_json {
-        let name = thing["name"].as_str().unwrap();
-        let kind = thing["type"].as_str().unwrap();
+        let name = match thing["name"].as_str() {
+            Some(name) => name.to_string(),
+            None => continue,
+        };
+        let kind = match thing["type"].as_str() {
+            Some(kind) => kind,
+            None => continue,
+        };
 
         match kind {
-            "dir" => directories.push(name.to_string()),
-            "file" => files.push(name.to_string()),
+            "dir" => directories.push(name),
+            "file" => files.push(name),
             _ => {}
         }
     }
     let dirs_string = directories.join("\n");
     let files_string = files.join("\n");
     let join_both_strings = dirs_string + "\n\n" + &files_string;
-    join_both_strings
+    Ok(join_both_strings)
 }
 
 fn parse_github_repo_id(repo_id: &str) -> Option<(String, String)> {
@@ -195,4 +204,18 @@ pub async fn run_cron_update_once(pool: Arc<Connection>) -> Result<(), Box<dyn E
     }
 
     Ok(())
+}
+
+#[tokio::test]
+async fn test_fetch_root_folder_directory_files() {
+    let client = reqwest::Client::new();
+    let result = fetch_root_folder_directory_files(
+        &client,
+        "zigistry".to_string(),
+        "zigistry".to_string(),
+        "main".to_string(),
+    )
+    .await
+    .unwrap();
+    println!("directory_files output:\n{result}");
 }

@@ -198,7 +198,7 @@ pub async fn get_repo_data(
         default_branch_name.as_ref()
     };
 
-    let (build_zig_zon_data, (readme_url, readme_content)) = tokio::join!(
+    let (build_zig_zon_data, (readme_url, readme_content), default_branch_directory_files) = tokio::join!(
         get_build_zig_zon_data_wrapper(&repository.owner.login, &repository.name, branch, client),
         get_readme_url_and_content(
             &repository.owner.login,
@@ -206,7 +206,13 @@ pub async fn get_repo_data(
             branch,
             true,
             client
-        )
+        ),
+        fetch_root_folder_directory_files_wrapper(
+            &repository.owner.login,
+            &repository.name,
+            branch,
+            client
+        ),
     );
 
     let (readme_url, readme_content) = match (readme_url, readme_content) {
@@ -223,13 +229,16 @@ pub async fn get_repo_data(
         let release_clone = release.clone();
 
         async move {
-            let (readme_url, _) =
-                match get_readme_url_and_content(&owner, &name, &tag, false, client).await {
-                    (Some(url), _) => (url, String::new()),
-                    _ => ("404 unable to find readme.".to_string(), String::new()),
-                };
-
-            let bzz_results = get_build_zig_zon_data_wrapper(&owner, &name, &tag, client).await;
+            let ((readme_url, _), bzz_results, directory_files) = tokio::join!(
+                async {
+                    match get_readme_url_and_content(&owner, &name, &tag, false, client).await {
+                        (Some(url), _) => (url, String::new()),
+                        _ => ("404 unable to find readme.".to_string(), String::new()),
+                    }
+                },
+                get_build_zig_zon_data_wrapper(&owner, &name, &tag, client),
+                fetch_root_folder_directory_files_wrapper(&owner, &name, &tag, client),
+            );
 
             ReleaseData {
                 tag_name: release_clone.tag_name,
@@ -237,6 +246,7 @@ pub async fn get_repo_data(
                 published_at: release_clone.published_at,
                 minimum_zig_version: bzz_results.0,
                 readme_url,
+                directory_files,
                 dependencies: bzz_results.1,
             }
         }
@@ -261,6 +271,7 @@ pub async fn get_repo_data(
         readme_content: readme_processed_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
+        default_branch_directory_files,
         releases,
     }
 }
@@ -275,6 +286,7 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         readme_content,
         build_zig_zon_version,
         build_zig_zon_dependencies,
+        default_branch_directory_files,
         releases,
     } = data;
 
@@ -439,13 +451,14 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
         .query(
             r#"
             INSERT INTO releases
-                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-            VALUES(?, ?, ?, ?, ?, ?)
+                (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url, directory_files)
+            VALUES(?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(repo_id, version) DO UPDATE SET
                 is_prerelease = excluded.is_prerelease,
                 published_at = excluded.published_at,
                 minimum_zig_version = excluded.minimum_zig_version,
-                readme_url = excluded.readme_url
+                readme_url = excluded.readme_url,
+                directory_files = excluded.directory_files
             RETURNING id
             "#,
             params![
@@ -461,6 +474,10 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                     limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
                 ),
                 readme_url.clone(),
+                truncate_to_char_limit(
+                    &default_branch_directory_files,
+                    limits::RELEASE_DIRECTORY_FILES_MAX_LEN
+                ),
             ],
         )
         .await
@@ -519,13 +536,14 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
             .query(
                 r#"
                 INSERT INTO releases
-                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                VALUES(?, ?, ?, ?, ?, ?)
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url, directory_files)
+                VALUES(?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(repo_id, version) DO UPDATE SET
                     is_prerelease = excluded.is_prerelease,
                     published_at = excluded.published_at,
                     minimum_zig_version = excluded.minimum_zig_version,
-                    readme_url = excluded.readme_url
+                    readme_url = excluded.readme_url,
+                    directory_files = excluded.directory_files
                 RETURNING id
                 "#,
                 params![
@@ -538,6 +556,10 @@ pub async fn persist_repo_data(transaction: &Transaction, data: RepoData) {
                         limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
                     ),
                     release_data.readme_url,
+                    truncate_to_char_limit(
+                        &release_data.directory_files,
+                        limits::RELEASE_DIRECTORY_FILES_MAX_LEN
+                    ),
                 ],
             )
             .await
@@ -1071,6 +1093,25 @@ async fn get_build_zig_zon_data_wrapper(
     match get_build_zig_zon_data(owner_name, repo_name, branch_or_tag, client).await {
         Ok((minimum_zig_version, dependencies)) => (minimum_zig_version, dependencies),
         Err(_) => ("unknown".to_string(), Vec::new()),
+    }
+}
+
+async fn fetch_root_folder_directory_files_wrapper(
+    owner_name: &str,
+    repo_name: &str,
+    branch_or_tag: &str,
+    client: &reqwest::Client,
+) -> String {
+    match cron_update_helper::fetch_root_folder_directory_files(
+        client,
+        owner_name.to_string(),
+        repo_name.to_string(),
+        branch_or_tag.to_string(),
+    )
+    .await
+    {
+        Ok(files) => files,
+        Err(_) => String::new(),
     }
 }
 

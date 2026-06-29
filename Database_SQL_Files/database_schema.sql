@@ -70,6 +70,7 @@ CREATE TABLE releases (
   -- Making this only 30 characters limit, it shouldn't be more than that.
   minimum_zig_version VARCHAR(30) NOT NULL,
   readme_url TEXT NOT NULL,
+  directory_files TEXT NOT NULL DEFAULT '',
   FOREIGN KEY (repo_id) REFERENCES repos (id) ON DELETE CASCADE,
   UNIQUE (repo_id, version)
 );

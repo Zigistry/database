@@ -31,4 +31,5 @@ pub mod limits {
     pub const RELEASE_MIN_ZIG_VERSION_MAX_LEN: usize = 30;
     pub const RELEASE_DEPENDENCY_FIELD_MAX_LEN: usize = 260;
     pub const INDEX_SECTION_NAME_MAX_LEN: usize = 10;
+    pub const RELEASE_DIRECTORY_FILES_MAX_LEN: usize = 5000;
 }
