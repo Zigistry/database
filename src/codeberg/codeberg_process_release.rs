@@ -1,6 +1,8 @@
 use super::types;
 use crate::codeberg::codeberg_data::ReleaseData;
-use crate::codeberg::helper_functions::{get_build_zig_zon_data, get_readme_url};
+use crate::codeberg::helper_functions::{
+    fetch_root_folder_directory_files, get_build_zig_zon_data, get_readme_url,
+};
 
 pub async fn fetch_releases(owner_name: &str, repo_name: &str) -> Vec<ReleaseData> {
     let release_url =
@@ -22,10 +24,13 @@ pub async fn fetch_releases(owner_name: &str, repo_name: &str) -> Vec<ReleaseDat
         Err(_) => return Vec::new(),
     };
 
+    let client = reqwest::Client::new();
+
     // We can fetch releases concurrently
     let futures = responce_as_json.into_iter().map(|i| {
         let owner = owner_name.to_string();
         let repo = repo_name.to_string();
+        let client = client.clone();
         async move {
             let details = match get_build_zig_zon_data(&owner, &repo, &i.tag_name, true).await {
                 Ok(r) => r,
@@ -34,12 +39,16 @@ pub async fn fetch_releases(owner_name: &str, repo_name: &str) -> Vec<ReleaseDat
 
             let (readme_url, _) = get_readme_url(&owner, &repo, &i.tag_name, true, false).await;
 
+            let directory_files =
+                fetch_root_folder_directory_files(&client, &owner, &repo, &i.tag_name).await;
+
             ReleaseData {
                 tag_name: i.tag_name,
                 is_prerelease: i.prerelease,
                 published_at: i.published_at,
                 minimum_zig_version: details.0,
                 readme_url,
+                directory_files,
                 dependencies: details.1,
             }
         }

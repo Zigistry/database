@@ -137,3 +137,54 @@ pub async fn has_zig_in_top_languages(owner_name: &str, repo_name: &str) -> bool
         .take(10)
         .any(|(name, _)| name.eq_ignore_ascii_case("zig"))
 }
+
+pub async fn fetch_root_folder_directory_files(
+    client: &reqwest::Client,
+    owner_name: &str,
+    repo_name: &str,
+    branch_or_tag: &str,
+) -> String {
+    let url = format!(
+        "https://codeberg.org/api/v1/repos/{owner_name}/{repo_name}/contents?ref={branch_or_tag}"
+    );
+
+    let response = match client
+        .get(&url)
+        .header("Authorization", &*CODEBERG_KEY)
+        .send()
+        .await
+    {
+        Ok(resp) if resp.status().is_success() => resp,
+        _ => return String::new(),
+    };
+
+    let response_json: Vec<serde_json::Value> = match response.json().await {
+        Ok(val) => val,
+        Err(_) => return String::new(),
+    };
+
+    let mut directories = Vec::new();
+    let mut files = Vec::new();
+
+    for thing in response_json {
+        let name = match thing["name"].as_str() {
+            Some(name) => name.to_string(),
+            None => continue,
+        };
+        let kind = match thing["type"].as_str() {
+            Some(kind) => kind,
+            None => continue,
+        };
+
+        match kind {
+            "dir" => directories.push(name),
+            "file" => files.push(name),
+            _ => {}
+        }
+    }
+
+    let dirs_string = directories.join("\n");
+    let files_string = files.join("\n");
+    let join_both_strings = dirs_string + "\n\n" + &files_string;
+    join_both_strings
+}

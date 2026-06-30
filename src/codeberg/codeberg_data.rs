@@ -9,6 +9,7 @@ pub struct ReleaseData {
     pub published_at: String, // ISO timestamp
     pub minimum_zig_version: String,
     pub readme_url: String,
+    pub directory_files: String,
     pub dependencies: Vec<Dependency>,
 }
 
@@ -22,5 +23,6 @@ pub struct RepoData {
     pub readme_content: String,
     pub build_zig_zon_version: String,
     pub build_zig_zon_dependencies: Vec<Dependency>,
+    pub default_branch_directory_files: String,
     pub releases: Vec<ReleaseData>,
 }

@@ -6,7 +6,8 @@ use std::sync::Arc;
 
 use crate::codeberg::codeberg_data::RepoData;
 use crate::codeberg::helper_functions::{
-    get_build_zig_zon_data, get_latest_commit_hash, has_zig_in_top_languages,
+    fetch_root_folder_directory_files, get_build_zig_zon_data, get_latest_commit_hash,
+    has_zig_in_top_languages,
 };
 use crate::codeberg::types::types::Daum;
 use crate::constants::ASYNC_LIMIT;
@@ -22,6 +23,15 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
     let repo_id = format!("cb/{}/{}", repository.owner.login, repository.name).to_lowercase();
     let latest_commit_hash =
         get_latest_commit_hash(&repository.owner.login, &repository.name).await;
+    let client = reqwest::Client::new();
+    let default_branch_directory_files = fetch_root_folder_directory_files(
+        &client,
+        &repository.owner.login,
+        &repository.name,
+        &repository.default_branch,
+    )
+    .await;
+
     let (readme_url, readme_content) = get_readme_url(
         &repository.owner.login,
         repository.name.as_str(),
@@ -62,6 +72,7 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
         readme_content: readme_processed_content,
         build_zig_zon_version: build_zig_zon_data.0,
         build_zig_zon_dependencies: build_zig_zon_data.1,
+        default_branch_directory_files,
         releases,
     }
 }
@@ -76,6 +87,7 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         readme_content,
         build_zig_zon_version,
         build_zig_zon_dependencies,
+        default_branch_directory_files,
         releases,
     } = data;
 
@@ -222,13 +234,14 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
         .query(
             r#"
                 INSERT INTO releases
-                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                VALUES(?, ?, ?, ?, ?, ?)
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url, directory_files)
+                VALUES(?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(repo_id, version) DO UPDATE SET
                     is_prerelease = excluded.is_prerelease,
                     published_at = excluded.published_at,
                     minimum_zig_version = excluded.minimum_zig_version,
-                    readme_url = excluded.readme_url
+                    readme_url = excluded.readme_url,
+                    directory_files = excluded.directory_files
                 RETURNING id
             "#,
             params![
@@ -243,7 +256,11 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                     &build_zig_zon_version,
                     limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
                 ),
-                readme_url
+                readme_url,
+                truncate_to_char_limit(
+                    &default_branch_directory_files,
+                    limits::RELEASE_DIRECTORY_FILES_MAX_LEN
+                ),
             ],
         )
         .await
@@ -298,13 +315,14 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
             .query(
                 r#"
                 INSERT INTO releases
-                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url)
-                VALUES(?, ?, ?, ?, ?, ?)
+                    (repo_id, version, is_prerelease, published_at, minimum_zig_version, readme_url, directory_files)
+                VALUES(?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(repo_id, version) DO UPDATE SET
                     is_prerelease = excluded.is_prerelease,
                     published_at = excluded.published_at,
                     minimum_zig_version = excluded.minimum_zig_version,
-                    readme_url = excluded.readme_url
+                    readme_url = excluded.readme_url,
+                    directory_files = excluded.directory_files
                 RETURNING id
             "#,
                 params![
@@ -317,6 +335,10 @@ pub async fn send_repo_data_to_database(transaction: &Transaction, data: RepoDat
                         limits::RELEASE_MIN_ZIG_VERSION_MAX_LEN
                     ),
                     r.readme_url,
+                    truncate_to_char_limit(
+                        &r.directory_files,
+                        limits::RELEASE_DIRECTORY_FILES_MAX_LEN
+                    ),
                 ],
             )
             .await
