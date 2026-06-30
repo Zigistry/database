@@ -58,9 +58,14 @@ async fn get_readme(
             content.unwrap_or_default()
         }
         "cb" => {
-            let (_, content) =
-                codeberg::helper_functions::get_readme_url(&owner, &name, &branch, false, true)
-                    .await;
+            let directory_files = codeberg::helper_functions::fetch_root_folder_directory_files(
+                client, &owner, &name, &branch,
+            )
+            .await;
+            let (_, content) = codeberg::helper_functions::get_readme_url(
+                &owner, &name, &branch, false, true, &directory_files,
+            )
+            .await;
             content
         }
         _ => panic!("database id is not in correct format."),

@@ -37,10 +37,11 @@ pub async fn fetch_releases(owner_name: &str, repo_name: &str) -> Vec<ReleaseDat
                 Err(_) => (String::new(), Vec::new()),
             };
 
-            let (readme_url, _) = get_readme_url(&owner, &repo, &i.tag_name, true, false).await;
-
             let directory_files =
                 fetch_root_folder_directory_files(&client, &owner, &repo, &i.tag_name).await;
+
+            let (readme_url, _) =
+                get_readme_url(&owner, &repo, &i.tag_name, true, false, &directory_files).await;
 
             ReleaseData {
                 tag_name: i.tag_name,

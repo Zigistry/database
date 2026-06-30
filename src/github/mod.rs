@@ -3,9 +3,7 @@ pub mod github_data;
 pub mod types;
 use crate::bzz_stuff::{parse, tokenize};
 use crate::constants::limits;
-use crate::constants::{
-    ASYNC_LIMIT, GH_GRAPH_QL_PARTIAL_QUERY, GH_GRAPH_QL_QUERY, POSSIBLE_README_FILE_NAMES,
-};
+use crate::constants::{ASYNC_LIMIT, GH_GRAPH_QL_PARTIAL_QUERY, GH_GRAPH_QL_QUERY};
 use crate::database::{
     parse_lazy_flag, truncate_option_to_char_limit, truncate_to_char_limit, utc_now_timestamp,
 };
@@ -17,7 +15,6 @@ pub use cron_update_helper::run_cron_update_once;
 use futures::stream;
 use futures::stream::StreamExt;
 use libsql::{Connection, Transaction, params};
-use reqwest::Client;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;

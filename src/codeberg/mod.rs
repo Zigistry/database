@@ -38,6 +38,7 @@ pub async fn get_repo_data(repository: Daum) -> RepoData {
         &repository.default_branch,
         false,
         true,
+        &default_branch_directory_files,
     )
     .await;
 

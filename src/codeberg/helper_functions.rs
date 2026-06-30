@@ -1,9 +1,9 @@
 use crate::CODEBERG_KEY;
 use crate::bzz_stuff;
-use crate::constants::POSSIBLE_README_FILE_NAMES;
 use crate::constants::limits;
 use crate::custom_types;
 use crate::database::truncate_to_char_limit;
+use regex::Regex;
 
 pub async fn get_readme_url(
     owner_name: &str,
@@ -11,49 +11,42 @@ pub async fn get_readme_url(
     branch_or_tag: &str,
     is_tag: bool,
     fetch_content: bool,
+    directory_files: &str,
 ) -> (String, String) {
+    if directory_files.is_empty() {
+        return (String::new(), String::new());
+    }
+
     let branch_or_tag_value = if is_tag { "tag" } else { "branch" };
-    let url = format!(
+    let base_url = format!(
         "https://codeberg.org/{owner_name}/{repo_name}/raw/{branch_or_tag_value}/{branch_or_tag}/"
     );
 
     let client = reqwest::Client::new();
+    // https://regex101.com/?regex=%28%3Fi%29%5Ereadme%5B%5Cw.%5D*%24&testString=readme.md%0Areadme.rs%0AREADME.md%0AReadme.md%0Areadme%2F%0Areadme_something%2F%0A&flags=gm&flavor=pcre2&delimiter=%2F
+    let readme_regex = Regex::new(r"(?i)^readme[\w.]*$").unwrap();
+    let readme_file_name = directory_files
+        .lines()
+        .find(|line| readme_regex.is_match(line.trim()));
 
-    for readme_file_name in POSSIBLE_README_FILE_NAMES {
-        let readme_possible_url = url.clone() + readme_file_name;
-
-        let responce = match client.head(&readme_possible_url).send().await {
-            Ok(r) => r,
-            Err(err) => {
-                eprintln!("Problem:{err}");
-                continue;
-            }
-        };
-        if responce.status().is_success() {
+    match readme_file_name {
+        Some(name) => {
+            let readme_url = base_url + name;
             if fetch_content {
-                let res = match client.get(&readme_possible_url).send().await {
-                    Ok(t) => t,
-                    Err(_) => {
-                        print!("skipping readme {owner_name}/{repo_name}");
-                        continue;
-                    }
+                let res = match client.get(&readme_url).send().await {
+                    Ok(t) if t.status().is_success() => t,
+                    _ => return (readme_url, String::new()),
                 };
-                if res.status().is_success() {
-                    match res.text().await {
-                        Ok(content) => return (readme_possible_url, content),
-                        Err(err) => {
-                            eprintln!(
-                                "Failed to read README body for {owner_name}/{repo_name}: {err}"
-                            );
-                        }
-                    }
+                match res.text().await {
+                    Ok(content) => (readme_url, content),
+                    Err(_) => (readme_url, String::new()),
                 }
+            } else {
+                (readme_url, String::new())
             }
-            return (readme_possible_url, String::new());
         }
+        None => (String::new(), String::new()),
     }
-
-    (String::new(), String::new())
 }
 
 pub async fn get_build_zig_zon_data(
