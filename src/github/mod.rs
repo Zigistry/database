@@ -1025,9 +1025,10 @@ pub async fn get_readme_url_and_content(
     let url =
         format!("https://api.github.com/repos/{owner_name}/{repo_name}/readme?ref={branch_or_tag}");
 
-    match client
-        .head(&url)
+    let resp = match client
+        .get(&url)
         .header("Authorization", GITHUB_KEY.to_string())
+        .header("Accept", "application/vnd.github.v3+json")
         .header("User-Agent", "zigistry")
         .send()
         .await
@@ -1036,24 +1037,30 @@ pub async fn get_readme_url_and_content(
         _ => return (None, None),
     };
 
+    let body: serde_json::Value = match resp.json().await {
+        Ok(v) => v,
+        Err(_) => return (None, None),
+    };
+
+    let download_url = match body["download_url"].as_str() {
+        Some(u) => u.to_string(),
+        None => return (None, None),
+    };
+
     if fetch_content {
-        let resp = match client
-            .get(&url)
-            .header("Accept", "application/vnd.github.v3.raw")
+        let content = match client
+            .get(&download_url)
             .header("User-Agent", "zigistry")
             .send()
             .await
         {
-            Ok(resp) if resp.status().is_success() => resp,
-            _ => return (Some(url), None),
+            Ok(resp) if resp.status().is_success() => resp.text().await.unwrap_or_default(),
+            _ => return (Some(download_url), None),
         };
 
-        match resp.text().await {
-            Ok(content) => (Some(url), Some(content)),
-            Err(_) => (Some(url), None),
-        }
+        (Some(download_url), Some(content))
     } else {
-        (Some(url), None)
+        (Some(download_url), None)
     }
 }
 
