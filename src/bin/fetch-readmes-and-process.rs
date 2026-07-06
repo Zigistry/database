@@ -63,7 +63,12 @@ async fn get_readme(
             )
             .await;
             let (_, content) = codeberg::helper_functions::get_readme_url(
-                &owner, &name, &branch, false, true, &directory_files,
+                &owner,
+                &name,
+                &branch,
+                false,
+                true,
+                &directory_files,
             )
             .await;
             content

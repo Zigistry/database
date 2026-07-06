@@ -25,11 +25,11 @@ jobs:
 
       - name: uv sync and install important things
         run: |
-           cd ./src/readme_keyword_extraction
+          cd ./src/readme_keyword_extraction
 
-           uv sync
+          uv sync
 
-           uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
+          uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
 
       - name: wait for 20 seconds before starting, for server to start
         run: |
@@ -38,7 +38,6 @@ jobs:
 
       - name: install hf
         run: curl -LsSf https://hf.co/cli/install.sh | bash
-
 
       - name: Download cron-codeberg binary
         run: wget -O cron-codeberg https://github.com/Zigistry/database/releases/download/executables/cron-codeberg
@@ -54,4 +53,3 @@ jobs:
 
       - name: push updated database
         run: hf cp ./zigistry.db hf://buckets/Zigistry/Zigistry/zigistry.db
-
