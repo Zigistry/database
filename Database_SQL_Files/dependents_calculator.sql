@@ -99,11 +99,11 @@ WITH
     WHERE
       instr(path_after_domain, '/') > 0 -- Must have at least owner/repo
   )
-INSERT INTO
+INSERT OR IGNORE INTO
   repo_dependents (repo_id, dependent)
 SELECT DISTINCT
-  repo_id_of_dependency,
-  dependent
+  lower(repo_id_of_dependency),
+  lower(dependent)
 FROM
   extracted
 WHERE
@@ -114,5 +114,5 @@ WHERE
     FROM
       repos r
     WHERE
-      r.id = repo_id_of_dependency
+      lower(r.id) = lower(repo_id_of_dependency)
   );
